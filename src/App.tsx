@@ -15,6 +15,7 @@ import ShiftManagement from "./pages/ShiftManagement";
 import LeaveManagement from "./pages/LeaveManagement";
 import ProfileSettings from "./pages/ProfileSettings";
 import WeekOffManagement from "./pages/WeekOffManagement";
+import CompanySettings from "./pages/CompanySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ function AppRoutes() {
       <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
       <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
       <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
+      <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

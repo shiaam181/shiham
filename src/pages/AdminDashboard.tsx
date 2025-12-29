@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/dialog';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
+import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface Employee {
@@ -68,6 +69,9 @@ interface AttendanceRecord {
   check_out_photo_url: string | null;
   check_in_latitude: number | null;
   check_in_longitude: number | null;
+  notes: string | null;
+  admin_notes: string | null;
+  overtime_minutes: number | null;
   employee_name?: string;
   employee_department?: string;
 }
@@ -96,6 +100,8 @@ export default function AdminDashboard() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -434,7 +440,14 @@ export default function AdminDashboard() {
                                 </div>
                               </DialogContent>
                             </Dialog>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setEditingRecord(record);
+                                setShowEditDialog(true);
+                              }}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
                           </div>
@@ -545,8 +558,32 @@ export default function AdminDashboard() {
               <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
             </div>
           </Card>
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/settings')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Settings className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium">Company Settings</p>
+                <p className="text-xs text-muted-foreground">Configure company info</p>
+              </div>
+              <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+            </div>
+          </Card>
         </div>
       </main>
+
+      {/* Attendance Edit Dialog */}
+      <AttendanceEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        attendance={editingRecord}
+        employeeName={editingRecord?.employee_name || 'Unknown'}
+        onUpdate={fetchData}
+      />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
