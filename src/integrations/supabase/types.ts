@@ -83,6 +83,56 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_logo_url: string | null
+          company_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          default_shift_id: string | null
+          id: string
+          tagline: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_logo_url?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          default_shift_id?: string | null
+          id?: string
+          tagline?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_logo_url?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          default_shift_id?: string | null
+          id?: string
+          tagline?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_default_shift_id_fkey"
+            columns: ["default_shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           created_at: string
