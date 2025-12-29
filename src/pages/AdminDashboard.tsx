@@ -23,7 +23,8 @@ import {
   Edit,
   BarChart3,
   Settings,
-  Timer
+  Timer,
+  Bell
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -43,6 +44,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import NotificationBell from '@/components/NotificationBell';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface Employee {
@@ -211,6 +213,8 @@ export default function AdminDashboard() {
                 <User className="w-4 h-4 mr-2" />
                 Employee View
               </Button>
+              
+              <NotificationBell />
               
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center">

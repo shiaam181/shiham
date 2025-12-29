@@ -203,58 +203,187 @@ export default function Reports() {
   };
 
   const exportToPDF = () => {
-    // Create a simple HTML table and print it
+    // Create a professional PDF with company branding
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const reportDate = format(new Date(), 'MMMM d, yyyy h:mm a');
+    const reportPeriod = format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy');
 
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Attendance Report - ${format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</title>
+          <title>Attendance Report - ${reportPeriod}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { color: #1a56db; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #f3f4f6; }
-            .good { color: #059669; }
-            .warning { color: #d97706; }
-            .bad { color: #dc2626; }
+            * { box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1a1a2e; line-height: 1.5; }
+            
+            /* Header with Company Branding */
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1a56db; padding-bottom: 20px; margin-bottom: 30px; }
+            .company-info { }
+            .company-name { font-size: 28px; font-weight: bold; color: #1a56db; margin: 0; }
+            .company-tagline { font-size: 12px; color: #666; margin: 5px 0 0 0; }
+            .report-meta { text-align: right; font-size: 12px; color: #666; }
+            .report-title { font-size: 14px; font-weight: bold; color: #1a1a2e; margin-bottom: 5px; }
+            
+            /* Report Info */
+            .report-info { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; }
+            .info-item { }
+            .info-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+            .info-value { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+            
+            /* Summary Stats */
+            .summary-section { margin-bottom: 30px; }
+            .summary-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1a1a2e; }
+            .summary-grid { display: flex; gap: 20px; }
+            .summary-card { flex: 1; background: linear-gradient(135deg, #f8fafc 0%, #e8eef4 100%); padding: 15px; border-radius: 8px; text-align: center; }
+            .summary-value { font-size: 24px; font-weight: bold; }
+            .summary-label { font-size: 11px; color: #666; text-transform: uppercase; }
+            .summary-value.success { color: #059669; }
+            .summary-value.warning { color: #d97706; }
+            .summary-value.danger { color: #dc2626; }
+            
+            /* Table */
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+            th { background: #1a56db; color: white; padding: 12px 10px; text-align: left; font-weight: 600; }
+            td { border-bottom: 1px solid #e2e8f0; padding: 10px; }
+            tr:nth-child(even) { background: #f8fafc; }
+            tr:hover { background: #eef2ff; }
+            .text-center { text-align: center; }
+            .badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+            .badge-success { background: #d1fae5; color: #059669; }
+            .badge-warning { background: #fef3c7; color: #d97706; }
+            .badge-danger { background: #fee2e2; color: #dc2626; }
+            
+            /* Footer with Signatures */
+            .footer { margin-top: 60px; page-break-inside: avoid; }
+            .signature-section { display: flex; justify-content: space-between; margin-top: 40px; }
+            .signature-box { width: 200px; text-align: center; }
+            .signature-line { border-top: 2px solid #1a1a2e; padding-top: 10px; margin-top: 60px; }
+            .signature-name { font-weight: 600; font-size: 12px; }
+            .signature-title { font-size: 10px; color: #666; }
+            
+            .footer-note { text-align: center; font-size: 10px; color: #999; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+            
+            @media print {
+              body { padding: 20px; }
+              .no-print { display: none; }
+            }
           </style>
         </head>
         <body>
-          <h1>Attendance Report</h1>
-          <p>Period: ${format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')}</p>
-          <p>Generated: ${format(new Date(), 'MMMM d, yyyy h:mm a')}</p>
+          <!-- Company Header -->
+          <div class="header">
+            <div class="company-info">
+              <h1 class="company-name">AttendanceHub</h1>
+              <p class="company-tagline">Employee Attendance Management System</p>
+            </div>
+            <div class="report-meta">
+              <div class="report-title">ATTENDANCE REPORT</div>
+              <div>Generated: ${reportDate}</div>
+              <div>Report ID: ATT-${format(new Date(), 'yyyyMMddHHmm')}</div>
+            </div>
+          </div>
+          
+          <!-- Report Info -->
+          <div class="report-info">
+            <div class="info-item">
+              <div class="info-label">Report Period</div>
+              <div class="info-value">${reportPeriod}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Total Employees</div>
+              <div class="info-value">${totalStats.totalEmployees}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Average Attendance</div>
+              <div class="info-value">${totalStats.avgAttendance}%</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Working Days</div>
+              <div class="info-value">${stats[0]?.totalDays || '-'}</div>
+            </div>
+          </div>
+          
+          <!-- Summary Statistics -->
+          <div class="summary-section">
+            <div class="summary-title">Summary Statistics</div>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-value success">${totalStats.avgAttendance}%</div>
+                <div class="summary-label">Avg Attendance</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-value warning">${totalStats.totalLateCheckIns}</div>
+                <div class="summary-label">Late Check-ins</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-value danger">${totalStats.totalAbsent}</div>
+                <div class="summary-label">Total Absences</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Detailed Table -->
+          <div class="summary-title">Employee Attendance Details</div>
           <table>
             <thead>
               <tr>
-                <th>Employee</th>
+                <th>Employee Name</th>
                 <th>Department</th>
-                <th>Present</th>
-                <th>Absent</th>
-                <th>Leave</th>
-                <th>Late</th>
-                <th>Early Out</th>
-                <th>Attendance %</th>
+                <th class="text-center">Present</th>
+                <th class="text-center">Absent</th>
+                <th class="text-center">Leave</th>
+                <th class="text-center">Late</th>
+                <th class="text-center">Early Out</th>
+                <th class="text-center">Attendance %</th>
               </tr>
             </thead>
             <tbody>
               ${stats.map(s => `
                 <tr>
-                  <td>${s.employee.full_name}</td>
+                  <td><strong>${s.employee.full_name}</strong></td>
                   <td>${s.employee.department || '-'}</td>
-                  <td class="good">${s.present}</td>
-                  <td class="bad">${s.absent}</td>
-                  <td>${s.leave}</td>
-                  <td class="warning">${s.lateCheckIns}</td>
-                  <td class="warning">${s.earlyCheckOuts}</td>
-                  <td class="${s.attendancePercentage >= 90 ? 'good' : s.attendancePercentage >= 75 ? 'warning' : 'bad'}">${s.attendancePercentage}%</td>
+                  <td class="text-center"><span class="badge badge-success">${s.present}</span></td>
+                  <td class="text-center"><span class="badge badge-danger">${s.absent}</span></td>
+                  <td class="text-center">${s.leave}</td>
+                  <td class="text-center"><span class="badge badge-warning">${s.lateCheckIns}</span></td>
+                  <td class="text-center"><span class="badge badge-warning">${s.earlyCheckOuts}</span></td>
+                  <td class="text-center"><span class="badge ${s.attendancePercentage >= 90 ? 'badge-success' : s.attendancePercentage >= 75 ? 'badge-warning' : 'badge-danger'}">${s.attendancePercentage}%</span></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
+          
+          <!-- Signature Section -->
+          <div class="footer">
+            <div class="signature-section">
+              <div class="signature-box">
+                <div class="signature-line">
+                  <div class="signature-name">Prepared By</div>
+                  <div class="signature-title">HR Department</div>
+                </div>
+              </div>
+              <div class="signature-box">
+                <div class="signature-line">
+                  <div class="signature-name">Reviewed By</div>
+                  <div class="signature-title">Department Manager</div>
+                </div>
+              </div>
+              <div class="signature-box">
+                <div class="signature-line">
+                  <div class="signature-name">Approved By</div>
+                  <div class="signature-title">HR Director</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer-note">
+              This is a computer-generated report from AttendanceHub. 
+              For any discrepancies, please contact the HR department.
+            </div>
+          </div>
         </body>
       </html>
     `;
@@ -263,7 +392,7 @@ export default function Reports() {
     printWindow.document.close();
     printWindow.print();
 
-    toast({ title: 'Success', description: 'Report exported to PDF' });
+    toast({ title: 'Success', description: 'Professional PDF report generated' });
   };
 
   const totalStats = {
