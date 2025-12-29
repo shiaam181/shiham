@@ -32,6 +32,7 @@ export type Database = {
           id: string
           modified_by: string | null
           notes: string | null
+          overtime_minutes: number | null
           status: string
           updated_at: string
           user_id: string
@@ -53,6 +54,7 @@ export type Database = {
           id?: string
           modified_by?: string | null
           notes?: string | null
+          overtime_minutes?: number | null
           status?: string
           updated_at?: string
           user_id: string
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           modified_by?: string | null
           notes?: string | null
+          overtime_minutes?: number | null
           status?: string
           updated_at?: string
           user_id?: string
