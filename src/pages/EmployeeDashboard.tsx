@@ -20,11 +20,14 @@ import {
   XCircle,
   AlertCircle,
   Sun,
-  Sunset
+  Sunset,
+  Settings,
+  FileText
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, getDay } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
 import CameraCapture from '@/components/CameraCapture';
+import LeaveRequestForm from '@/components/LeaveRequestForm';
 
 interface TodayAttendance {
   id: string;
@@ -42,6 +45,17 @@ interface AttendanceStats {
   total: number;
 }
 
+interface LeaveRequest {
+  id: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  reason: string | null;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+}
+
 export default function EmployeeDashboard() {
   const { user, profile, isAdmin, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -49,6 +63,7 @@ export default function EmployeeDashboard() {
   
   const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<AttendanceStats>({ present: 0, absent: 0, leave: 0, total: 0 });
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
   const [captureType, setCaptureType] = useState<'check-in' | 'check-out'>('check-in');
@@ -126,12 +141,31 @@ export default function EmployeeDashboard() {
     }
   }, [user]);
 
+  const fetchLeaveRequests = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setLeaveRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchTodayAttendance();
       fetchMonthlyStats();
+      fetchLeaveRequests();
     }
-  }, [user, fetchTodayAttendance, fetchMonthlyStats]);
+  }, [user, fetchTodayAttendance, fetchMonthlyStats, fetchLeaveRequests]);
 
   const handleCheckIn = () => {
     setCaptureType('check-in');
@@ -260,6 +294,15 @@ export default function EmployeeDashboard() {
                   Admin Panel
                 </Button>
               )}
+              
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate('/profile')}
+                title="Profile Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
               
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
@@ -458,6 +501,7 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* Calendar */}
+        {/* Calendar */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -470,6 +514,46 @@ export default function EmployeeDashboard() {
             <AttendanceCalendar userId={user?.id} />
           </CardContent>
         </Card>
+
+        {/* Leave Requests */}
+        <LeaveRequestForm leaveRequests={leaveRequests} onRefresh={fetchLeaveRequests} />
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/profile')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Settings className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium">Profile Settings</p>
+                <p className="text-xs text-muted-foreground">Update photo & details</p>
+              </div>
+              <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+            </div>
+          </Card>
+          
+          {!profile?.face_reference_url && (
+            <Card 
+              className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
+              onClick={() => navigate('/profile')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                  <Camera className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <p className="font-medium text-warning">Setup Face Verification</p>
+                  <p className="text-xs text-warning/80">Required for attendance</p>
+                </div>
+                <ChevronRight className="w-5 h-5 ml-auto text-warning" />
+              </div>
+            </Card>
+          )}
+        </div>
       </main>
 
       {/* Camera Modal */}
