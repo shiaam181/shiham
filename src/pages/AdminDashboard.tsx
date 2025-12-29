@@ -443,7 +443,10 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4 cursor-pointer hover:shadow-elevated transition-shadow">
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/employees')}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Users className="w-5 h-5 text-primary" />
@@ -456,7 +459,10 @@ export default function AdminDashboard() {
             </div>
           </Card>
           
-          <Card className="p-4 cursor-pointer hover:shadow-elevated transition-shadow">
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/holidays')}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-warning" />
@@ -469,7 +475,10 @@ export default function AdminDashboard() {
             </div>
           </Card>
           
-          <Card className="p-4 cursor-pointer hover:shadow-elevated transition-shadow">
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/reports')}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-info-soft flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-info" />

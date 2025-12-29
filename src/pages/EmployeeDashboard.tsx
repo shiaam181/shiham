@@ -143,7 +143,7 @@ export default function EmployeeDashboard() {
     setShowCamera(true);
   };
 
-  const handleCameraCapture = async (photoDataUrl: string) => {
+  const handleCameraCapture = async (photoDataUrl: string, faceVerified: boolean) => {
     setShowCamera(false);
     
     if (!user || !location) {
@@ -167,6 +167,7 @@ export default function EmployeeDashboard() {
           check_in_latitude: location.lat,
           check_in_longitude: location.lng,
           check_in_photo_url: photoDataUrl,
+          check_in_face_verified: faceVerified,
           status: 'present',
         });
 
@@ -184,6 +185,7 @@ export default function EmployeeDashboard() {
             check_out_latitude: location.lat,
             check_out_longitude: location.lng,
             check_out_photo_url: photoDataUrl,
+            check_out_face_verified: faceVerified,
           })
           .eq('user_id', user.id)
           .eq('date', today);
@@ -476,6 +478,7 @@ export default function EmployeeDashboard() {
           onCapture={handleCameraCapture}
           onClose={() => setShowCamera(false)}
           type={captureType}
+          referenceImageUrl={profile?.face_reference_url}
         />
       )}
     </div>

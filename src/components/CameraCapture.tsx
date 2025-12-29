@@ -1,21 +1,30 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, X, RotateCcw, Check, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CameraCaptureProps {
-  onCapture: (photoDataUrl: string) => void;
+  onCapture: (photoDataUrl: string, faceVerified: boolean) => void;
   onClose: () => void;
   type: 'check-in' | 'check-out';
+  referenceImageUrl?: string | null;
 }
 
-export default function CameraCapture({ onCapture, onClose, type }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, onClose, type, referenceImageUrl }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationResult, setVerificationResult] = useState<{
+    match: boolean;
+    confidence: number;
+    reason: string;
+  } | null>(null);
 
   useEffect(() => {
     startCamera();
@@ -61,7 +70,7 @@ export default function CameraCapture({ onCapture, onClose, type }: CameraCaptur
     }
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -81,18 +90,57 @@ export default function CameraCapture({ onCapture, onClose, type }: CameraCaptur
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(dataUrl);
     stopCamera();
+
+    // If we have a reference image, verify face
+    if (referenceImageUrl) {
+      await verifyFace(dataUrl);
+    }
+  };
+
+  const verifyFace = async (capturedDataUrl: string) => {
+    if (!referenceImageUrl) {
+      setVerificationResult({ match: true, confidence: 100, reason: 'No reference photo set - verification skipped' });
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-face', {
+        body: {
+          referenceImage: referenceImageUrl,
+          capturedImage: capturedDataUrl,
+        },
+      });
+
+      if (error) throw error;
+
+      setVerificationResult(data);
+    } catch (error) {
+      console.error('Face verification error:', error);
+      setVerificationResult({
+        match: false,
+        confidence: 0,
+        reason: 'Face verification failed. Please try again.',
+      });
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const retakePhoto = () => {
     setCapturedImage(null);
+    setVerificationResult(null);
     startCamera();
   };
 
   const confirmPhoto = () => {
     if (capturedImage) {
-      onCapture(capturedImage);
+      const faceVerified = referenceImageUrl ? (verificationResult?.match ?? false) : true;
+      onCapture(capturedImage, faceVerified);
     }
   };
+
+  const canConfirm = !referenceImageUrl || (verificationResult?.match ?? false);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -156,6 +204,36 @@ export default function CameraCapture({ onCapture, onClose, type }: CameraCaptur
             </div>
           )}
 
+          {/* Verification Status */}
+          {capturedImage && referenceImageUrl && (
+            <div className="absolute bottom-4 left-4 right-4">
+              {isVerifying ? (
+                <div className="bg-black/70 backdrop-blur rounded-lg p-3 flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  <span className="text-white text-sm">Verifying face...</span>
+                </div>
+              ) : verificationResult && (
+                <div className={`backdrop-blur rounded-lg p-3 flex items-center gap-3 ${
+                  verificationResult.match ? 'bg-success/90' : 'bg-destructive/90'
+                }`}>
+                  {verificationResult.match ? (
+                    <ShieldCheck className="w-5 h-5 text-white" />
+                  ) : (
+                    <ShieldX className="w-5 h-5 text-white" />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">
+                      {verificationResult.match ? 'Face Verified' : 'Face Not Matched'}
+                    </p>
+                    <p className="text-white/80 text-xs">
+                      {verificationResult.confidence}% confidence
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
@@ -179,25 +257,30 @@ export default function CameraCapture({ onCapture, onClose, type }: CameraCaptur
                 size="lg"
                 className="flex-1"
                 onClick={retakePhoto}
+                disabled={isVerifying}
               >
                 <RotateCcw className="w-5 h-5 mr-2" />
                 Retake
               </Button>
               <Button
-                variant="success"
+                variant={canConfirm ? "success" : "destructive"}
                 size="lg"
                 className="flex-1"
                 onClick={confirmPhoto}
+                disabled={isVerifying || (!canConfirm && !!referenceImageUrl)}
               >
                 <Check className="w-5 h-5 mr-2" />
-                Confirm
+                {canConfirm ? 'Confirm' : 'Verification Failed'}
               </Button>
             </>
           )}
         </div>
 
         <p className="text-xs text-center text-muted-foreground pb-4 px-4">
-          Position your face within the guide for best results
+          {referenceImageUrl 
+            ? 'Face verification will be performed automatically'
+            : 'Position your face within the guide for best results'
+          }
         </p>
       </Card>
     </div>
