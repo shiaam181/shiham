@@ -50,6 +50,7 @@ export default function DeveloperDashboard() {
   const [photoCaptureEnabled, setPhotoCaptureEnabled] = useState(true);
   const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
+  const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // EmailJS configuration state
@@ -88,6 +89,9 @@ export default function DeveloperDashboard() {
             break;
           case 'overtime_tracking_enabled':
             setOvertimeTrackingEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
+            break;
+          case 'face_verification_threshold':
+            setFaceVerificationThreshold((setting.value as { threshold: number })?.threshold ?? 70);
             break;
           case 'emailjs_config': {
             const emailConfig = setting.value as { service_id?: string; template_id?: string; public_key?: string };
@@ -130,6 +134,28 @@ export default function DeveloperDashboard() {
   };
 
   const isEmailConfigured = emailServiceId && emailTemplateId && emailPublicKey;
+
+  const saveFaceThreshold = async (threshold: number) => {
+    setSettingsLoading(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ key: 'face_verification_threshold', value: { threshold } }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update threshold',
+        variant: 'destructive',
+      });
+    } else {
+      setFaceVerificationThreshold(threshold);
+      toast({
+        title: 'Setting Updated',
+        description: `Face verification threshold set to ${threshold}%`,
+      });
+    }
+    setSettingsLoading(false);
+  };
 
   const toggleFaceVerification = async (enabled: boolean) => {
     setSettingsLoading(true);
@@ -683,6 +709,60 @@ export default function DeveloperDashboard() {
                         disabled={settingsLoading}
                       />
                     </div>
+
+                    {/* Face Verification Threshold Slider */}
+                    {faceVerificationEnabled && (
+                      <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                        <div className="space-y-1">
+                          <Label htmlFor="face-threshold" className="font-medium flex items-center gap-2">
+                            <ScanFace className="w-4 h-4" />
+                            Confidence Threshold: <span className="text-primary font-bold">{faceVerificationThreshold}%</span>
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Minimum confidence level required for face match (higher = stricter)
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs text-muted-foreground">50%</span>
+                          <input
+                            type="range"
+                            id="face-threshold"
+                            min="50"
+                            max="95"
+                            step="5"
+                            value={faceVerificationThreshold}
+                            onChange={(e) => setFaceVerificationThreshold(Number(e.target.value))}
+                            className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                            disabled={settingsLoading}
+                          />
+                          <span className="text-xs text-muted-foreground">95%</span>
+                          <Button 
+                            size="sm" 
+                            onClick={() => saveFaceThreshold(faceVerificationThreshold)}
+                            disabled={settingsLoading}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          {[60, 70, 80, 90].map((val) => (
+                            <Button
+                              key={val}
+                              variant={faceVerificationThreshold === val ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => {
+                                setFaceVerificationThreshold(val);
+                                saveFaceThreshold(val);
+                              }}
+                              disabled={settingsLoading}
+                            >
+                              {val}%
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
