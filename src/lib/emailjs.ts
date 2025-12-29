@@ -1,10 +1,5 @@
 import emailjs from '@emailjs/browser';
-
-// EmailJS Configuration - Replace these with your actual EmailJS credentials
-// Get your credentials from https://www.emailjs.com/
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface LeaveEmailParams {
   to_name: string;
@@ -16,11 +11,38 @@ export interface LeaveEmailParams {
   admin_notes?: string;
 }
 
+interface EmailJSConfig {
+  service_id: string;
+  template_id: string;
+  public_key: string;
+}
+
+// Fetch EmailJS config from database
+async function getEmailConfig(): Promise<EmailJSConfig | null> {
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'emailjs_config')
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    const value = data.value as unknown as EmailJSConfig;
+    if (!value?.service_id || !value?.template_id || !value?.public_key) {
+      return null;
+    }
+
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export const sendLeaveStatusEmail = async (params: LeaveEmailParams): Promise<boolean> => {
-  // Check if EmailJS is configured
-  if (EMAILJS_SERVICE_ID === 'YOUR_SERVICE_ID' || 
-      EMAILJS_TEMPLATE_ID === 'YOUR_TEMPLATE_ID' || 
-      EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+  const config = await getEmailConfig();
+  
+  if (!config) {
     console.log('EmailJS not configured. Skipping email notification.');
     return false;
   }
@@ -40,10 +62,10 @@ export const sendLeaveStatusEmail = async (params: LeaveEmailParams): Promise<bo
     };
 
     await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
+      config.service_id,
+      config.template_id,
       templateParams,
-      EMAILJS_PUBLIC_KEY
+      config.public_key
     );
 
     console.log('Leave status email sent successfully');
@@ -54,8 +76,7 @@ export const sendLeaveStatusEmail = async (params: LeaveEmailParams): Promise<bo
   }
 };
 
-export const isEmailJSConfigured = (): boolean => {
-  return EMAILJS_SERVICE_ID !== 'YOUR_SERVICE_ID' && 
-         EMAILJS_TEMPLATE_ID !== 'YOUR_TEMPLATE_ID' && 
-         EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY';
+export const isEmailJSConfigured = async (): Promise<boolean> => {
+  const config = await getEmailConfig();
+  return config !== null;
 };
