@@ -22,7 +22,8 @@ import {
   Eye,
   Edit,
   BarChart3,
-  Settings
+  Settings,
+  Timer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -41,6 +42,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface Employee {
   id: string;
@@ -540,6 +543,12 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+      
+      {/* Bottom padding for mobile nav */}
+      <div className="h-16 sm:hidden" />
     </div>
   );
 }

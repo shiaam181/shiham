@@ -22,12 +22,16 @@ import {
   Sun,
   Sunset,
   Settings,
-  FileText
+  FileText,
+  Timer
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
 import CameraCapture from '@/components/CameraCapture';
 import LeaveRequestForm from '@/components/LeaveRequestForm';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import LeaveNotifications from '@/components/LeaveNotifications';
+import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface TodayAttendance {
   id: string;
@@ -556,6 +560,12 @@ export default function EmployeeDashboard() {
         </div>
       </main>
 
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+
+      {/* Leave Notifications (realtime) */}
+      <LeaveNotifications onLeaveUpdate={fetchLeaveRequests} />
+
       {/* Camera Modal */}
       {showCamera && (
         <CameraCapture
@@ -565,6 +575,9 @@ export default function EmployeeDashboard() {
           referenceImageUrl={profile?.face_reference_url}
         />
       )}
+
+      {/* Bottom padding for mobile nav */}
+      <div className="h-16 sm:hidden" />
     </div>
   );
 }
