@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import HolidayManagement from "./pages/HolidayManagement";
+import EmployeeManagement from "./pages/EmployeeManagement";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +79,30 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <AdminDashboard />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/holidays"
+        element={
+          <AdminRoute>
+            <HolidayManagement />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/employees"
+        element={
+          <AdminRoute>
+            <EmployeeManagement />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/reports"
+        element={
+          <AdminRoute>
+            <Reports />
           </AdminRoute>
         }
       />
