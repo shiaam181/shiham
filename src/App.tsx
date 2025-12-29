@@ -8,6 +8,7 @@ import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
+import ResetPassword from "./pages/ResetPassword";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
@@ -145,6 +146,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />

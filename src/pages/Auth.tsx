@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 const loginSchema = z.object({
@@ -27,6 +27,9 @@ const signupSchema = z.object({
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -35,10 +38,11 @@ export default function Auth() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isResetLoading, setIsResetLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -136,6 +140,37 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail.trim()) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsResetLoading(true);
+    const { error } = await resetPassword(resetEmail.trim());
+    setIsResetLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      setResetSent(true);
+      toast({
+        title: 'Reset Email Sent',
+        description: 'Check your email for a password reset link.',
+      });
+    }
+  };
+
   const features = [
     { icon: Clock, title: 'Real-time Tracking', desc: 'Instant check-in/out with timestamps' },
     { icon: MapPin, title: 'GPS Location', desc: 'Verified location for every attendance' },
@@ -200,6 +235,103 @@ export default function Auth() {
             <h1 className="text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
           </div>
 
+          {showForgotPassword ? (
+            <Card variant="elevated" className="border-0 shadow-xl">
+              <CardHeader className="space-y-1 pb-4">
+                {resetSent ? (
+                  <>
+                    <div className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mb-4">
+                      <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    <CardTitle className="text-2xl font-display text-center">Check Your Email</CardTitle>
+                    <CardDescription className="text-center">
+                      We've sent a password reset link to <strong>{resetEmail}</strong>
+                    </CardDescription>
+                  </>
+                ) : (
+                  <>
+                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Mail className="w-8 h-8 text-primary" />
+                    </div>
+                    <CardTitle className="text-2xl font-display text-center">Forgot Password?</CardTitle>
+                    <CardDescription className="text-center">
+                      Enter your email address and we'll send you a link to reset your password
+                    </CardDescription>
+                  </>
+                )}
+              </CardHeader>
+              <CardContent>
+                {resetSent ? (
+                  <div className="space-y-4">
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="w-full"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setResetSent(false);
+                        setResetEmail('');
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Sign In
+                    </Button>
+                    <p className="text-center text-sm text-muted-foreground">
+                      Didn't receive the email?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setResetSent(false)}
+                        className="text-primary hover:underline"
+                      >
+                        Try again
+                      </button>
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="resetEmail">Email</Label>
+                      <Input
+                        id="resetEmail"
+                        type="email"
+                        placeholder="you@company.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      variant="hero"
+                      size="lg"
+                      className="w-full"
+                      disabled={isResetLoading}
+                    >
+                      {isResetLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        'Send Reset Link'
+                      )}
+                    </Button>
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(false);
+                          setResetEmail('');
+                        }}
+                        className="text-sm text-muted-foreground hover:text-primary"
+                      >
+                        <ArrowLeft className="w-4 h-4 inline mr-1" />
+                        Back to Sign In
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
           <Card variant="elevated" className="border-0 shadow-xl">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-2xl font-display">
@@ -248,7 +380,21 @@ export default function Auth() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setResetEmail(formData.email);
+                        }}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="password"
                     name="password"
@@ -359,6 +505,7 @@ export default function Auth() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             By continuing, you agree to our Terms of Service and Privacy Policy.
