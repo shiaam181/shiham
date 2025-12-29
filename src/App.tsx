@@ -11,6 +11,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import HolidayManagement from "./pages/HolidayManagement";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import Reports from "./pages/Reports";
+import ShiftManagement from "./pages/ShiftManagement";
+import LeaveManagement from "./pages/LeaveManagement";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,46 +69,14 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <EmployeeDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/holidays"
-        element={
-          <AdminRoute>
-            <HolidayManagement />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/employees"
-        element={
-          <AdminRoute>
-            <EmployeeManagement />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/reports"
-        element={
-          <AdminRoute>
-            <Reports />
-          </AdminRoute>
-        }
-      />
+      <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
+      <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
+      <Route path="/admin/reports" element={<AdminRoute><Reports /></AdminRoute>} />
+      <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
+      <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
