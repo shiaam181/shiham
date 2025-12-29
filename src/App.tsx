@@ -23,7 +23,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isDeveloper, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -40,8 +40,8 @@ function ProtectedRoute({ children, requireFaceSetup = true }: { children: React
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect to face setup if user hasn't set up their face reference
-  if (requireFaceSetup && profile && !profile.face_reference_url) {
+  // Developers bypass face setup requirement
+  if (requireFaceSetup && profile && !profile.face_reference_url && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 
@@ -75,7 +75,7 @@ function FaceSetupRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, profile, isAdmin, isLoading } = useAuth();
+  const { user, profile, isAdmin, isDeveloper, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -92,8 +92,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check face setup first
-  if (profile && !profile.face_reference_url) {
+  // Check face setup first (developers bypass)
+  if (profile && !profile.face_reference_url && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 
@@ -105,7 +105,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DeveloperRoute({ children }: { children: React.ReactNode }) {
-  const { user, profile, isDeveloper, isLoading } = useAuth();
+  const { user, isDeveloper, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -122,10 +122,7 @@ function DeveloperRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check face setup first
-  if (profile && !profile.face_reference_url) {
-    return <Navigate to="/face-setup" replace />;
-  }
+  // Developers bypass face setup - no check needed
 
   if (!isDeveloper) {
     return <Navigate to="/dashboard" replace />;
