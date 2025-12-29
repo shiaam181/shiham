@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,7 +57,10 @@ interface LeaveRequest {
 
 export default function LeaveManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  
+  const fromDeveloper = location.state?.from === 'developer';
   
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string; department: string | null }>>({});
@@ -217,7 +220,7 @@ export default function LeaveManagement() {
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3">

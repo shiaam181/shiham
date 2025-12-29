@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,7 +65,10 @@ interface Employee {
 
 export default function WeekOffManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  
+  const fromDeveloper = location.state?.from === 'developer';
   
   const [weekOffs, setWeekOffs] = useState<WeekOff[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -247,7 +250,7 @@ export default function WeekOffManagement() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-3">
