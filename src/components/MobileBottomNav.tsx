@@ -5,7 +5,8 @@ import {
   Calendar, 
   User, 
   Shield,
-  FileText
+  FileText,
+  Code
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,13 +30,27 @@ const adminNavItems: NavItem[] = [
   { icon: User, label: 'Employees', path: '/admin/employees' },
 ];
 
+const developerNavItems: NavItem[] = [
+  { icon: Home, label: 'Overview', path: '/developer' },
+  { icon: Shield, label: 'Roles', path: '/developer' },
+  { icon: Calendar, label: 'Leaves', path: '/admin/leaves' },
+  { icon: User, label: 'Employees', path: '/admin/employees' },
+];
+
 export default function MobileBottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isDeveloper } = useAuth();
   
+  const isDeveloperRoute = location.pathname.startsWith('/developer');
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const items = isAdminRoute ? adminNavItems : navItems;
+  
+  let items = navItems;
+  if (isDeveloperRoute) {
+    items = developerNavItems;
+  } else if (isAdminRoute) {
+    items = adminNavItems;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/50 sm:hidden">
@@ -61,8 +76,19 @@ export default function MobileBottomNav() {
           );
         })}
         
-        {/* Admin/Employee toggle for non-admin routes */}
-        {!isAdminRoute && isAdmin && (
+        {/* Developer panel toggle for non-developer routes */}
+        {!isDeveloperRoute && isDeveloper && (
+          <button
+            onClick={() => navigate('/developer')}
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-purple-500 hover:bg-purple-500/10"
+          >
+            <Code className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Dev</span>
+          </button>
+        )}
+        
+        {/* Admin toggle for non-admin routes (only if not developer) */}
+        {!isAdminRoute && !isDeveloperRoute && isAdmin && !isDeveloper && (
           <button
             onClick={() => navigate('/admin')}
             className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -72,8 +98,8 @@ export default function MobileBottomNav() {
           </button>
         )}
         
-        {/* Employee view toggle for admin routes */}
-        {isAdminRoute && (
+        {/* Employee view toggle for admin/developer routes */}
+        {(isAdminRoute || isDeveloperRoute) && (
           <button
             onClick={() => navigate('/dashboard')}
             className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-muted-foreground hover:text-foreground hover:bg-muted/50"

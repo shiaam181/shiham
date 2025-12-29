@@ -15,11 +15,15 @@ interface Profile {
   is_active: boolean;
 }
 
+type UserRole = 'admin' | 'employee' | 'developer';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  role: UserRole | null;
   isAdmin: boolean;
+  isDeveloper: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -33,8 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isAdmin = role === 'admin' || role === 'developer';
+  const isDeveloper = role === 'developer';
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -62,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setIsAdmin(roleData?.role === 'admin');
+      setRole(roleData?.role as UserRole || 'employee');
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }
@@ -86,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 0);
         } else {
           setProfile(null);
-          setIsAdmin(false);
+          setRole(null);
         }
         
         setIsLoading(false);
@@ -136,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
-    setIsAdmin(false);
+    setRole(null);
   };
 
   return (
@@ -145,7 +152,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
+        role,
         isAdmin,
+        isDeveloper,
         isLoading,
         signIn,
         signUp,
