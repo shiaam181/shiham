@@ -442,7 +442,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card 
             className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
             onClick={() => navigate('/admin/employees')}
@@ -491,14 +491,49 @@ export default function AdminDashboard() {
             </div>
           </Card>
           
-          <Card className="p-4 cursor-pointer hover:shadow-elevated transition-shadow">
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/shifts')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+                <Clock className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div>
+                <p className="font-medium">Shift Management</p>
+                <p className="text-xs text-muted-foreground">Create & assign shifts</p>
+              </div>
+              <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+            </div>
+          </Card>
+          
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/leaves')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-success" />
+              </div>
+              <div>
+                <p className="font-medium">Leave Requests</p>
+                <p className="text-xs text-muted-foreground">Approve or reject leaves</p>
+              </div>
+              <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+            </div>
+          </Card>
+          
+          <Card 
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            onClick={() => navigate('/admin/weekoffs')}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium">Settings</p>
-                <p className="text-xs text-muted-foreground">Shifts & configurations</p>
+                <p className="font-medium">Weekly Offs</p>
+                <p className="text-xs text-muted-foreground">Configure week off days</p>
               </div>
               <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
             </div>
