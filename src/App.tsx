@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import FaceSetup from "./pages/FaceSetup";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
@@ -21,8 +22,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+function ProtectedRoute({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) {
+  const { user, profile, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -37,13 +38,44 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect to face setup if user hasn't set up their face reference
+  if (requireFaceSetup && profile && !profile.face_reference_url) {
+    return <Navigate to="/face-setup" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function FaceSetupRoute({ children }: { children: React.ReactNode }) {
+  const { user, profile, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If already has face reference, redirect to dashboard
+  if (profile?.face_reference_url) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, profile, isAdmin, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -58,6 +90,11 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check face setup first
+  if (profile && !profile.face_reference_url) {
+    return <Navigate to="/face-setup" replace />;
   }
 
   if (!isAdmin) {
@@ -68,7 +105,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DeveloperRoute({ children }: { children: React.ReactNode }) {
-  const { user, isDeveloper, isLoading } = useAuth();
+  const { user, profile, isDeveloper, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -83,6 +120,11 @@ function DeveloperRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check face setup first
+  if (profile && !profile.face_reference_url) {
+    return <Navigate to="/face-setup" replace />;
   }
 
   if (!isDeveloper) {
@@ -97,6 +139,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

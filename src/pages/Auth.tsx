@@ -102,9 +102,9 @@ export default function Auth() {
         } else {
           toast({
             title: 'Account created!',
-            description: 'Welcome to AttendanceHub. You are now logged in.',
+            description: 'Please set up face verification to continue.',
           });
-          navigate('/dashboard');
+          navigate('/face-setup');
         }
       }
     } catch (error) {
