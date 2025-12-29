@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { sendLeaveStatusEmail, isEmailJSConfigured } from '@/lib/emailjs';
+import { format, differenceInDays } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +38,6 @@ import {
   Clock,
   User
 } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
 
 interface LeaveRequest {
   id: string;
@@ -122,6 +123,29 @@ export default function LeaveManagement() {
         .eq('id', selectedRequest.id);
 
       if (error) throw error;
+
+      // Send email notification if EmailJS is configured
+      const profile = profiles[selectedRequest.user_id];
+      if (profile && isEmailJSConfigured()) {
+        // Fetch user's email from profiles
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('user_id', selectedRequest.user_id)
+          .single();
+
+        if (userData?.email) {
+          await sendLeaveStatusEmail({
+            to_name: profile.full_name,
+            to_email: userData.email,
+            leave_type: selectedRequest.leave_type,
+            start_date: format(new Date(selectedRequest.start_date), 'MMM d, yyyy'),
+            end_date: format(new Date(selectedRequest.end_date), 'MMM d, yyyy'),
+            status: action,
+            admin_notes: adminNotes || undefined,
+          });
+        }
+      }
 
       toast({
         title: 'Success',
