@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import DeveloperDashboard from "./pages/DeveloperDashboard";
 import HolidayManagement from "./pages/HolidayManagement";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import Reports from "./pages/Reports";
@@ -66,6 +67,31 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function DeveloperRoute({ children }: { children: React.ReactNode }) {
+  const { user, isDeveloper, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isDeveloper) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -81,6 +107,7 @@ function AppRoutes() {
       <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
       <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
       <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
+      <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
