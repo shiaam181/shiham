@@ -140,7 +140,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
     }
   };
 
-  const canConfirm = !referenceImageUrl || (verificationResult?.match ?? false);
+  // Face must match if reference exists - no bypass allowed
+  const canConfirm = !referenceImageUrl || (verificationResult?.match === true);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -267,10 +268,10 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
                 size="lg"
                 className="flex-1"
                 onClick={confirmPhoto}
-                disabled={isVerifying || (!canConfirm && !!referenceImageUrl)}
+                disabled={isVerifying || !canConfirm}
               >
                 <Check className="w-5 h-5 mr-2" />
-                {canConfirm ? 'Confirm' : 'Verification Failed'}
+                {isVerifying ? 'Verifying...' : canConfirm ? 'Confirm' : 'Face Not Matched'}
               </Button>
             </>
           )}
