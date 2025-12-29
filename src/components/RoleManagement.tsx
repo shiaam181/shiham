@@ -256,24 +256,23 @@ export default function RoleManagement() {
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
-                        {user.user_id === currentUser?.id ? (
-                          <span className="text-sm text-muted-foreground italic">
-                            Cannot change own role
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) => handleRoleChange(user, value)}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee">Employee</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="developer">Developer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {user.user_id === currentUser?.id && (
+                          <span className="text-xs text-purple-500 mt-1 block">
+                            (You)
                           </span>
-                        ) : (
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => handleRoleChange(user, value)}
-                          >
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="employee">Employee</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="developer">Developer</SelectItem>
-                            </SelectContent>
-                          </Select>
                         )}
                       </TableCell>
                     </TableRow>
