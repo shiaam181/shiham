@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface SystemSettings {
   faceVerificationEnabled: boolean;
+  faceVerificationThreshold: number;
   gpsTrackingEnabled: boolean;
   photoCaptureEnabled: boolean;
   leaveManagementEnabled: boolean;
@@ -15,6 +16,7 @@ export interface SystemSettings {
 
 const defaultSettings: SystemSettings = {
   faceVerificationEnabled: true,
+  faceVerificationThreshold: 70,
   gpsTrackingEnabled: true,
   photoCaptureEnabled: true,
   leaveManagementEnabled: true,
@@ -40,10 +42,13 @@ export function useSystemSettings() {
       const newSettings = { ...defaultSettings };
       
       data?.forEach((setting) => {
-        const value = setting.value as { enabled?: boolean; service_id?: string; template_id?: string; public_key?: string };
+        const value = setting.value as { enabled?: boolean; service_id?: string; template_id?: string; public_key?: string; threshold?: number };
         switch (setting.key) {
           case 'face_verification_required':
             newSettings.faceVerificationEnabled = value?.enabled ?? true;
+            break;
+          case 'face_verification_threshold':
+            newSettings.faceVerificationThreshold = value?.threshold ?? 70;
             break;
           case 'gps_tracking_enabled':
             newSettings.gpsTrackingEnabled = value?.enabled ?? true;

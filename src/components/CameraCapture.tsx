@@ -20,11 +20,29 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(70);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     confidence: number;
     reason: string;
   } | null>(null);
+
+  // Fetch the confidence threshold from system settings
+  useEffect(() => {
+    const fetchThreshold = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'face_verification_threshold')
+        .maybeSingle();
+      
+      if (data?.value) {
+        const threshold = (data.value as { threshold?: number })?.threshold ?? 70;
+        setConfidenceThreshold(threshold);
+      }
+    };
+    fetchThreshold();
+  }, []);
 
   useEffect(() => {
     startCamera();
@@ -164,13 +182,16 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
 
   const confirmPhoto = () => {
     if (capturedImage) {
-      const faceVerified = referenceImageUrl ? (verificationResult?.match ?? false) : true;
+      // Check if confidence meets the threshold
+      const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
+      const faceVerified = referenceImageUrl ? meetsThreshold : true;
       onCapture(capturedImage, faceVerified);
     }
   };
 
-  // Face must match if reference exists - no bypass allowed
-  const canConfirm = !referenceImageUrl || (verificationResult?.match === true);
+  // Face must meet threshold if reference exists - no bypass allowed
+  const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
+  const canConfirm = !referenceImageUrl || meetsThreshold;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -244,19 +265,19 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
                 </div>
               ) : verificationResult && (
                 <div className={`backdrop-blur rounded-lg p-3 flex items-center gap-3 ${
-                  verificationResult.match ? 'bg-success/90' : 'bg-destructive/90'
+                  meetsThreshold ? 'bg-success/90' : 'bg-destructive/90'
                 }`}>
-                  {verificationResult.match ? (
+                  {meetsThreshold ? (
                     <ShieldCheck className="w-5 h-5 text-white" />
                   ) : (
                     <ShieldX className="w-5 h-5 text-white" />
                   )}
                   <div className="flex-1">
                     <p className="text-white text-sm font-medium">
-                      {verificationResult.match ? 'Face Verified' : 'Face Not Matched'}
+                      {meetsThreshold ? 'Face Verified' : 'Face Not Matched'}
                     </p>
                     <p className="text-white/80 text-xs">
-                      {verificationResult.confidence}% confidence
+                      {verificationResult.confidence}% confidence (required: {confidenceThreshold}%)
                     </p>
                   </div>
                 </div>
