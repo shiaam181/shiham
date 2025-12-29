@@ -24,7 +24,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) {
+const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) => {
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
@@ -48,10 +48,10 @@ function ProtectedRoute({ children, requireFaceSetup = true }: { children: React
     return <Navigate to="/face-setup" replace />;
   }
 
-  return <>{children}</>;
-}
+  return children;
+};
 
-function FaceSetupRoute({ children }: { children: React.ReactNode }) {
+const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
@@ -80,10 +80,10 @@ function FaceSetupRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
-}
+  return children;
+};
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, isAdmin, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
@@ -111,10 +111,10 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
-}
+  return children;
+};
 
-function DeveloperRoute({ children }: { children: React.ReactNode }) {
+const DeveloperRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isDeveloper, isLoading } = useAuth();
 
   if (isLoading) {
@@ -138,8 +138,8 @@ function DeveloperRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
-}
+  return children;
+};
 
 function AppRoutes() {
   return (
