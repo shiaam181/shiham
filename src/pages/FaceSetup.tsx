@@ -29,6 +29,8 @@ export default function FaceSetup() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState<'intro' | 'capture' | 'confirm' | 'complete'>('intro');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraLoading, setCameraLoading] = useState(false);
 
   // Redirect if already has face reference
   useEffect(() => {
@@ -38,7 +40,17 @@ export default function FaceSetup() {
   }, [profile, navigate]);
 
   const startCamera = async () => {
+    setCameraError(null);
+    setCameraLoading(true);
+    setStep('capture');
+    
     try {
+      // Stop any existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 640, height: 480 },
       });
@@ -46,14 +58,36 @@ export default function FaceSetup() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => resolve();
+            videoRef.current.onerror = () => reject(new Error('Video failed to load'));
+            // Timeout after 5 seconds
+            setTimeout(() => reject(new Error('Camera timeout')), 5000);
+          }
+        });
       }
       setShowCamera(true);
-      setStep('capture');
-    } catch (error) {
+      setCameraLoading(false);
+    } catch (error: any) {
       console.error('Camera error:', error);
+      setCameraLoading(false);
+      
+      let errorMessage = 'Could not access camera. Please check permissions.';
+      if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is in use by another app. Please close other apps using the camera and try again.';
+      } else if (error.name === 'NotAllowedError') {
+        errorMessage = 'Camera access denied. Please allow camera permissions in your browser settings.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please connect a camera and try again.';
+      }
+      
+      setCameraError(errorMessage);
       toast({
         title: 'Camera Error',
-        description: 'Could not access camera. Please check permissions.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -231,9 +265,27 @@ export default function FaceSetup() {
           )}
 
           {/* Camera Step */}
-          {step === 'capture' && showCamera && (
+          {step === 'capture' && (
             <div className="space-y-4">
               <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3]">
+                {cameraLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
+                    <RefreshCw className="w-10 h-10 text-white animate-spin mb-3" />
+                    <p className="text-white text-sm">Starting camera...</p>
+                  </div>
+                )}
+                
+                {cameraError && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 p-6">
+                    <Camera className="w-12 h-12 text-destructive mb-3" />
+                    <p className="text-white text-sm text-center mb-4">{cameraError}</p>
+                    <Button onClick={startCamera} variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </Button>
+                  </div>
+                )}
+                
                 <video
                   ref={videoRef}
                   autoPlay
@@ -242,15 +294,20 @@ export default function FaceSetup() {
                   className="w-full h-full object-cover"
                   style={{ transform: 'scaleX(-1)' }}
                 />
-                {/* Face guide overlay */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-48 h-60 border-4 border-dashed border-white/50 rounded-full" />
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 text-center">
-                  <p className="text-white text-sm bg-black/50 backdrop-blur rounded-lg px-4 py-2">
-                    Position your face within the guide
-                  </p>
-                </div>
+                
+                {/* Face guide overlay - only show when camera is working */}
+                {showCamera && !cameraError && !cameraLoading && (
+                  <>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-48 h-60 border-4 border-dashed border-white/50 rounded-full" />
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 text-center">
+                      <p className="text-white text-sm bg-black/50 backdrop-blur rounded-lg px-4 py-2">
+                        Position your face within the guide
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
               
               <div className="flex justify-center gap-3">
@@ -258,12 +315,13 @@ export default function FaceSetup() {
                   variant="outline" 
                   onClick={() => {
                     stopCamera();
+                    setCameraError(null);
                     setStep('intro');
                   }}
                 >
                   Cancel
                 </Button>
-                <Button onClick={capturePhoto} variant="hero">
+                <Button onClick={capturePhoto} variant="hero" disabled={!showCamera || cameraLoading || !!cameraError}>
                   <Camera className="w-4 h-4 mr-2" />
                   Capture Photo
                 </Button>
