@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
@@ -24,8 +25,9 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) {
   const { user, profile, isDeveloper, isLoading } = useAuth();
+  const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
-  if (isLoading) {
+  if (isLoading || settingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -40,8 +42,8 @@ function ProtectedRoute({ children, requireFaceSetup = true }: { children: React
     return <Navigate to="/auth" replace />;
   }
 
-  // Developers bypass face setup requirement
-  if (requireFaceSetup && profile && !profile.face_reference_url && !isDeveloper) {
+  // Developers bypass face setup, also skip if face verification is disabled
+  if (requireFaceSetup && faceVerificationRequired && profile && !profile.face_reference_url && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 
@@ -49,9 +51,10 @@ function ProtectedRoute({ children, requireFaceSetup = true }: { children: React
 }
 
 function FaceSetupRoute({ children }: { children: React.ReactNode }) {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isDeveloper, isLoading } = useAuth();
+  const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
-  if (isLoading) {
+  if (isLoading || settingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -66,8 +69,13 @@ function FaceSetupRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // If already has face reference, redirect to dashboard
-  if (profile?.face_reference_url) {
+  // If face verification is disabled, redirect to dashboard
+  if (!faceVerificationRequired) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If already has face reference or is developer, redirect to dashboard
+  if (profile?.face_reference_url || isDeveloper) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -76,8 +84,9 @@ function FaceSetupRoute({ children }: { children: React.ReactNode }) {
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, isAdmin, isDeveloper, isLoading } = useAuth();
+  const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
-  if (isLoading) {
+  if (isLoading || settingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -92,8 +101,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check face setup first (developers bypass)
-  if (profile && !profile.face_reference_url && !isDeveloper) {
+  // Check face setup first (developers bypass, also skip if disabled)
+  if (faceVerificationRequired && profile && !profile.face_reference_url && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 

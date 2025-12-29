@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Code,
   LogOut,
@@ -19,16 +21,61 @@ import {
   BarChart3,
   Clock,
   Building2,
-  Mail
+  Mail,
+  ScanFace
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DeveloperDashboard() {
   const { profile, isDeveloper, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
+  const [faceVerificationEnabled, setFaceVerificationEnabled] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchFaceVerificationSetting();
+  }, []);
+
+  const fetchFaceVerificationSetting = async () => {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'face_verification_required')
+      .maybeSingle();
+    
+    if (!error && data) {
+      setFaceVerificationEnabled((data.value as { enabled: boolean }).enabled);
+    }
+  };
+
+  const toggleFaceVerification = async (enabled: boolean) => {
+    setSettingsLoading(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .update({ value: { enabled } })
+      .eq('key', 'face_verification_required');
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } else {
+      setFaceVerificationEnabled(enabled);
+      toast({
+        title: 'Setting Updated',
+        description: `Face verification is now ${enabled ? 'enabled' : 'disabled'}`,
+      });
+    }
+    setSettingsLoading(false);
+  };
 
   if (authLoading) {
     return (
@@ -393,6 +440,37 @@ export default function DeveloperDashboard() {
                     </div>
                   </Card>
                 </div>
+
+                {/* Face Verification Toggle */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ScanFace className="w-5 h-5" />
+                      Face Verification Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Control whether face verification is required for employees
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="face-verification" className="font-medium">
+                          Require Face Verification
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          When enabled, employees must set up face verification before accessing the dashboard
+                        </p>
+                      </div>
+                      <Switch
+                        id="face-verification"
+                        checked={faceVerificationEnabled}
+                        onCheckedChange={toggleFaceVerification}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </TabsContent>
