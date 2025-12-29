@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
@@ -30,10 +29,33 @@ export default function ProfileSettings() {
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
   });
+
+  // Load signed URL for face reference image
+  useEffect(() => {
+    const loadFaceImage = async () => {
+      if (profile?.face_reference_url && user) {
+        try {
+          const fileName = `${user.id}/face-reference.jpg`;
+          const { data, error } = await supabase.storage
+            .from('employee-photos')
+            .createSignedUrl(fileName, 3600); // 1 hour expiry
+          
+          if (data && !error) {
+            setFaceImageUrl(data.signedUrl);
+          }
+        } catch (err) {
+          console.error('Error loading face image:', err);
+        }
+      }
+    };
+    
+    loadFaceImage();
+  }, [profile?.face_reference_url, user]);
 
   useEffect(() => {
     if (profile) {
@@ -50,11 +72,16 @@ export default function ProfileSettings() {
         video: { facingMode: 'user', width: 640, height: 480 },
       });
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-      }
+      streamRef.current = stream;
       setShowCamera(true);
+      
+      // Wait for next render then attach stream to video
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(console.error);
+        }
+      }, 100);
     } catch (error) {
       console.error('Camera error:', error);
       toast({
@@ -212,9 +239,9 @@ export default function ProfileSettings() {
             {/* Current Reference Photo */}
             <div className="flex items-start gap-4">
               <div className="w-32 h-32 rounded-xl bg-muted flex items-center justify-center overflow-hidden border-2 border-border">
-                {profile?.face_reference_url ? (
+                {faceImageUrl ? (
                   <img 
-                    src={profile.face_reference_url} 
+                    src={faceImageUrl} 
                     alt="Face reference" 
                     className="w-full h-full object-cover"
                   />
