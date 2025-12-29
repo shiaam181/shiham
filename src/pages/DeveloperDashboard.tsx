@@ -23,7 +23,10 @@ import {
   Building2,
   Mail,
   ScanFace,
-  Globe
+  Globe,
+  MapPin,
+  Camera,
+  Timer
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -38,6 +41,10 @@ export default function DeveloperDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [faceVerificationEnabled, setFaceVerificationEnabled] = useState(true);
   const [marketingPageEnabled, setMarketingPageEnabled] = useState(false);
+  const [gpsTrackingEnabled, setGpsTrackingEnabled] = useState(true);
+  const [photoCaptureEnabled, setPhotoCaptureEnabled] = useState(true);
+  const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
+  const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
 
   useEffect(() => {
@@ -47,16 +54,30 @@ export default function DeveloperDashboard() {
   const fetchSettings = async () => {
     const { data, error } = await supabase
       .from('system_settings')
-      .select('key, value')
-      .in('key', ['face_verification_required', 'show_marketing_landing_page']);
+      .select('key, value');
     
     if (!error && data) {
       data.forEach((setting) => {
-        if (setting.key === 'face_verification_required') {
-          setFaceVerificationEnabled((setting.value as { enabled: boolean }).enabled);
-        }
-        if (setting.key === 'show_marketing_landing_page') {
-          setMarketingPageEnabled((setting.value as { enabled: boolean }).enabled);
+        const enabled = (setting.value as { enabled: boolean })?.enabled ?? true;
+        switch (setting.key) {
+          case 'face_verification_required':
+            setFaceVerificationEnabled(enabled);
+            break;
+          case 'show_marketing_landing_page':
+            setMarketingPageEnabled(enabled);
+            break;
+          case 'gps_tracking_enabled':
+            setGpsTrackingEnabled(enabled);
+            break;
+          case 'photo_capture_enabled':
+            setPhotoCaptureEnabled(enabled);
+            break;
+          case 'leave_management_enabled':
+            setLeaveManagementEnabled(enabled);
+            break;
+          case 'overtime_tracking_enabled':
+            setOvertimeTrackingEnabled(enabled);
+            break;
         }
       });
     }
@@ -86,13 +107,20 @@ export default function DeveloperDashboard() {
   };
 
   const toggleMarketingPage = async (enabled: boolean) => {
+    await updateSetting('show_marketing_landing_page', enabled, setMarketingPageEnabled, 
+      enabled ? 'Marketing landing page is now visible' : 'Users will go directly to login');
+  };
+
+  const updateSetting = async (
+    key: string, 
+    enabled: boolean, 
+    setter: (val: boolean) => void,
+    successMessage: string
+  ) => {
     setSettingsLoading(true);
     const { error } = await supabase
       .from('system_settings')
-      .upsert({ 
-        key: 'show_marketing_landing_page', 
-        value: { enabled } 
-      }, { onConflict: 'key' });
+      .upsert({ key, value: { enabled } }, { onConflict: 'key' });
     
     if (error) {
       toast({
@@ -101,14 +129,27 @@ export default function DeveloperDashboard() {
         variant: 'destructive',
       });
     } else {
-      setMarketingPageEnabled(enabled);
-      toast({
-        title: 'Setting Updated',
-        description: enabled ? 'Marketing landing page is now visible' : 'Users will go directly to login',
-      });
+      setter(enabled);
+      toast({ title: 'Setting Updated', description: successMessage });
     }
     setSettingsLoading(false);
   };
+
+  const toggleGpsTracking = (enabled: boolean) => 
+    updateSetting('gps_tracking_enabled', enabled, setGpsTrackingEnabled, 
+      `GPS tracking is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const togglePhotoCapture = (enabled: boolean) => 
+    updateSetting('photo_capture_enabled', enabled, setPhotoCaptureEnabled, 
+      `Photo capture is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const toggleLeaveManagement = (enabled: boolean) => 
+    updateSetting('leave_management_enabled', enabled, setLeaveManagementEnabled, 
+      `Leave management is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const toggleOvertimeTracking = (enabled: boolean) => 
+    updateSetting('overtime_tracking_enabled', enabled, setOvertimeTrackingEnabled, 
+      `Overtime tracking is now ${enabled ? 'enabled' : 'disabled'}`);
 
   if (authLoading) {
     return (
@@ -268,7 +309,7 @@ export default function DeveloperDashboard() {
               
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/settings')}
+                onClick={() => navigate('/admin/settings', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -284,7 +325,7 @@ export default function DeveloperDashboard() {
               
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/shifts')}
+                onClick={() => navigate('/admin/shifts', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
@@ -300,7 +341,7 @@ export default function DeveloperDashboard() {
               
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/employees')}
+                onClick={() => navigate('/admin/employees', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -316,7 +357,7 @@ export default function DeveloperDashboard() {
               
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/holidays')}
+                onClick={() => navigate('/admin/holidays', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
@@ -332,7 +373,7 @@ export default function DeveloperDashboard() {
               
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/reports')}
+                onClick={() => navigate('/admin/reports', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-info-soft flex items-center justify-center">
@@ -348,7 +389,7 @@ export default function DeveloperDashboard() {
 
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/leaves')}
+                onClick={() => navigate('/admin/leaves', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
@@ -364,7 +405,7 @@ export default function DeveloperDashboard() {
 
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                onClick={() => navigate('/admin/weekoffs')}
+                onClick={() => navigate('/admin/weekoffs', { state: { from: 'developer' } })}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
@@ -415,7 +456,7 @@ export default function DeveloperDashboard() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card 
                     className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                    onClick={() => navigate('/admin/settings')}
+                    onClick={() => navigate('/admin/settings', { state: { from: 'developer' } })}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -431,7 +472,7 @@ export default function DeveloperDashboard() {
 
                   <Card 
                     className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                    onClick={() => navigate('/admin/shifts')}
+                    onClick={() => navigate('/admin/shifts', { state: { from: 'developer' } })}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
@@ -447,7 +488,7 @@ export default function DeveloperDashboard() {
 
                   <Card 
                     className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
-                    onClick={() => navigate('/admin/weekoffs')}
+                    onClick={() => navigate('/admin/weekoffs', { state: { from: 'developer' } })}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
@@ -510,26 +551,98 @@ export default function DeveloperDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ScanFace className="w-5 h-5" />
-                      Face Verification Settings
+                      Attendance Features
                     </CardTitle>
                     <CardDescription>
-                      Control whether face verification is required for employees
+                      Enable or disable attendance-related features
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label htmlFor="face-verification" className="font-medium">
-                          Require Face Verification
+                          Face Verification
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          When enabled, employees must set up face verification before accessing the dashboard
+                          Require employees to set up and verify face during attendance
                         </p>
                       </div>
                       <Switch
                         id="face-verification"
                         checked={faceVerificationEnabled}
                         onCheckedChange={toggleFaceVerification}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="gps-tracking" className="font-medium flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          GPS Location Tracking
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Capture employee location during check-in/check-out
+                        </p>
+                      </div>
+                      <Switch
+                        id="gps-tracking"
+                        checked={gpsTrackingEnabled}
+                        onCheckedChange={toggleGpsTracking}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="photo-capture" className="font-medium flex items-center gap-2">
+                          <Camera className="w-4 h-4" />
+                          Photo Capture
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Require photo capture during check-in/check-out
+                        </p>
+                      </div>
+                      <Switch
+                        id="photo-capture"
+                        checked={photoCaptureEnabled}
+                        onCheckedChange={togglePhotoCapture}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="overtime-tracking" className="font-medium flex items-center gap-2">
+                          <Timer className="w-4 h-4" />
+                          Overtime Tracking
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Track and calculate employee overtime hours
+                        </p>
+                      </div>
+                      <Switch
+                        id="overtime-tracking"
+                        checked={overtimeTrackingEnabled}
+                        onCheckedChange={toggleOvertimeTracking}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="leave-management" className="font-medium flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Leave Management
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Enable leave request and approval system
+                        </p>
+                      </div>
+                      <Switch
+                        id="leave-management"
+                        checked={leaveManagementEnabled}
+                        onCheckedChange={toggleLeaveManagement}
                         disabled={settingsLoading}
                       />
                     </div>
