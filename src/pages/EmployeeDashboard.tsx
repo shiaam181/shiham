@@ -23,7 +23,8 @@ import {
   Sunset,
   Settings,
   FileText,
-  Timer
+  Timer,
+  Code
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
@@ -63,7 +64,7 @@ interface LeaveRequest {
 }
 
 export default function EmployeeDashboard() {
-  const { user, profile, isAdmin, signOut, isLoading: authLoading } = useAuth();
+  const { user, profile, isAdmin, isDeveloper, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -289,7 +290,19 @@ export default function EmployeeDashboard() {
             </div>
             
             <div className="flex items-center gap-3">
-              {isAdmin && (
+              {isDeveloper && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/developer')}
+                  className="hidden sm:flex border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
+                >
+                  <Code className="w-4 h-4 mr-2" />
+                  Developer
+                </Button>
+              )}
+              
+              {isAdmin && !isDeveloper && (
                 <Button 
                   variant="outline" 
                   size="sm"
