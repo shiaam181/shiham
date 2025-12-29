@@ -22,7 +22,8 @@ import {
   Clock,
   Building2,
   Mail,
-  ScanFace
+  ScanFace,
+  Globe
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -36,21 +37,28 @@ export default function DeveloperDashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [faceVerificationEnabled, setFaceVerificationEnabled] = useState(true);
+  const [marketingPageEnabled, setMarketingPageEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
 
   useEffect(() => {
-    fetchFaceVerificationSetting();
+    fetchSettings();
   }, []);
 
-  const fetchFaceVerificationSetting = async () => {
+  const fetchSettings = async () => {
     const { data, error } = await supabase
       .from('system_settings')
-      .select('value')
-      .eq('key', 'face_verification_required')
-      .maybeSingle();
+      .select('key, value')
+      .in('key', ['face_verification_required', 'show_marketing_landing_page']);
     
     if (!error && data) {
-      setFaceVerificationEnabled((data.value as { enabled: boolean }).enabled);
+      data.forEach((setting) => {
+        if (setting.key === 'face_verification_required') {
+          setFaceVerificationEnabled((setting.value as { enabled: boolean }).enabled);
+        }
+        if (setting.key === 'show_marketing_landing_page') {
+          setMarketingPageEnabled((setting.value as { enabled: boolean }).enabled);
+        }
+      });
     }
   };
 
@@ -72,6 +80,31 @@ export default function DeveloperDashboard() {
       toast({
         title: 'Setting Updated',
         description: `Face verification is now ${enabled ? 'enabled' : 'disabled'}`,
+      });
+    }
+    setSettingsLoading(false);
+  };
+
+  const toggleMarketingPage = async (enabled: boolean) => {
+    setSettingsLoading(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ 
+        key: 'show_marketing_landing_page', 
+        value: { enabled } 
+      }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } else {
+      setMarketingPageEnabled(enabled);
+      toast({
+        title: 'Setting Updated',
+        description: enabled ? 'Marketing landing page is now visible' : 'Users will go directly to login',
       });
     }
     setSettingsLoading(false);
@@ -440,6 +473,37 @@ export default function DeveloperDashboard() {
                     </div>
                   </Card>
                 </div>
+
+                {/* Landing Page Toggle */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Globe className="w-5 h-5" />
+                      Landing Page Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Control the public landing page behavior
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="marketing-page" className="font-medium">
+                          Show Marketing Landing Page
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          When disabled, visitors go directly to the login page. Enable this if you want to show a marketing page.
+                        </p>
+                      </div>
+                      <Switch
+                        id="marketing-page"
+                        checked={marketingPageEnabled}
+                        onCheckedChange={toggleMarketingPage}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Face Verification Toggle */}
                 <Card className="mt-6">
