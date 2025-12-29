@@ -35,6 +35,7 @@ import LeaveNotifications from '@/components/LeaveNotifications';
 import NotificationBell from '@/components/NotificationBell';
 import OvertimeChart from '@/components/OvertimeChart';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface TodayAttendance {
   id: string;
@@ -77,6 +78,7 @@ export default function EmployeeDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -84,7 +86,8 @@ export default function EmployeeDashboard() {
   }, []);
 
   useEffect(() => {
-    if (navigator.geolocation) {
+    // Only request location if GPS tracking is enabled
+    if (systemSettings.gpsTrackingEnabled && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocation({
@@ -96,8 +99,12 @@ export default function EmployeeDashboard() {
           setLocationError('Location access denied. Please enable GPS.');
         }
       );
+    } else if (!systemSettings.gpsTrackingEnabled) {
+      // Set a dummy location if GPS tracking is disabled
+      setLocation({ lat: 0, lng: 0 });
+      setLocationError(null);
     }
-  }, []);
+  }, [systemSettings.gpsTrackingEnabled]);
 
   const fetchTodayAttendance = useCallback(async () => {
     if (!user) return;
@@ -175,19 +182,114 @@ export default function EmployeeDashboard() {
   }, [user, fetchTodayAttendance, fetchMonthlyStats, fetchLeaveRequests]);
 
   const handleCheckIn = () => {
-    setCaptureType('check-in');
-    setShowCamera(true);
+    if (systemSettings.photoCaptureEnabled) {
+      setCaptureType('check-in');
+      setShowCamera(true);
+    } else {
+      // Direct check-in without camera
+      handleDirectCheckIn();
+    }
   };
 
   const handleCheckOut = () => {
-    setCaptureType('check-out');
-    setShowCamera(true);
+    if (systemSettings.photoCaptureEnabled) {
+      setCaptureType('check-out');
+      setShowCamera(true);
+    } else {
+      // Direct check-out without camera
+      handleDirectCheckOut();
+    }
+  };
+
+  const handleDirectCheckIn = async () => {
+    if (!user) return;
+
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date().toISOString();
+
+      const { error } = await supabase.from('attendance').insert({
+        user_id: user.id,
+        date: today,
+        check_in_time: now,
+        check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+        check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
+        check_in_photo_url: null,
+        check_in_face_verified: true,
+        status: 'present',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Checked In!',
+        description: `You checked in at ${format(new Date(), 'hh:mm a')}`,
+      });
+
+      fetchTodayAttendance();
+      fetchMonthlyStats();
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to check in',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDirectCheckOut = async () => {
+    if (!user) return;
+
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('attendance')
+        .update({
+          check_out_time: now,
+          check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+          check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
+          check_out_photo_url: null,
+          check_out_face_verified: true,
+        })
+        .eq('user_id', user.id)
+        .eq('date', today);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Checked Out!',
+        description: `You checked out at ${format(new Date(), 'hh:mm a')}`,
+      });
+
+      fetchTodayAttendance();
+      fetchMonthlyStats();
+    } catch (error: any) {
+      console.error('Check-out error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to check out',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleCameraCapture = async (photoDataUrl: string, faceVerified: boolean) => {
     setShowCamera(false);
     
-    if (!user || !location) {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'User not authenticated.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Only require location if GPS tracking is enabled
+    if (systemSettings.gpsTrackingEnabled && !location) {
       toast({
         title: 'Error',
         description: 'Please enable location access to mark attendance.',
@@ -205,8 +307,8 @@ export default function EmployeeDashboard() {
           user_id: user.id,
           date: today,
           check_in_time: now,
-          check_in_latitude: location.lat,
-          check_in_longitude: location.lng,
+          check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+          check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
           check_in_photo_url: photoDataUrl,
           check_in_face_verified: faceVerified,
           status: 'present',
@@ -223,8 +325,8 @@ export default function EmployeeDashboard() {
           .from('attendance')
           .update({
             check_out_time: now,
-            check_out_latitude: location.lat,
-            check_out_longitude: location.lng,
+            check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+            check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
             check_out_photo_url: photoDataUrl,
             check_out_face_verified: faceVerified,
           })
@@ -367,8 +469,8 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* Location Status */}
-        {locationError && (
+        {/* Location Status - only show if GPS tracking is enabled */}
+        {systemSettings.gpsTrackingEnabled && locationError && (
           <Card className="border-warning/30 bg-warning-soft">
             <CardContent className="py-3 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-warning" />
@@ -426,7 +528,7 @@ export default function EmployeeDashboard() {
               </div>
             </div>
 
-            {location && (
+            {systemSettings.gpsTrackingEnabled && location && location.lat !== 0 && (
               <div className="flex items-center gap-2 text-white/80 text-sm mb-4">
                 <MapPin className="w-4 h-4" />
                 <span>Location verified: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
@@ -441,9 +543,9 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckIn}
-                disabled={!location}
+                disabled={systemSettings.gpsTrackingEnabled && !location}
               >
-                <Camera className="w-5 h-5 mr-2" />
+                {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
                 Check In Now
               </Button>
             ) : !hasCheckedOut ? (
@@ -452,9 +554,9 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={!location}
+                disabled={systemSettings.gpsTrackingEnabled && !location}
               >
-                <Camera className="w-5 h-5 mr-2" />
+                {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogOut className="w-5 h-5 mr-2" />}
                 Check Out Now
               </Button>
             ) : (
@@ -521,8 +623,8 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
 
-        {/* Overtime Chart */}
-        <OvertimeChart />
+        {/* Overtime Chart - only show if overtime tracking is enabled */}
+        {systemSettings.overtimeTrackingEnabled && <OvertimeChart />}
 
         {/* Calendar */}
         <Card>
@@ -538,8 +640,10 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
-        {/* Leave Requests */}
-        <LeaveRequestForm leaveRequests={leaveRequests} onRefresh={fetchLeaveRequests} />
+        {/* Leave Requests - only show if leave management is enabled */}
+        {systemSettings.leaveManagementEnabled && (
+          <LeaveRequestForm leaveRequests={leaveRequests} onRefresh={fetchLeaveRequests} />
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -559,7 +663,7 @@ export default function EmployeeDashboard() {
             </div>
           </Card>
           
-          {!profile?.face_reference_url && (
+          {systemSettings.faceVerificationEnabled && !profile?.face_reference_url && (
             <Card 
               className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
               onClick={() => navigate('/profile')}
@@ -591,7 +695,7 @@ export default function EmployeeDashboard() {
           onCapture={handleCameraCapture}
           onClose={() => setShowCamera(false)}
           type={captureType}
-          referenceImageUrl={profile?.face_reference_url}
+          referenceImageUrl={systemSettings.faceVerificationEnabled ? profile?.face_reference_url : null}
         />
       )}
 

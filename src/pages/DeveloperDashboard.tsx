@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Code,
   LogOut,
@@ -26,7 +27,11 @@ import {
   Globe,
   MapPin,
   Camera,
-  Timer
+  Timer,
+  Save,
+  CheckCircle2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -46,6 +51,13 @@ export default function DeveloperDashboard() {
   const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  
+  // EmailJS configuration state
+  const [emailServiceId, setEmailServiceId] = useState('');
+  const [emailTemplateId, setEmailTemplateId] = useState('');
+  const [emailPublicKey, setEmailPublicKey] = useState('');
+  const [showEmailKeys, setShowEmailKeys] = useState(false);
+  const [emailConfigSaving, setEmailConfigSaving] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -58,30 +70,66 @@ export default function DeveloperDashboard() {
     
     if (!error && data) {
       data.forEach((setting) => {
-        const enabled = (setting.value as { enabled: boolean })?.enabled ?? true;
         switch (setting.key) {
           case 'face_verification_required':
-            setFaceVerificationEnabled(enabled);
+            setFaceVerificationEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'show_marketing_landing_page':
-            setMarketingPageEnabled(enabled);
+            setMarketingPageEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
             break;
           case 'gps_tracking_enabled':
-            setGpsTrackingEnabled(enabled);
+            setGpsTrackingEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'photo_capture_enabled':
-            setPhotoCaptureEnabled(enabled);
+            setPhotoCaptureEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'leave_management_enabled':
-            setLeaveManagementEnabled(enabled);
+            setLeaveManagementEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'overtime_tracking_enabled':
-            setOvertimeTrackingEnabled(enabled);
+            setOvertimeTrackingEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
+          case 'emailjs_config': {
+            const emailConfig = setting.value as { service_id?: string; template_id?: string; public_key?: string };
+            setEmailServiceId(emailConfig?.service_id || '');
+            setEmailTemplateId(emailConfig?.template_id || '');
+            setEmailPublicKey(emailConfig?.public_key || '');
+            break;
+          }
         }
       });
     }
   };
+
+  const saveEmailConfig = async () => {
+    setEmailConfigSaving(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'emailjs_config',
+        value: {
+          service_id: emailServiceId,
+          template_id: emailTemplateId,
+          public_key: emailPublicKey
+        }
+      }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save email configuration',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: 'Email configuration saved successfully',
+      });
+    }
+    setEmailConfigSaving(false);
+  };
+
+  const isEmailConfigured = emailServiceId && emailTemplateId && emailPublicKey;
 
   const toggleFaceVerification = async (enabled: boolean) => {
     setSettingsLoading(true);
@@ -502,18 +550,79 @@ export default function DeveloperDashboard() {
                     </div>
                   </Card>
 
-                  <Card className="p-4 opacity-60">
+                  <Card className={`p-4 ${isEmailConfigured ? 'border-success/50' : ''}`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                        <Mail className="w-5 h-5 text-orange-500" />
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isEmailConfigured ? 'bg-success/20' : 'bg-orange-500/20'}`}>
+                        {isEmailConfigured ? <CheckCircle2 className="w-5 h-5 text-success" /> : <Mail className="w-5 h-5 text-orange-500" />}
                       </div>
                       <div>
                         <p className="font-medium">Email Configuration</p>
-                        <p className="text-xs text-muted-foreground">Configure EmailJS in src/lib/emailjs.ts</p>
+                        <p className="text-xs text-muted-foreground">{isEmailConfigured ? 'EmailJS configured' : 'Configure below'}</p>
                       </div>
                     </div>
                   </Card>
                 </div>
+
+                {/* Email Configuration Section */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Mail className="w-5 h-5" />
+                      Email Notifications (EmailJS)
+                    </CardTitle>
+                    <CardDescription>
+                      Configure EmailJS to send email notifications for leave approvals. Get your credentials from <a href="https://www.emailjs.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">emailjs.com</a>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="service-id">Service ID</Label>
+                        <Input
+                          id="service-id"
+                          type={showEmailKeys ? 'text' : 'password'}
+                          placeholder="service_xxxxxxx"
+                          value={emailServiceId}
+                          onChange={(e) => setEmailServiceId(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="template-id">Template ID</Label>
+                        <Input
+                          id="template-id"
+                          type={showEmailKeys ? 'text' : 'password'}
+                          placeholder="template_xxxxxxx"
+                          value={emailTemplateId}
+                          onChange={(e) => setEmailTemplateId(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="public-key">Public Key</Label>
+                        <Input
+                          id="public-key"
+                          type={showEmailKeys ? 'text' : 'password'}
+                          placeholder="Your public key"
+                          value={emailPublicKey}
+                          onChange={(e) => setEmailPublicKey(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowEmailKeys(!showEmailKeys)}
+                      >
+                        {showEmailKeys ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                        {showEmailKeys ? 'Hide Keys' : 'Show Keys'}
+                      </Button>
+                      <Button onClick={saveEmailConfig} disabled={emailConfigSaving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {emailConfigSaving ? 'Saving...' : 'Save Email Configuration'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Landing Page Toggle */}
                 <Card className="mt-6">
