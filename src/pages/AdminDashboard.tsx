@@ -17,18 +17,14 @@ import {
   Shield,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Search,
   MapPin,
   Eye,
   Edit,
-  Download,
   BarChart3,
-  Settings,
-  Plus,
-  Briefcase
+  Settings
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -45,13 +41,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface Employee {
   id: string;
@@ -74,10 +63,8 @@ interface AttendanceRecord {
   check_out_photo_url: string | null;
   check_in_latitude: number | null;
   check_in_longitude: number | null;
-  profiles: {
-    full_name: string;
-    department: string | null;
-  } | null;
+  employee_name?: string;
+  employee_department?: string;
 }
 
 interface DashboardStats {
@@ -116,20 +103,25 @@ export default function AdminDashboard() {
       if (employeesError) throw employeesError;
       setEmployees(employeesData || []);
 
-      // Fetch today's attendance
+      // Fetch attendance for selected date
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('attendance')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            department
-          )
-        `)
+        .select('*')
         .eq('date', selectedDate);
 
       if (attendanceError) throw attendanceError;
-      setTodayAttendance(attendanceData || []);
+
+      // Map employee info to attendance records
+      const attendanceWithEmployees = (attendanceData || []).map(record => {
+        const employee = employeesData?.find(e => e.user_id === record.user_id);
+        return {
+          ...record,
+          employee_name: employee?.full_name || 'Unknown',
+          employee_department: employee?.department || null,
+        };
+      });
+
+      setTodayAttendance(attendanceWithEmployees);
 
       // Calculate stats
       const present = attendanceData?.filter(a => a.status === 'present').length || 0;
@@ -163,11 +155,11 @@ export default function AdminDashboard() {
   }, [authLoading, isAdmin, navigate, fetchData]);
 
   const filteredAttendance = todayAttendance.filter(record => 
-    record.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    record.profiles?.department?.toLowerCase().includes(searchQuery.toLowerCase())
+    record.employee_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    record.employee_department?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadgeVariant = (status: string): "present" | "absent" | "leave" | "week-off" | "holiday" | "half-day" | "default" => {
     const variants: Record<string, "present" | "absent" | "leave" | "week-off" | "holiday" | "half-day"> = {
       present: 'present',
       absent: 'absent',
@@ -176,7 +168,7 @@ export default function AdminDashboard() {
       holiday: 'holiday',
       half_day: 'half-day',
     };
-    return variants[status] || 'present';
+    return variants[status] || 'default';
   };
 
   if (authLoading || isLoading) {
@@ -351,11 +343,11 @@ export default function AdminDashboard() {
                             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                               <User className="w-5 h-5 text-primary" />
                             </div>
-                            <span className="font-medium">{record.profiles?.full_name}</span>
+                            <span className="font-medium">{record.employee_name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {record.profiles?.department || '-'}
+                          {record.employee_department || '-'}
                         </TableCell>
                         <TableCell>
                           {record.check_in_time 
@@ -370,7 +362,7 @@ export default function AdminDashboard() {
                           }
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadge(record.status)}>
+                          <Badge variant={getStatusBadgeVariant(record.status)}>
                             {record.status.replace('_', ' ')}
                           </Badge>
                         </TableCell>
@@ -390,7 +382,7 @@ export default function AdminDashboard() {
                                 <DialogHeader>
                                   <DialogTitle>Attendance Details</DialogTitle>
                                   <DialogDescription>
-                                    {record.profiles?.full_name} - {record.date}
+                                    {record.employee_name} - {record.date}
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid grid-cols-2 gap-4 py-4">
