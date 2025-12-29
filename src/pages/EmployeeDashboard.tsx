@@ -31,6 +31,8 @@ import CameraCapture from '@/components/CameraCapture';
 import LeaveRequestForm from '@/components/LeaveRequestForm';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import LeaveNotifications from '@/components/LeaveNotifications';
+import NotificationBell from '@/components/NotificationBell';
+import OvertimeChart from '@/components/OvertimeChart';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface TodayAttendance {
@@ -299,6 +301,8 @@ export default function EmployeeDashboard() {
                 </Button>
               )}
               
+              <NotificationBell />
+              
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -504,7 +508,9 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
 
-        {/* Calendar */}
+        {/* Overtime Chart */}
+        <OvertimeChart />
+
         {/* Calendar */}
         <Card>
           <CardHeader>
