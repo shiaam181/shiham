@@ -105,9 +105,38 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
 
     setIsVerifying(true);
     try {
+      // Convert reference image to base64 if it's a storage URL
+      let referenceBase64 = referenceImageUrl;
+      
+      if (referenceImageUrl.includes('supabase.co/storage')) {
+        // Get signed URL for private bucket
+        const urlParts = referenceImageUrl.split('/employee-photos/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('employee-photos')
+            .createSignedUrl(filePath, 300); // 5 min expiry
+          
+          if (signedError || !signedData?.signedUrl) {
+            console.error('Failed to get signed URL:', signedError);
+            throw new Error('Could not load reference image');
+          }
+          
+          // Fetch the image and convert to base64
+          const response = await fetch(signedData.signedUrl);
+          const blob = await response.blob();
+          referenceBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('verify-face', {
         body: {
-          referenceImage: referenceImageUrl,
+          referenceImage: referenceBase64,
           capturedImage: capturedDataUrl,
         },
       });
