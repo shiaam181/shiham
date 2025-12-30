@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Phone } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 const loginSchema = z.object({
@@ -16,6 +16,7 @@ const loginSchema = z.object({
 
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[+]?[\d\s-]+$/, 'Please enter a valid phone number'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
@@ -32,6 +33,7 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -88,7 +90,7 @@ export default function Auth() {
       } else {
         const validated = signupSchema.parse(formData);
         
-        const { error } = await signUp(validated.email, validated.password, validated.fullName);
+        const { error } = await signUp(validated.email, validated.password, validated.fullName, validated.phone);
         
         if (error) {
           if (error.message.includes('already registered')) {
@@ -362,6 +364,27 @@ export default function Auth() {
                     )}
                   </div>
                 )}
+
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+91 9876543210"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+                )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -495,7 +518,7 @@ export default function Auth() {
                     onClick={() => {
                       setIsLogin(!isLogin);
                       setErrors({});
-                      setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
+                      setFormData({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
                     }}
                     className="ml-1 text-primary font-medium hover:underline"
                   >
