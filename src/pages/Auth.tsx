@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Phone } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Phone, Smartphone } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { supabase } from '@/integrations/supabase/client';
+
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -40,6 +43,18 @@ export default function Auth() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  // OTP States
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [pendingSignupData, setPendingSignupData] = useState<{
+    email: string;
+    password: string;
+    fullName: string;
+    phone: string;
+  } | null>(null);
+  
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -52,67 +67,206 @@ export default function Auth() {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  // Format phone number for Supabase (must include country code)
+  const formatPhoneForSupabase = (phone: string): string => {
+    let cleaned = phone.replace(/[\s-]/g, '');
+    if (!cleaned.startsWith('+')) {
+      // Default to India country code if not provided
+      cleaned = '+91' + cleaned.replace(/^0+/, '');
+    }
+    return cleaned;
+  };
+
+  const sendPhoneOtp = async () => {
+    try {
+      const validated = signupSchema.parse(formData);
+      
+      setIsSendingOtp(true);
+      const formattedPhone = formatPhoneForSupabase(validated.phone);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+      
+      if (error) {
+        toast({
+          title: 'Failed to send OTP',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      setPendingSignupData({
+        email: validated.email,
+        password: validated.password,
+        fullName: validated.fullName,
+        phone: validated.phone,
+      });
+      setShowOtpVerification(true);
+      toast({
+        title: 'OTP Sent!',
+        description: `A verification code has been sent to ${formattedPhone}`,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const verifyOtpAndSignup = async () => {
+    if (!pendingSignupData || otpValue.length !== 6) {
+      toast({
+        title: 'Invalid OTP',
+        description: 'Please enter the 6-digit code sent to your phone.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
+      
+      // Verify the OTP
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        phone: formattedPhone,
+        token: otpValue,
+        type: 'sms',
+      });
+      
+      if (otpError) {
+        toast({
+          title: 'Verification Failed',
+          description: otpError.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Sign out from phone auth first
+      await supabase.auth.signOut();
+
+      // Now create the actual account with email/password
+      const { error: signUpError } = await signUp(
+        pendingSignupData.email,
+        pendingSignupData.password,
+        pendingSignupData.fullName,
+        pendingSignupData.phone
+      );
+      
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast({
+            title: 'Account Exists',
+            description: 'This email is already registered. Please sign in instead.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Sign Up Failed',
+            description: signUpError.message,
+            variant: 'destructive',
+          });
+        }
+        return;
+      }
+      
+      toast({
+        title: 'Account created!',
+        description: 'Phone verified successfully. Please set up face verification to continue.',
+      });
+      navigate('/face-setup');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (!pendingSignupData) return;
+    
+    setIsSendingOtp(true);
+    try {
+      const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+      
+      if (error) {
+        toast({
+          title: 'Failed to resend OTP',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      toast({
+        title: 'OTP Resent!',
+        description: `A new verification code has been sent to ${formattedPhone}`,
+      });
+      setOtpValue('');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isLogin) {
+      // For signup, send OTP first
+      await sendPhoneOtp();
+      return;
+    }
+    
     setIsLoading(true);
     setErrors({});
 
     try {
-      if (isLogin) {
-        const validated = loginSchema.parse({
-          email: formData.email,
-          password: formData.password,
-        });
-        
-        const { error } = await signIn(validated.email, validated.password);
-        
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: 'Login Failed',
-              description: 'Invalid email or password. Please try again.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Login Failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
+      const validated = loginSchema.parse({
+        email: formData.email,
+        password: formData.password,
+      });
+      
+      const { error } = await signIn(validated.email, validated.password);
+      
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: 'Login Failed',
+            description: 'Invalid email or password. Please try again.',
+            variant: 'destructive',
+          });
         } else {
           toast({
-            title: 'Welcome back!',
-            description: 'You have successfully signed in.',
+            title: 'Login Failed',
+            description: error.message,
+            variant: 'destructive',
           });
-          navigate('/dashboard');
         }
       } else {
-        const validated = signupSchema.parse(formData);
-        
-        const { error } = await signUp(validated.email, validated.password, validated.fullName, validated.phone);
-        
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account Exists',
-              description: 'This email is already registered. Please sign in instead.',
-              variant: 'destructive',
-            });
-          } else {
-            toast({
-              title: 'Sign Up Failed',
-              description: error.message,
-              variant: 'destructive',
-            });
-          }
-        } else {
-          toast({
-            title: 'Account created!',
-            description: 'Please set up face verification to continue.',
-          });
-          navigate('/face-setup');
-        }
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully signed in.',
+        });
+        navigate('/dashboard');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -179,6 +333,96 @@ export default function Auth() {
     { icon: Camera, title: 'Photo Verification', desc: 'Selfie capture for identity proof' },
     { icon: Shield, title: 'Face Recognition', desc: 'AI-powered face verification' },
   ];
+
+  // OTP Verification Screen
+  if (showOtpVerification && pendingSignupData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="flex items-center gap-3 mb-8 justify-center">
+            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
+              <Clock className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
+          </div>
+
+          <Card variant="elevated" className="border-0 shadow-xl">
+            <CardHeader className="space-y-1 pb-4 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Smartphone className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-display">Verify Your Phone</CardTitle>
+              <CardDescription>
+                We've sent a 6-digit code to<br />
+                <strong className="text-foreground">{formatPhoneForSupabase(pendingSignupData.phone)}</strong>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otpValue}
+                  onChange={(value) => setOtpValue(value)}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <Button
+                onClick={verifyOtpAndSignup}
+                variant="hero"
+                size="lg"
+                className="w-full"
+                disabled={isVerifyingOtp || otpValue.length !== 6}
+              >
+                {isVerifyingOtp ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Verify & Create Account
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the code?{' '}
+                  <button
+                    type="button"
+                    onClick={resendOtp}
+                    disabled={isSendingOtp}
+                    className="text-primary hover:underline font-medium disabled:opacity-50"
+                  >
+                    {isSendingOtp ? 'Sending...' : 'Resend OTP'}
+                  </button>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtpVerification(false);
+                    setOtpValue('');
+                    setPendingSignupData(null);
+                  }}
+                  className="text-sm text-muted-foreground hover:text-primary"
+                >
+                  <ArrowLeft className="w-4 h-4 inline mr-1" />
+                  Back to Sign Up
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -380,6 +624,7 @@ export default function Auth() {
                         className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">OTP will be sent for verification</p>
                     {errors.phone && (
                       <p className="text-sm text-destructive">{errors.phone}</p>
                     )}
@@ -455,13 +700,13 @@ export default function Auth() {
                   variant="hero" 
                   size="lg" 
                   className="w-full" 
-                  disabled={isLoading}
+                  disabled={isLoading || isSendingOtp}
                 >
-                  {isLoading ? (
+                  {isLoading || isSendingOtp ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      {isLogin ? 'Sign In' : 'Create Account'}
+                      {isLogin ? 'Sign In' : 'Send OTP & Continue'}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -529,10 +774,6 @@ export default function Auth() {
             </CardContent>
           </Card>
           )}
-
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
-          </p>
         </div>
       </div>
     </div>
