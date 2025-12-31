@@ -201,16 +201,36 @@ export default function FaceSetup() {
   };
 
   const saveFaceEmbedding = async () => {
-    if (!capturedEmbedding || !user) return;
+    if (!capturedEmbedding || !capturedImage || !user) return;
 
     setIsUploading(true);
     try {
-      // Save embedding to profile
+      // Upload the preview image to storage
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      const fileName = `${user.id}/face-preview.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('employee-photos')
+        .upload(fileName, blob, {
+          upsert: true,
+          contentType: 'image/jpeg',
+        });
+
+      if (uploadError) {
+        console.error('Photo upload error:', uploadError);
+        // Continue anyway - embedding is more important
+      }
+
+      // Get the storage path (not public URL) to store in profile
+      const storagePath = fileName;
+
+      // Save embedding and photo path to profile
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           face_embedding: capturedEmbedding,
-          face_reference_url: null // Clear old image URL if any
+          face_reference_url: storagePath // Store path for signed URL retrieval
         })
         .eq('user_id', user.id);
 

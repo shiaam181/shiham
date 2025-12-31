@@ -39,11 +39,32 @@ export default function ProfileSettings() {
     phone: '',
   });
 
-  // We no longer store a face reference photo in storage; only embeddings are stored.
-  // Keeping this state for future (e.g., showing last attendance photo) but not loading anything here.
+  // Load signed URL for face preview image from storage
   useEffect(() => {
-    setFaceImageUrl(null);
-  }, [profile?.face_embedding, user]);
+    const loadFaceImage = async () => {
+      if (profile?.face_reference_url && user) {
+        try {
+          // face_reference_url now stores the storage path
+          const { data, error } = await supabase.storage
+            .from('employee-photos')
+            .createSignedUrl(profile.face_reference_url, 3600); // 1 hour expiry
+          
+          if (data && !error) {
+            setFaceImageUrl(data.signedUrl);
+          } else {
+            setFaceImageUrl(null);
+          }
+        } catch (err) {
+          console.error('Error loading face image:', err);
+          setFaceImageUrl(null);
+        }
+      } else {
+        setFaceImageUrl(null);
+      }
+    };
+    
+    loadFaceImage();
+  }, [profile?.face_reference_url, user]);
 
   useEffect(() => {
     if (profile) {
