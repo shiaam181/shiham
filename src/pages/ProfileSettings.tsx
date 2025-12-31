@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog';
 import { 
   ArrowLeft, 
   User, 
@@ -14,7 +15,8 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 
 export default function ProfileSettings() {
@@ -30,6 +32,8 @@ export default function ProfileSettings() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -175,12 +179,30 @@ export default function ProfileSettings() {
     e.preventDefault();
     if (!user) return;
 
+    const existingPhone = profile?.phone || '';
+    const newPhone = formData.phone.trim();
+    const isPhoneChanged = existingPhone !== newPhone;
+    const isAddingNewPhone = !existingPhone && newPhone;
+
+    // If phone is being CHANGED (not added for first time), require verification
+    if (isPhoneChanged && !isAddingNewPhone && newPhone) {
+      setPendingPhone(newPhone);
+      setShowPhoneVerification(true);
+      return;
+    }
+
+    await saveProfile(formData.full_name, formData.phone);
+  };
+
+  const saveProfile = async (fullName: string, phone: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
+          full_name: fullName,
+          phone: phone,
         })
         .eq('user_id', user.id);
 
@@ -199,6 +221,12 @@ export default function ProfileSettings() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handlePhoneVerified = async () => {
+    // After OTP verification, save the profile with the new phone
+    await saveProfile(formData.full_name, pendingPhone);
+    setPendingPhone('');
   };
 
   return (
@@ -380,6 +408,12 @@ export default function ProfileSettings() {
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Your phone number"
                 />
+                {profile?.phone && formData.phone !== profile.phone && formData.phone.trim() && (
+                  <p className="text-xs text-warning flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    Phone change requires OTP verification
+                  </p>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -408,6 +442,14 @@ export default function ProfileSettings() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Phone Verification Dialog */}
+      <PhoneVerificationDialog
+        open={showPhoneVerification}
+        onOpenChange={setShowPhoneVerification}
+        newPhone={pendingPhone}
+        onVerified={handlePhoneVerified}
+      />
     </div>
   );
 }
