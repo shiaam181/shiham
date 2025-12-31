@@ -1,31 +1,43 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { extractFaceEmbedding, compareFaceEmbeddings, loadFaceModels } from '@/lib/faceRecognition';
 
 interface CameraCaptureProps {
   onCapture: (photoDataUrl: string, faceVerified: boolean) => void;
   onClose: () => void;
   type: 'check-in' | 'check-out';
-  referenceImageUrl?: string | null;
+  referenceEmbedding?: number[] | null;
 }
 
-export default function CameraCapture({ onCapture, onClose, type, referenceImageUrl }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState(70);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(40); // Default threshold (distance 0.6 = 40% confidence)
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     confidence: number;
     reason: string;
   } | null>(null);
+
+  // Load face models on mount
+  useEffect(() => {
+    loadFaceModels()
+      .then(() => setModelsLoading(false))
+      .catch((err) => {
+        console.error('Failed to load face models:', err);
+        setError('Failed to load face recognition. Please refresh the page.');
+        setModelsLoading(false);
+      });
+  }, []);
 
   // Fetch the confidence threshold from system settings
   useEffect(() => {
@@ -37,7 +49,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
         .maybeSingle();
       
       if (data?.value) {
-        const threshold = (data.value as { threshold?: number })?.threshold ?? 70;
+        const threshold = (data.value as { threshold?: number })?.threshold ?? 40;
         setConfidenceThreshold(threshold);
       }
     };
@@ -45,11 +57,13 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
   }, []);
 
   useEffect(() => {
-    startCamera();
+    if (!modelsLoading) {
+      startCamera();
+    }
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [modelsLoading]);
 
   const startCamera = async () => {
     try {
@@ -100,68 +114,54 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Mirror the image for selfie camera
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
+    // Draw without mirroring for face detection (mirror only for display)
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    // Create mirrored version for display
+    const displayCanvas = document.createElement('canvas');
+    displayCanvas.width = canvas.width;
+    displayCanvas.height = canvas.height;
+    const displayContext = displayCanvas.getContext('2d');
+    if (displayContext) {
+      displayContext.translate(canvas.width, 0);
+      displayContext.scale(-1, 1);
+      displayContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
+    
+    const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(dataUrl);
     stopCamera();
 
-    // If we have a reference image, verify face
-    if (referenceImageUrl) {
-      await verifyFace(dataUrl);
+    // If we have a reference embedding, verify face locally
+    if (referenceEmbedding && referenceEmbedding.length > 0) {
+      await verifyFaceLocally(canvas);
     }
   };
 
-  const verifyFace = async (capturedDataUrl: string) => {
-    if (!referenceImageUrl) {
-      setVerificationResult({ match: true, confidence: 100, reason: 'No reference photo set - verification skipped' });
+  const verifyFaceLocally = async (canvas: HTMLCanvasElement) => {
+    if (!referenceEmbedding || referenceEmbedding.length === 0) {
+      setVerificationResult({ match: true, confidence: 100, reason: 'No reference embedding - verification skipped' });
       return;
     }
 
     setIsVerifying(true);
     try {
-      // Convert reference image to base64 if it's a storage URL
-      let referenceBase64 = referenceImageUrl;
+      // Extract embedding from captured image
+      const capturedEmbedding = await extractFaceEmbedding(canvas);
       
-      if (referenceImageUrl.includes('supabase.co/storage')) {
-        // Get signed URL for private bucket
-        const urlParts = referenceImageUrl.split('/employee-photos/');
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          const { data: signedData, error: signedError } = await supabase.storage
-            .from('employee-photos')
-            .createSignedUrl(filePath, 300); // 5 min expiry
-          
-          if (signedError || !signedData?.signedUrl) {
-            console.error('Failed to get signed URL:', signedError);
-            throw new Error('Could not load reference image');
-          }
-          
-          // Fetch the image and convert to base64
-          const response = await fetch(signedData.signedUrl);
-          const blob = await response.blob();
-          referenceBase64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        }
+      if (!capturedEmbedding) {
+        setVerificationResult({
+          match: false,
+          confidence: 0,
+          reason: 'No face detected. Please ensure your face is visible.',
+        });
+        return;
       }
 
-      const { data, error } = await supabase.functions.invoke('verify-face', {
-        body: {
-          referenceImage: referenceBase64,
-          capturedImage: capturedDataUrl,
-        },
-      });
-
-      if (error) throw error;
-
-      setVerificationResult(data);
+      // Compare embeddings locally
+      const distanceThreshold = (100 - confidenceThreshold) / 100; // Convert confidence to distance
+      const result = compareFaceEmbeddings(referenceEmbedding, capturedEmbedding, distanceThreshold);
+      setVerificationResult(result);
     } catch (error) {
       console.error('Face verification error:', error);
       setVerificationResult({
@@ -182,16 +182,27 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
 
   const confirmPhoto = () => {
     if (capturedImage) {
-      // Check if confidence meets the threshold
       const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-      const faceVerified = referenceImageUrl ? meetsThreshold : true;
+      const faceVerified = referenceEmbedding && referenceEmbedding.length > 0 ? meetsThreshold : true;
       onCapture(capturedImage, faceVerified);
     }
   };
 
   // Face must meet threshold if reference exists - no bypass allowed
   const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-  const canConfirm = !referenceImageUrl || meetsThreshold;
+  const canConfirm = !referenceEmbedding || referenceEmbedding.length === 0 || meetsThreshold;
+
+  if (modelsLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
+          <h3 className="font-display font-semibold text-lg mb-2">Loading Face Recognition</h3>
+          <p className="text-sm text-muted-foreground">Preparing face detection models...</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -256,7 +267,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
           )}
 
           {/* Verification Status */}
-          {capturedImage && referenceImageUrl && (
+          {capturedImage && referenceEmbedding && referenceEmbedding.length > 0 && (
             <div className="absolute bottom-4 left-4 right-4">
               {isVerifying ? (
                 <div className="bg-black/70 backdrop-blur rounded-lg p-3 flex items-center gap-3">
@@ -328,8 +339,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceImage
         </div>
 
         <p className="text-xs text-center text-muted-foreground pb-4 px-4">
-          {referenceImageUrl 
-            ? 'Face verification will be performed automatically'
+          {referenceEmbedding && referenceEmbedding.length > 0
+            ? 'Face verification is performed locally on your device'
             : 'Position your face within the guide for best results'
           }
         </p>

@@ -280,26 +280,26 @@ export default function ProfileSettings() {
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  {profile?.face_reference_url ? (
+                  {profile?.face_embedding && profile.face_embedding.length > 0 ? (
                     <>
                       <CheckCircle2 className="w-5 h-5 text-success" />
-                      <span className="font-medium text-success">Photo Set</span>
+                      <span className="font-medium text-success">Face Registered</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="w-5 h-5 text-warning" />
-                      <span className="font-medium text-warning">No Photo Set</span>
+                      <span className="font-medium text-warning">No Face Registered</span>
                     </>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  {profile?.face_reference_url 
-                    ? 'Your face verification photo is set. You can update it anytime.'
+                  {profile?.face_embedding && profile.face_embedding.length > 0
+                    ? 'Your face is registered for verification. You can update it anytime.'
                     : 'Please capture a clear photo of your face for verification during attendance.'}
                 </p>
-                <Button onClick={startCamera} variant="outline" size="sm">
+                <Button onClick={() => navigate('/face-setup')} variant="outline" size="sm">
                   <Camera className="w-4 h-4 mr-2" />
-                  {profile?.face_reference_url ? 'Update Photo' : 'Capture Photo'}
+                  {profile?.face_embedding && profile.face_embedding.length > 0 ? 'Update Face' : 'Setup Face'}
                 </Button>
               </div>
             </div>

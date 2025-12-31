@@ -238,6 +238,7 @@ export type Database = {
           created_at: string
           department: string | null
           email: string
+          face_embedding: Json | null
           face_reference_url: string | null
           full_name: string
           id: string
@@ -253,6 +254,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email: string
+          face_embedding?: Json | null
           face_reference_url?: string | null
           full_name: string
           id?: string
@@ -268,6 +270,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string
+          face_embedding?: Json | null
           face_reference_url?: string | null
           full_name?: string
           id?: string
