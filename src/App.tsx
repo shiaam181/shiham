@@ -20,6 +20,7 @@ import LeaveManagement from "./pages/LeaveManagement";
 import ProfileSettings from "./pages/ProfileSettings";
 import WeekOffManagement from "./pages/WeekOffManagement";
 import CompanySettings from "./pages/CompanySettings";
+import CsvImport from "./pages/CsvImport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -159,6 +160,7 @@ function AppRoutes() {
       <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
       <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
       <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
+      <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
