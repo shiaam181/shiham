@@ -663,7 +663,7 @@ export default function EmployeeDashboard() {
             </div>
           </Card>
           
-          {systemSettings.faceVerificationEnabled && !profile?.face_reference_url && (
+          {systemSettings.faceVerificationEnabled && (!profile?.face_embedding || profile.face_embedding.length === 0) && (
             <Card 
               className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
               onClick={() => navigate('/profile')}
@@ -695,7 +695,7 @@ export default function EmployeeDashboard() {
           onCapture={handleCameraCapture}
           onClose={() => setShowCamera(false)}
           type={captureType}
-          referenceImageUrl={systemSettings.faceVerificationEnabled ? profile?.face_reference_url : null}
+          referenceEmbedding={systemSettings.faceVerificationEnabled ? profile?.face_embedding : null}
         />
       )}
 

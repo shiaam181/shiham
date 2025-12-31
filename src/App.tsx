@@ -45,7 +45,9 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
   }
 
   // Developers bypass face setup, also skip if face verification is disabled
-  if (requireFaceSetup && faceVerificationRequired && profile && !profile.face_reference_url && !isDeveloper) {
+  // Now check for face_embedding instead of face_reference_url
+  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  if (requireFaceSetup && faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 
@@ -76,8 +78,9 @@ const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If already has face reference or is developer, redirect to dashboard
-  if (profile?.face_reference_url || isDeveloper) {
+  // If already has face embedding or is developer, redirect to dashboard
+  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  if (hasFaceData || isDeveloper) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -104,7 +107,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Check face setup first (developers bypass, also skip if disabled)
-  if (faceVerificationRequired && profile && !profile.face_reference_url && !isDeveloper) {
+  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  if (faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
 

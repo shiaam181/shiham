@@ -12,6 +12,7 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   face_reference_url: string | null;
+  face_embedding: number[] | null;
   is_active: boolean;
 }
 
@@ -58,7 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setProfile(profileData);
+      // Cast face_embedding from Json to number[] if it exists
+      if (profileData) {
+        const profile: Profile = {
+          ...profileData,
+          face_embedding: profileData.face_embedding as number[] | null,
+        };
+        setProfile(profile);
+      } else {
+        setProfile(null);
+      }
 
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
