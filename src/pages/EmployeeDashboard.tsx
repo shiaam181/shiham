@@ -276,6 +276,42 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const uploadPhotoToStorage = async (photoDataUrl: string, userId: string, type: 'check-in' | 'check-out'): Promise<string | null> => {
+    try {
+      // Convert base64 to blob
+      const response = await fetch(photoDataUrl);
+      const blob = await response.blob();
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const date = format(new Date(), 'yyyy-MM-dd');
+      const fileName = `${userId}/${date}/${type}-${timestamp}.jpg`;
+      
+      // Upload to storage
+      const { data, error } = await supabase.storage
+        .from('employee-photos')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      
+      if (error) {
+        console.error('Photo upload error:', error);
+        return null;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('employee-photos')
+        .getPublicUrl(fileName);
+      
+      return urlData?.publicUrl || null;
+    } catch (error) {
+      console.error('Failed to upload photo:', error);
+      return null;
+    }
+  };
+
   const handleCameraCapture = async (photoDataUrl: string, faceVerified: boolean) => {
     setShowCamera(false);
     
@@ -302,6 +338,9 @@ export default function EmployeeDashboard() {
       const today = format(new Date(), 'yyyy-MM-dd');
       const now = new Date().toISOString();
 
+      // Upload photo to storage and get URL
+      const photoUrl = await uploadPhotoToStorage(photoDataUrl, user.id, captureType);
+
       if (captureType === 'check-in') {
         const { error } = await supabase.from('attendance').insert({
           user_id: user.id,
@@ -309,7 +348,7 @@ export default function EmployeeDashboard() {
           check_in_time: now,
           check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
           check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-          check_in_photo_url: photoDataUrl,
+          check_in_photo_url: photoUrl,
           check_in_face_verified: faceVerified,
           status: 'present',
         });
@@ -327,7 +366,7 @@ export default function EmployeeDashboard() {
             check_out_time: now,
             check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
             check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-            check_out_photo_url: photoDataUrl,
+            check_out_photo_url: photoUrl,
             check_out_face_verified: faceVerified,
           })
           .eq('user_id', user.id)

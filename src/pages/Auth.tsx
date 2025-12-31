@@ -138,14 +138,12 @@ export default function Auth() {
       setIsSendingOtp(true);
       const formattedPhone = formatPhoneWithCountryCode(validated.phone, countryCode);
       
-      // First check if user exists with this phone number
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('user_id, email')
-        .eq('phone', formattedPhone)
-        .single();
+      // Check if user exists using edge function (bypasses RLS)
+      const { data: checkData, error: checkError } = await supabase.functions.invoke('check-phone-exists', {
+        body: { phone: formattedPhone },
+      });
       
-      if (!profileData) {
+      if (checkError || !checkData?.exists) {
         toast({
           title: 'Account Not Found',
           description: 'No account found with this phone number. Please sign up first.',
@@ -273,51 +271,51 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      // Verify the OTP using our custom edge function
-      const { data, error: otpError } = await supabase.functions.invoke('verify-otp', {
+      // Call the phone-login edge function which verifies OTP and returns session token
+      const { data, error: loginError } = await supabase.functions.invoke('phone-login', {
         body: { phone: pendingLoginPhone, otp: otpValue },
       });
       
-      if (otpError || (data && data.error)) {
+      if (loginError || (data && data.error)) {
         toast({
-          title: 'Verification Failed',
-          description: data?.error || otpError?.message || 'Invalid OTP',
+          title: 'Login Failed',
+          description: data?.error || loginError?.message || 'Failed to login',
           variant: 'destructive',
         });
         setIsVerifyingOtp(false);
         return;
       }
 
-      // Get user email from profile and sign them in with a magic link approach
-      // Since we verified the phone, we'll use a custom token approach
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('email, user_id')
-        .eq('phone', pendingLoginPhone)
-        .single();
-      
-      if (!profileData) {
+      // Verify the token hash to create a session
+      if (data.token_hash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: data.token_hash,
+          type: 'magiclink',
+        });
+
+        if (verifyError) {
+          toast({
+            title: 'Login Failed',
+            description: verifyError.message || 'Failed to create session',
+            variant: 'destructive',
+          });
+          setIsVerifyingOtp(false);
+          return;
+        }
+
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully signed in.',
+        });
+        
+        navigate('/dashboard');
+      } else {
         toast({
           title: 'Error',
-          description: 'Could not find your account. Please try again.',
+          description: 'Failed to create session. Please try email login.',
           variant: 'destructive',
         });
-        setIsVerifyingOtp(false);
-        return;
       }
-
-      // Use Supabase admin API to generate a session
-      // For now, we'll redirect them to email login with a message
-      toast({
-        title: 'Phone Verified!',
-        description: 'Phone verified successfully. Please use your email and password to complete login.',
-      });
-      
-      setShowOtpVerification(false);
-      setOtpValue('');
-      setPendingLoginPhone(null);
-      setLoginMethod('email');
-      setFormData(prev => ({ ...prev, email: profileData.email }));
       
     } catch (error) {
       toast({
@@ -327,6 +325,9 @@ export default function Auth() {
       });
     } finally {
       setIsVerifyingOtp(false);
+      setShowOtpVerification(false);
+      setOtpValue('');
+      setPendingLoginPhone(null);
     }
   };
 
