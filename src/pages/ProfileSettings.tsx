@@ -39,27 +39,11 @@ export default function ProfileSettings() {
     phone: '',
   });
 
-  // Load signed URL for face reference image
+  // We no longer store a face reference photo in storage; only embeddings are stored.
+  // Keeping this state for future (e.g., showing last attendance photo) but not loading anything here.
   useEffect(() => {
-    const loadFaceImage = async () => {
-      if (profile?.face_reference_url && user) {
-        try {
-          const fileName = `${user.id}/face-reference.jpg`;
-          const { data, error } = await supabase.storage
-            .from('employee-photos')
-            .createSignedUrl(fileName, 3600); // 1 hour expiry
-          
-          if (data && !error) {
-            setFaceImageUrl(data.signedUrl);
-          }
-        } catch (err) {
-          console.error('Error loading face image:', err);
-        }
-      }
-    };
-    
-    loadFaceImage();
-  }, [profile?.face_reference_url, user]);
+    setFaceImageUrl(null);
+  }, [profile?.face_embedding, user]);
 
   useEffect(() => {
     if (profile) {
@@ -252,15 +236,15 @@ export default function ProfileSettings() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6 max-w-2xl">
-        {/* Face Reference Photo */}
+        {/* Face Verification */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Camera className="w-5 h-5 text-primary" />
-              Face Verification Photo
+              Face Verification
             </CardTitle>
             <CardDescription>
-              This photo will be used to verify your identity during check-in/check-out
+              For privacy and accuracy, we store only your face features (embedding) — not a saved face photo.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

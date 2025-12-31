@@ -21,7 +21,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const [isVerifying, setIsVerifying] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState(40); // Default threshold (distance 0.6 = 40% confidence)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(60); // Default threshold (60% ~= cosine similarity 0.6)
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     confidence: number;
@@ -49,7 +49,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         .maybeSingle();
       
       if (data?.value) {
-        const threshold = (data.value as { threshold?: number })?.threshold ?? 40;
+        const threshold = (data.value as { threshold?: number })?.threshold ?? 60;
         setConfidenceThreshold(threshold);
       }
     };
@@ -158,9 +158,9 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         return;
       }
 
-      // Compare embeddings locally
-      const distanceThreshold = (100 - confidenceThreshold) / 100; // Convert confidence to distance
-      const result = compareFaceEmbeddings(referenceEmbedding, capturedEmbedding, distanceThreshold);
+      // Compare embeddings locally (cosine similarity)
+      const similarityThreshold = confidenceThreshold / 100;
+      const result = compareFaceEmbeddings(referenceEmbedding, capturedEmbedding, similarityThreshold);
       setVerificationResult(result);
     } catch (error) {
       console.error('Face verification error:', error);
