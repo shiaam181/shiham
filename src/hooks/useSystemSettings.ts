@@ -12,6 +12,7 @@ export interface SystemSettings {
   emailServiceId: string;
   emailTemplateId: string;
   emailPublicKey: string;
+  twilioSmsEnabled: boolean;
 }
 
 const defaultSettings: SystemSettings = {
@@ -25,6 +26,7 @@ const defaultSettings: SystemSettings = {
   emailServiceId: '',
   emailTemplateId: '',
   emailPublicKey: '',
+  twilioSmsEnabled: false,
 };
 
 export function useSystemSettings() {
@@ -69,6 +71,9 @@ export function useSystemSettings() {
             newSettings.emailServiceId = value?.service_id ?? '';
             newSettings.emailTemplateId = value?.template_id ?? '';
             newSettings.emailPublicKey = value?.public_key ?? '';
+            break;
+          case 'twilio_sms_enabled':
+            newSettings.twilioSmsEnabled = value?.enabled ?? false;
             break;
         }
       });
