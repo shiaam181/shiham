@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import Index from "./pages/Index";
@@ -55,6 +55,9 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
 };
 
 const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isUpdate = new URLSearchParams(location.search).get('update') === 'true';
+
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
@@ -73,14 +76,14 @@ const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If face verification is disabled, redirect to dashboard
-  if (!faceVerificationRequired) {
+  // If face verification is disabled, redirect to dashboard (unless explicitly updating)
+  if (!faceVerificationRequired && !isUpdate) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If already has face embedding or is developer, redirect to dashboard
+  // Allow updating face even if already registered
   const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
-  if (hasFaceData || isDeveloper) {
+  if (!isUpdate && (hasFaceData || isDeveloper)) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -97,6 +97,8 @@ export function euclideanDistance(embedding1: number[], embedding2: number[]): n
 
 /**
  * Compare two face embeddings and determine if they match
+ * Uses cosine similarity (more stable across lighting/pose than raw distance scaling).
+ *
  * @param storedEmbedding - The reference embedding from registration
  * @param capturedEmbedding - The newly captured embedding
  * @param threshold - Similarity threshold (default 0.6)
@@ -107,25 +109,16 @@ export function compareFaceEmbeddings(
   capturedEmbedding: number[],
   threshold: number = 0.6
 ): { match: boolean; confidence: number; reason: string } {
-  // Use Euclidean distance for comparison (face-api.js standard)
-  const distance = euclideanDistance(storedEmbedding, capturedEmbedding);
-  
-  // Convert distance to confidence percentage
-  // Distance of 0 = 100% match, distance of 1 = 0% match
-  // Typical same-person distance is < 0.6
-  const confidence = Math.max(0, Math.min(100, Math.round((1 - distance) * 100)));
-  
-  const match = distance < threshold;
-  
+  const similarity = cosineSimilarity(storedEmbedding, capturedEmbedding);
+  const confidence = Math.max(0, Math.min(100, Math.round(similarity * 100)));
+
+  const match = similarity >= threshold;
+
   let reason: string;
   if (match) {
-    if (confidence >= 90) {
-      reason = 'Excellent match - faces are very similar';
-    } else if (confidence >= 75) {
-      reason = 'Good match - faces appear to be the same person';
-    } else {
-      reason = 'Match found within acceptable threshold';
-    }
+    if (confidence >= 90) reason = 'Excellent match';
+    else if (confidence >= 75) reason = 'Good match';
+    else reason = 'Match within threshold';
   } else {
     reason = 'Face does not match the registered reference';
   }
