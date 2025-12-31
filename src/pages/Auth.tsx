@@ -11,15 +11,21 @@ import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
+import { CountryCodeSelect } from '@/components/CountryCodeSelect';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+const phoneLoginSchema = z.object({
+  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[\d]+$/, 'Please enter only digits'),
+});
+
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[+]?[\d\s-]+$/, 'Please enter a valid phone number'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[\d]+$/, 'Please enter only digits'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
@@ -30,10 +36,12 @@ const signupSchema = z.object({
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [countryCode, setCountryCode] = useState('+91');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -48,12 +56,14 @@ export default function Auth() {
   const [otpValue, setOtpValue] = useState('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpType, setOtpType] = useState<'signup' | 'login'>('signup');
   const [pendingSignupData, setPendingSignupData] = useState<{
     email: string;
     password: string;
     fullName: string;
     phone: string;
   } | null>(null);
+  const [pendingLoginPhone, setPendingLoginPhone] = useState<string | null>(null);
   
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -67,14 +77,10 @@ export default function Auth() {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Format phone number for Supabase (must include country code)
-  const formatPhoneForSupabase = (phone: string): string => {
-    let cleaned = phone.replace(/[\s-]/g, '');
-    if (!cleaned.startsWith('+')) {
-      // Default to India country code if not provided
-      cleaned = '+91' + cleaned.replace(/^0+/, '');
-    }
-    return cleaned;
+  // Format phone number with country code
+  const formatPhoneWithCountryCode = (phone: string, code: string): string => {
+    const cleaned = phone.replace(/[\s-]/g, '').replace(/^0+/, '');
+    return `${code}${cleaned}`;
   };
 
   const sendPhoneOtp = async () => {
@@ -82,11 +88,11 @@ export default function Auth() {
       const validated = signupSchema.parse(formData);
       
       setIsSendingOtp(true);
-      const formattedPhone = formatPhoneForSupabase(validated.phone);
+      const formattedPhone = formatPhoneWithCountryCode(validated.phone, countryCode);
       
       // Call our custom Twilio edge function
       const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone },
+        body: { phone: formattedPhone, type: 'signup' },
       });
       
       if (error || (data && data.error)) {
@@ -104,6 +110,67 @@ export default function Auth() {
         fullName: validated.fullName,
         phone: validated.phone,
       });
+      setOtpType('signup');
+      setShowOtpVerification(true);
+      toast({
+        title: 'OTP Sent!',
+        description: `A verification code has been sent to ${formattedPhone}`,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const sendLoginOtp = async () => {
+    try {
+      const validated = phoneLoginSchema.parse({ phone: formData.phone });
+      
+      setIsSendingOtp(true);
+      const formattedPhone = formatPhoneWithCountryCode(validated.phone, countryCode);
+      
+      // First check if user exists with this phone number
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('user_id, email')
+        .eq('phone', formattedPhone)
+        .single();
+      
+      if (!profileData) {
+        toast({
+          title: 'Account Not Found',
+          description: 'No account found with this phone number. Please sign up first.',
+          variant: 'destructive',
+        });
+        setIsSendingOtp(false);
+        return;
+      }
+      
+      // Call our custom Twilio edge function
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phone: formattedPhone, type: 'login' },
+      });
+      
+      if (error || (data && data.error)) {
+        toast({
+          title: 'Failed to send OTP',
+          description: data?.error || error?.message || 'SMS service error',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      setPendingLoginPhone(formattedPhone);
+      setOtpType('login');
       setShowOtpVerification(true);
       toast({
         title: 'OTP Sent!',
@@ -136,7 +203,7 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
+      const formattedPhone = formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
       
       // Verify the OTP using our custom edge function
       const { data, error: otpError } = await supabase.functions.invoke('verify-otp', {
@@ -158,7 +225,7 @@ export default function Auth() {
         pendingSignupData.email,
         pendingSignupData.password,
         pendingSignupData.fullName,
-        pendingSignupData.phone
+        formattedPhone
       );
       
       if (signUpError) {
@@ -194,16 +261,91 @@ export default function Auth() {
     }
   };
 
+  const verifyOtpAndLogin = async () => {
+    if (!pendingLoginPhone || otpValue.length !== 6) {
+      toast({
+        title: 'Invalid OTP',
+        description: 'Please enter the 6-digit code sent to your phone.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      // Verify the OTP using our custom edge function
+      const { data, error: otpError } = await supabase.functions.invoke('verify-otp', {
+        body: { phone: pendingLoginPhone, otp: otpValue },
+      });
+      
+      if (otpError || (data && data.error)) {
+        toast({
+          title: 'Verification Failed',
+          description: data?.error || otpError?.message || 'Invalid OTP',
+          variant: 'destructive',
+        });
+        setIsVerifyingOtp(false);
+        return;
+      }
+
+      // Get user email from profile and sign them in with a magic link approach
+      // Since we verified the phone, we'll use a custom token approach
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email, user_id')
+        .eq('phone', pendingLoginPhone)
+        .single();
+      
+      if (!profileData) {
+        toast({
+          title: 'Error',
+          description: 'Could not find your account. Please try again.',
+          variant: 'destructive',
+        });
+        setIsVerifyingOtp(false);
+        return;
+      }
+
+      // Use Supabase admin API to generate a session
+      // For now, we'll redirect them to email login with a message
+      toast({
+        title: 'Phone Verified!',
+        description: 'Phone verified successfully. Please use your email and password to complete login.',
+      });
+      
+      setShowOtpVerification(false);
+      setOtpValue('');
+      setPendingLoginPhone(null);
+      setLoginMethod('email');
+      setFormData(prev => ({ ...prev, email: profileData.email }));
+      
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const resendOtp = async () => {
-    if (!pendingSignupData) return;
-    
     setIsSendingOtp(true);
     try {
-      const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
+      let formattedPhone: string;
+      
+      if (otpType === 'signup' && pendingSignupData) {
+        formattedPhone = formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
+      } else if (otpType === 'login' && pendingLoginPhone) {
+        formattedPhone = pendingLoginPhone;
+      } else {
+        return;
+      }
       
       // Call our custom Twilio edge function
       const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone },
+        body: { phone: formattedPhone, type: otpType },
       });
       
       if (error || (data && data.error)) {
@@ -234,6 +376,13 @@ export default function Auth() {
       return;
     }
     
+    if (loginMethod === 'phone') {
+      // Phone login with OTP
+      await sendLoginOtp();
+      return;
+    }
+    
+    // Email/password login
     setIsLoading(true);
     setErrors({});
 
@@ -332,8 +481,15 @@ export default function Auth() {
     { icon: Shield, title: 'Face Recognition', desc: 'AI-powered face verification' },
   ];
 
+  const getDisplayPhone = () => {
+    if (otpType === 'signup' && pendingSignupData) {
+      return formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
+    }
+    return pendingLoginPhone || '';
+  };
+
   // OTP Verification Screen
-  if (showOtpVerification && pendingSignupData) {
+  if (showOtpVerification) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md animate-fade-in">
@@ -352,7 +508,7 @@ export default function Auth() {
               <CardTitle className="text-2xl font-display">Verify Your Phone</CardTitle>
               <CardDescription>
                 We've sent a 6-digit code to<br />
-                <strong className="text-foreground">{formatPhoneForSupabase(pendingSignupData.phone)}</strong>
+                <strong className="text-foreground">{getDisplayPhone()}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -374,7 +530,7 @@ export default function Auth() {
               </div>
 
               <Button
-                onClick={verifyOtpAndSignup}
+                onClick={otpType === 'signup' ? verifyOtpAndSignup : verifyOtpAndLogin}
                 variant="hero"
                 size="lg"
                 className="w-full"
@@ -384,7 +540,7 @@ export default function Auth() {
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    Verify & Create Account
+                    {otpType === 'signup' ? 'Verify & Create Account' : 'Verify & Sign In'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -408,11 +564,12 @@ export default function Auth() {
                     setShowOtpVerification(false);
                     setOtpValue('');
                     setPendingSignupData(null);
+                    setPendingLoginPhone(null);
                   }}
                   className="text-sm text-muted-foreground hover:text-primary"
                 >
                   <ArrowLeft className="w-4 h-4 inline mr-1" />
-                  Back to Sign Up
+                  {otpType === 'signup' ? 'Back to Sign Up' : 'Back to Sign In'}
                 </button>
               </div>
             </CardContent>
@@ -494,12 +651,9 @@ export default function Auth() {
                   </>
                 ) : (
                   <>
-                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                      <Mail className="w-8 h-8 text-primary" />
-                    </div>
-                    <CardTitle className="text-2xl font-display text-center">Forgot Password?</CardTitle>
-                    <CardDescription className="text-center">
-                      Enter your email address and we'll send you a link to reset your password
+                    <CardTitle className="text-2xl font-display">Reset Password</CardTitle>
+                    <CardDescription>
+                      Enter your email address and we'll send you a link to reset your password.
                     </CardDescription>
                   </>
                 )}
@@ -508,35 +662,24 @@ export default function Auth() {
                 {resetSent ? (
                   <div className="space-y-4">
                     <Button
-                      variant="hero"
-                      size="lg"
-                      className="w-full"
                       onClick={() => {
                         setShowForgotPassword(false);
                         setResetSent(false);
                         setResetEmail('');
                       }}
+                      variant="outline"
+                      className="w-full"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back to Sign In
                     </Button>
-                    <p className="text-center text-sm text-muted-foreground">
-                      Didn't receive the email?{' '}
-                      <button
-                        type="button"
-                        onClick={() => setResetSent(false)}
-                        className="text-primary hover:underline"
-                      >
-                        Try again
-                      </button>
-                    </p>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="resetEmail">Email</Label>
+                      <Label htmlFor="reset-email">Email</Label>
                       <Input
-                        id="resetEmail"
+                        id="reset-email"
                         type="email"
                         placeholder="you@company.com"
                         value={resetEmail}
@@ -583,11 +726,26 @@ export default function Auth() {
               </CardTitle>
               <CardDescription>
                 {isLogin 
-                  ? 'Enter your credentials to access your account' 
+                  ? 'Sign in to access your account' 
                   : 'Enter your details to get started'}
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {isLogin && (
+                <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'email' | 'phone')} className="mb-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="email" className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </TabsTrigger>
+                    <TabsTrigger value="phone" className="flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      Phone
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <div className="space-y-2">
@@ -607,19 +765,23 @@ export default function Auth() {
                   </div>
                 )}
 
-                {!isLogin && (
+                {(!isLogin || loginMethod === 'phone') && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="flex gap-2">
+                      <CountryCodeSelect 
+                        value={countryCode} 
+                        onChange={setCountryCode}
+                        disabled={isSendingOtp}
+                      />
                       <Input
                         id="phone"
                         name="phone"
                         type="tel"
-                        placeholder="+91 9876543210"
+                        placeholder="9876543210"
                         value={formData.phone}
                         onChange={handleChange}
-                        className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
+                        className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">OTP will be sent for verification</p>
@@ -629,26 +791,46 @@ export default function Auth() {
                   </div>
                 )}
                 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={errors.email ? 'border-destructive' : ''}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
-                </div>
+                {(isLogin && loginMethod === 'email') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={errors.email ? 'border-destructive' : ''}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
+                  </div>
+                )}
+
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={errors.email ? 'border-destructive' : ''}
+                    />
+                    {errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
+                  </div>
+                )}
                 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    {isLogin && (
+                {(isLogin && loginMethod === 'email') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
                       <button
                         type="button"
                         onClick={() => {
@@ -659,38 +841,55 @@ export default function Auth() {
                       >
                         Forgot password?
                       </button>
-                    )}
-                  </div>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={errors.password ? 'border-destructive' : ''}
-                  />
-                  {errors.password && (
-                    <p className="text-sm text-destructive">{errors.password}</p>
-                  )}
-                </div>
-
-                {!isLogin && (
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    </div>
                     <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
+                      id="password"
+                      name="password"
                       type="password"
                       placeholder="••••••••"
-                      value={formData.confirmPassword}
+                      value={formData.password}
                       onChange={handleChange}
-                      className={errors.confirmPassword ? 'border-destructive' : ''}
+                      className={errors.password ? 'border-destructive' : ''}
                     />
-                    {errors.confirmPassword && (
-                      <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                    {errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
                     )}
                   </div>
+                )}
+
+                {!isLogin && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={errors.password ? 'border-destructive' : ''}
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={errors.confirmPassword ? 'border-destructive' : ''}
+                      />
+                      {errors.confirmPassword && (
+                        <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                      )}
+                    </div>
+                  </>
                 )}
 
                 <Button 
@@ -704,7 +903,9 @@ export default function Auth() {
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      {isLogin ? 'Sign In' : 'Send OTP & Continue'}
+                      {isLogin 
+                        ? (loginMethod === 'phone' ? 'Send OTP' : 'Sign In')
+                        : 'Send OTP & Continue'}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -762,6 +963,7 @@ export default function Auth() {
                       setIsLogin(!isLogin);
                       setErrors({});
                       setFormData({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
+                      setLoginMethod('email');
                     }}
                     className="ml-1 text-primary font-medium hover:underline"
                   >

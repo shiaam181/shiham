@@ -65,6 +65,11 @@ export default function DeveloperDashboard() {
   // Twilio SMS configuration state
   const [twilioEnabled, setTwilioEnabled] = useState(false);
   const [twilioConfigured, setTwilioConfigured] = useState(false);
+  
+  // SMS Templates state
+  const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
+  const [smsTemplateLogin, setSmsTemplateLogin] = useState('Your AttendanceHub login code is: {{OTP}}. This code expires in 5 minutes.');
+  const [smsTemplatesSaving, setSmsTemplatesSaving] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -109,6 +114,12 @@ export default function DeveloperDashboard() {
           case 'twilio_sms_enabled':
             setTwilioEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
             break;
+          case 'sms_templates': {
+            const templates = setting.value as { otp_signup?: string; otp_login?: string };
+            if (templates?.otp_signup) setSmsTemplateSignup(templates.otp_signup);
+            if (templates?.otp_login) setSmsTemplateLogin(templates.otp_login);
+            break;
+          }
         }
       });
     }
@@ -173,6 +184,33 @@ export default function DeveloperDashboard() {
       });
     }
     setSettingsLoading(false);
+  };
+
+  const saveSmsTemplates = async () => {
+    setSmsTemplatesSaving(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ 
+        key: 'sms_templates', 
+        value: { 
+          otp_signup: smsTemplateSignup,
+          otp_login: smsTemplateLogin
+        } 
+      }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save SMS templates',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: 'SMS templates saved successfully',
+      });
+    }
+    setSmsTemplatesSaving(false);
   };
 
   const saveFaceThreshold = async (threshold: number) => {
@@ -737,6 +775,45 @@ export default function DeveloperDashboard() {
                       <p>• <strong>Auth Token:</strong> Found in Twilio Console → Account Info (keep secret!)</p>
                       <p>• <strong>Phone Number:</strong> Your Twilio phone number (format: +1234567890)</p>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* SMS Templates */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MessageSquare className="w-5 h-5" />
+                      SMS Message Templates
+                    </CardTitle>
+                    <CardDescription>
+                      Customize OTP messages. Use {'{{OTP}}'} as placeholder for the verification code.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="sms-signup">Signup OTP Template</Label>
+                      <textarea
+                        id="sms-signup"
+                        value={smsTemplateSignup}
+                        onChange={(e) => setSmsTemplateSignup(e.target.value)}
+                        className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background"
+                        placeholder="Your verification code is: {{OTP}}"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sms-login">Login OTP Template</Label>
+                      <textarea
+                        id="sms-login"
+                        value={smsTemplateLogin}
+                        onChange={(e) => setSmsTemplateLogin(e.target.value)}
+                        className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background"
+                        placeholder="Your login code is: {{OTP}}"
+                      />
+                    </div>
+                    <Button onClick={saveSmsTemplates} disabled={smsTemplatesSaving}>
+                      <Save className="w-4 h-4 mr-2" />
+                      {smsTemplatesSaving ? 'Saving...' : 'Save Templates'}
+                    </Button>
                   </CardContent>
                 </Card>
 

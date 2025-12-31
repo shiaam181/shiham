@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface SendOtpRequest {
   phone: string;
+  type?: 'signup' | 'login';
 }
 
 // Generate a 6-digit OTP
@@ -22,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { phone }: SendOtpRequest = await req.json();
+    const { phone, type = 'signup' }: SendOtpRequest = await req.json();
 
     if (!phone) {
       return new Response(
@@ -76,6 +77,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Get SMS template from settings
+    const { data: templateSettings } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "sms_templates")
+      .single();
+
+    let messageBody: string;
+    const templates = templateSettings?.value as { otp_signup?: string; otp_login?: string } | null;
+    
+    if (type === 'login' && templates?.otp_login) {
+      messageBody = templates.otp_login.replace('{{OTP}}', otp);
+    } else if (templates?.otp_signup) {
+      messageBody = templates.otp_signup.replace('{{OTP}}', otp);
+    } else {
+      // Default template
+      messageBody = `Your AttendanceHub verification code is: ${otp}. This code expires in 5 minutes.`;
+    }
+
     // Send SMS via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
     const authHeader = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
@@ -83,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     const formData = new URLSearchParams();
     formData.append("To", phone);
     formData.append("From", twilioPhoneNumber);
-    formData.append("Body", `Your AttendanceHub verification code is: ${otp}. This code expires in 5 minutes.`);
+    formData.append("Body", messageBody);
 
     const twilioResponse = await fetch(twilioUrl, {
       method: "POST",
@@ -108,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("OTP sent successfully to:", phone, "Message SID:", twilioResult.sid);
+    console.log("OTP sent successfully to:", phone, "Message SID:", twilioResult.sid, "Type:", type);
 
     return new Response(
       JSON.stringify({ success: true, message: "OTP sent successfully" }),
