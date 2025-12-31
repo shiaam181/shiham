@@ -84,14 +84,15 @@ export default function Auth() {
       setIsSendingOtp(true);
       const formattedPhone = formatPhoneForSupabase(validated.phone);
       
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
+      // Call our custom Twilio edge function
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phone: formattedPhone },
       });
       
-      if (error) {
+      if (error || (data && data.error)) {
         toast({
           title: 'Failed to send OTP',
-          description: error.message,
+          description: data?.error || error?.message || 'SMS service error',
           variant: 'destructive',
         });
         return;
@@ -137,24 +138,20 @@ export default function Auth() {
     try {
       const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
       
-      // Verify the OTP
-      const { error: otpError } = await supabase.auth.verifyOtp({
-        phone: formattedPhone,
-        token: otpValue,
-        type: 'sms',
+      // Verify the OTP using our custom edge function
+      const { data, error: otpError } = await supabase.functions.invoke('verify-otp', {
+        body: { phone: formattedPhone, otp: otpValue },
       });
       
-      if (otpError) {
+      if (otpError || (data && data.error)) {
         toast({
           title: 'Verification Failed',
-          description: otpError.message,
+          description: data?.error || otpError?.message || 'Invalid OTP',
           variant: 'destructive',
         });
+        setIsVerifyingOtp(false);
         return;
       }
-
-      // Sign out from phone auth first
-      await supabase.auth.signOut();
 
       // Now create the actual account with email/password
       const { error: signUpError } = await signUp(
@@ -204,14 +201,15 @@ export default function Auth() {
     try {
       const formattedPhone = formatPhoneForSupabase(pendingSignupData.phone);
       
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
+      // Call our custom Twilio edge function
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phone: formattedPhone },
       });
       
-      if (error) {
+      if (error || (data && data.error)) {
         toast({
           title: 'Failed to resend OTP',
-          description: error.message,
+          description: data?.error || error?.message || 'SMS service error',
           variant: 'destructive',
         });
         return;
