@@ -297,7 +297,7 @@ export default function ProfileSettings() {
                     ? 'Your face is registered for verification. You can update it anytime.'
                     : 'Please capture a clear photo of your face for verification during attendance.'}
                 </p>
-                <Button onClick={() => navigate('/face-setup')} variant="outline" size="sm">
+                <Button onClick={() => navigate('/face-setup?update=true')} variant="outline" size="sm">
                   <Camera className="w-4 h-4 mr-2" />
                   {profile?.face_embedding && profile.face_embedding.length > 0 ? 'Update Face' : 'Setup Face'}
                 </Button>

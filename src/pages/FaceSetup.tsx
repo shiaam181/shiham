@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,8 @@ import { extractFaceEmbedding, loadFaceModels } from '@/lib/faceRecognition';
 
 export default function FaceSetup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isUpdate = searchParams.get('update') === 'true';
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   
@@ -37,10 +39,10 @@ export default function FaceSetup() {
   const [modelsLoading, setModelsLoading] = useState(true);
   const [faceDetected, setFaceDetected] = useState(false);
 
-  // Redirect if already has face embedding
+  // Only redirect if already has face embedding AND not updating
   useEffect(() => {
     const checkExistingEmbedding = async () => {
-      if (!user) return;
+      if (!user || isUpdate) return;
       
       const { data } = await supabase
         .from('profiles')
@@ -54,7 +56,7 @@ export default function FaceSetup() {
     };
     
     checkExistingEmbedding();
-  }, [user, navigate]);
+  }, [user, navigate, isUpdate]);
 
   // Load face models on mount
   useEffect(() => {
