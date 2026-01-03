@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Clock, Save, AlertCircle } from 'lucide-react';
+import type { Json } from '@/integrations/supabase/types';
 
 interface AttendanceRecord {
   id: string;
@@ -51,6 +54,8 @@ export default function AttendanceEditDialog({
   onUpdate,
 }: AttendanceEditDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { logAttendanceUpdate } = useAuditLog();
   const [isLoading, setIsLoading] = useState(false);
   const [checkInTime, setCheckInTime] = useState('');
   const [checkOutTime, setCheckOutTime] = useState('');
@@ -69,14 +74,23 @@ export default function AttendanceEditDialog({
   };
 
   const handleSave = async () => {
-    if (!attendance) return;
+    if (!attendance || !user) return;
 
     setIsLoading(true);
     try {
+      // Capture old values for audit log
+      const oldData = {
+        status: attendance.status,
+        check_in_time: attendance.check_in_time,
+        check_out_time: attendance.check_out_time,
+        admin_notes: attendance.admin_notes,
+      };
+
       const updateData: Record<string, any> = {
         status,
         admin_notes: adminNotes || null,
         updated_at: new Date().toISOString(),
+        modified_by: user.id,
       };
 
       // Convert time inputs to full timestamps
@@ -104,6 +118,19 @@ export default function AttendanceEditDialog({
         .eq('id', attendance.id);
 
       if (error) throw error;
+
+      // Log the audit trail
+      await logAttendanceUpdate(
+        attendance.id,
+        oldData as Json,
+        {
+          status,
+          check_in_time: updateData.check_in_time,
+          check_out_time: updateData.check_out_time,
+          admin_notes: adminNotes || null,
+          modified_by: user.id,
+        } as Json
+      );
 
       toast({
         title: 'Success',

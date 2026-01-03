@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAuditLog } from '@/hooks/useAuditLog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +62,8 @@ export default function LeaveManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { logLeaveApproval } = useAuditLog();
   
   const fromDeveloper = location.state?.from === 'developer';
   
@@ -114,7 +118,7 @@ export default function LeaveManagement() {
   }, []);
 
   const handleReview = async (action: 'approved' | 'rejected') => {
-    if (!selectedRequest) return;
+    if (!selectedRequest || !user) return;
 
     try {
       const { error } = await supabase
@@ -123,10 +127,19 @@ export default function LeaveManagement() {
           status: action,
           admin_notes: adminNotes || null,
           reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
         })
         .eq('id', selectedRequest.id);
 
       if (error) throw error;
+
+      // Log the action for audit trail
+      await logLeaveApproval(
+        selectedRequest.id,
+        action,
+        selectedRequest.status,
+        adminNotes || undefined
+      );
 
       // Send email notification if EmailJS is configured
       const profile = profiles[selectedRequest.user_id];
@@ -136,7 +149,7 @@ export default function LeaveManagement() {
           .from('profiles')
           .select('email')
           .eq('user_id', selectedRequest.user_id)
-          .single();
+          .maybeSingle();
 
         if (userData?.email) {
           await sendLeaveStatusEmail({
