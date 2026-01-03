@@ -34,6 +34,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import LeaveNotifications from '@/components/LeaveNotifications';
 import NotificationBell from '@/components/NotificationBell';
 import OvertimeChart from '@/components/OvertimeChart';
+import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
@@ -668,11 +669,16 @@ export default function EmployeeDashboard() {
         {/* Calendar */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Monthly Overview
-            </CardTitle>
-            <CardDescription>Your attendance for {format(new Date(), 'MMMM yyyy')}</CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Monthly Overview
+                </CardTitle>
+                <CardDescription>Your attendance for {format(new Date(), 'MMMM yyyy')}</CardDescription>
+              </div>
+              <EmployeeAttendancePDF />
+            </div>
           </CardHeader>
           <CardContent>
             <AttendanceCalendar userId={user?.id} />
