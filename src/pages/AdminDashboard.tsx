@@ -24,7 +24,8 @@ import {
   BarChart3,
   Settings,
   Timer,
-  Bell
+  Bell,
+  Image as ImageIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -46,6 +47,7 @@ import {
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
+import PhotoThumbnail from '@/components/PhotoThumbnail';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
@@ -340,6 +342,7 @@ export default function AdminDashboard() {
                     <TableHead>Department</TableHead>
                     <TableHead>Check In</TableHead>
                     <TableHead>Check Out</TableHead>
+                    <TableHead>Photos</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -347,7 +350,7 @@ export default function AdminDashboard() {
                 <TableBody>
                   {filteredAttendance.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No attendance records found for this date
                       </TableCell>
                     </TableRow>
@@ -376,6 +379,18 @@ export default function AdminDashboard() {
                             ? format(new Date(record.check_out_time), 'hh:mm a')
                             : '-'
                           }
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <PhotoThumbnail 
+                              photoUrl={record.check_in_photo_url} 
+                              alt={`${record.employee_name} check-in`}
+                            />
+                            <PhotoThumbnail 
+                              photoUrl={record.check_out_photo_url} 
+                              alt={`${record.employee_name} check-out`}
+                            />
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusBadgeVariant(record.status)}>
