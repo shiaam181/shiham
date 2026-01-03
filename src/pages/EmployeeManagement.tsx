@@ -6,21 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft,
   Users,
-  Plus,
-  Edit,
   UserX,
   UserCheck,
-  Save,
   Search,
-  Mail,
   Phone,
   Briefcase,
-  Building
+  Building,
+  Eye
 } from 'lucide-react';
 import {
   Table,
@@ -30,21 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,6 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import EmployeeDetailDialog from '@/components/EmployeeDetailDialog';
 
 interface Employee {
   id: string;
@@ -69,18 +51,6 @@ interface Employee {
   created_at: string;
 }
 
-const departments = [
-  'Engineering',
-  'Design',
-  'Marketing',
-  'Sales',
-  'Human Resources',
-  'Finance',
-  'Operations',
-  'Customer Support',
-  'Other'
-];
-
 export default function EmployeeManagement() {
   const { isAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -92,14 +62,8 @@ export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    department: '',
-    position: '',
-    phone: '',
-  });
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -130,50 +94,9 @@ export default function EmployeeManagement() {
     fetchEmployees();
   }, [authLoading, isAdmin, navigate, fetchEmployees]);
 
-  const handleOpenDialog = (employee: Employee) => {
-    setEditingEmployee(employee);
-    setFormData({
-      full_name: employee.full_name,
-      department: employee.department || '',
-      position: employee.position || '',
-      phone: employee.phone || '',
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!editingEmployee || !formData.full_name) {
-      toast({
-        title: 'Error',
-        description: 'Full name is required',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          department: formData.department || null,
-          position: formData.position || null,
-          phone: formData.phone || null,
-        })
-        .eq('id', editingEmployee.id);
-
-      if (error) throw error;
-      toast({ title: 'Success', description: 'Employee updated successfully' });
-      setIsDialogOpen(false);
-      fetchEmployees();
-    } catch (error: any) {
-      console.error('Error updating employee:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update employee',
-        variant: 'destructive',
-      });
-    }
+  const handleOpenDetail = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsDetailOpen(true);
   };
 
   const handleToggleActive = async (employee: Employee) => {
@@ -232,7 +155,7 @@ export default function EmployeeManagement() {
                 </div>
                 <div>
                   <h1 className="font-display font-bold text-lg">Employee Management</h1>
-                  <p className="text-xs text-muted-foreground">Manage employee profiles</p>
+                  <p className="text-xs text-muted-foreground">Manage employee profiles & attendance</p>
                 </div>
               </div>
             </div>
@@ -305,7 +228,7 @@ export default function EmployeeManagement() {
           <CardHeader>
             <CardTitle>All Employees</CardTitle>
             <CardDescription>
-              {filteredEmployees.length} employees found
+              Click on an employee to view details and attendance history
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -330,7 +253,11 @@ export default function EmployeeManagement() {
                     </TableRow>
                   ) : (
                     filteredEmployees.map((employee) => (
-                      <TableRow key={employee.id} className={!employee.is_active ? 'opacity-60' : ''}>
+                      <TableRow 
+                        key={employee.id} 
+                        className={`cursor-pointer hover:bg-muted/50 ${!employee.is_active ? 'opacity-60' : ''}`}
+                        onClick={() => handleOpenDetail(employee)}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -372,13 +299,14 @@ export default function EmployeeManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleOpenDialog(employee)}
+                              onClick={() => handleOpenDetail(employee)}
+                              title="View Details"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -421,72 +349,13 @@ export default function EmployeeManagement() {
           </CardContent>
         </Card>
 
-        {/* Edit Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Employee</DialogTitle>
-              <DialogDescription>
-                Update employee details
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  value={formData.department}
-                  onValueChange={(value) => setFormData({ ...formData, department: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Input
-                  id="position"
-                  value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  placeholder="e.g., Software Engineer"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="e.g., +1 234 567 8900"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="hero" onClick={handleSubmit}>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Employee Detail Dialog */}
+        <EmployeeDetailDialog
+          employee={selectedEmployee}
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          onUpdate={fetchEmployees}
+        />
       </main>
     </div>
   );
