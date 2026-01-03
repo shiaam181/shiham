@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 type TableConfig = {
   name: string;
@@ -86,6 +87,78 @@ const tableConfigs: TableConfig[] = [
   },
 ];
 
+// Zod schemas for each table - server-side style validation
+const uuidSchema = z.string().uuid("Invalid UUID format").or(z.literal("").transform(() => undefined));
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").or(z.literal("").transform(() => undefined));
+const timeSchema = z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Invalid time format (HH:MM or HH:MM:SS)").or(z.literal("").transform(() => undefined));
+const timestampSchema = z.string().refine((val) => {
+  if (!val || val === "") return true;
+  const date = new Date(val);
+  return !isNaN(date.getTime());
+}, "Invalid timestamp").or(z.literal("").transform(() => undefined));
+const textSchema = z.string().max(1000, "Text too long (max 1000 chars)").or(z.literal("").transform(() => undefined));
+const emailSchema = z.string().email("Invalid email").max(255, "Email too long").or(z.literal("").transform(() => undefined));
+const integerSchema = z.string().refine((val) => {
+  if (!val || val === "") return true;
+  const num = parseInt(val, 10);
+  return !isNaN(num) && num >= -2147483648 && num <= 2147483647;
+}, "Invalid integer or out of range").or(z.literal("").transform(() => undefined));
+const booleanSchema = z.string().refine((val) => {
+  if (!val || val === "") return true;
+  return ["true", "false", "1", "0", "yes", "no"].includes(val.toLowerCase());
+}, "Invalid boolean (use true/false, 1/0, or yes/no)").or(z.literal("").transform(() => undefined));
+
+// Table-specific schemas
+const tableSchemas: Record<string, z.ZodObject<any>> = {
+  attendance: z.object({
+    user_id: uuidSchema.refine(val => val !== undefined, "user_id is required"),
+    date: dateSchema.refine(val => val !== undefined, "date is required"),
+    check_in_time: timestampSchema.optional(),
+    check_out_time: timestampSchema.optional(),
+    status: z.enum(["present", "absent", "late", "half_day", "on_leave", "holiday", "week_off"]).optional().or(z.literal("").transform(() => undefined)),
+    notes: textSchema.optional(),
+    overtime_minutes: integerSchema.optional(),
+  }),
+  profiles: z.object({
+    user_id: uuidSchema.refine(val => val !== undefined, "user_id is required"),
+    email: emailSchema.refine(val => val !== undefined, "email is required"),
+    full_name: textSchema.refine(val => val !== undefined && val.length > 0, "full_name is required"),
+    phone: z.string().regex(/^\+?[0-9\s\-()]{6,20}$/, "Invalid phone format").optional().or(z.literal("").transform(() => undefined)),
+    department: textSchema.optional(),
+    position: textSchema.optional(),
+    is_active: booleanSchema.optional(),
+  }),
+  holidays: z.object({
+    name: textSchema.refine(val => val !== undefined && val.length > 0, "name is required"),
+    date: dateSchema.refine(val => val !== undefined, "date is required"),
+    description: textSchema.optional(),
+  }),
+  shifts: z.object({
+    name: textSchema.refine(val => val !== undefined && val.length > 0, "name is required"),
+    start_time: timeSchema.refine(val => val !== undefined, "start_time is required"),
+    end_time: timeSchema.refine(val => val !== undefined, "end_time is required"),
+    grace_period_minutes: integerSchema.optional(),
+    is_default: booleanSchema.optional(),
+  }),
+  leave_requests: z.object({
+    user_id: uuidSchema.refine(val => val !== undefined, "user_id is required"),
+    start_date: dateSchema.refine(val => val !== undefined, "start_date is required"),
+    end_date: dateSchema.refine(val => val !== undefined, "end_date is required"),
+    leave_type: z.enum(["casual", "sick", "earned", "unpaid", "maternity", "paternity", "other"]).optional().or(z.literal("").transform(() => undefined)),
+    reason: textSchema.optional(),
+    status: z.enum(["pending", "approved", "rejected"]).optional().or(z.literal("").transform(() => undefined)),
+  }),
+  week_offs: z.object({
+    day_of_week: integerSchema.refine(val => {
+      if (val === undefined) return false;
+      const num = parseInt(val as string, 10);
+      return num >= 0 && num <= 6;
+    }, "day_of_week must be 0-6 (Sunday-Saturday)"),
+    is_global: booleanSchema.optional(),
+    user_id: uuidSchema.optional(),
+  }),
+};
+
 const CsvImport = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,6 +167,8 @@ const CsvImport = () => {
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [isImporting, setIsImporting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{ row: number; errors: string[] }[]>([]);
   const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
 
   const selectedTableConfig = tableConfigs.find((t) => t.name === selectedTable);
@@ -137,13 +212,27 @@ const CsvImport = () => {
       return;
     }
 
+    // Limit file size to 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large. Maximum size is 5MB.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const { headers, data } = parseCSV(text);
+      
+      // Limit rows to 10000
+      if (data.length > 10000) {
+        toast.error("Too many rows. Maximum is 10,000 rows per import.");
+        return;
+      }
+      
       setCsvHeaders(headers);
       setCsvData(data);
       setImportResult(null);
+      setValidationErrors([]);
 
       // Auto-map columns based on name matching
       if (selectedTableConfig) {
@@ -169,6 +258,7 @@ const CsvImport = () => {
       ...prev,
       [csvColumn]: tableColumn === "skip" ? "" : tableColumn,
     }));
+    setValidationErrors([]);
   };
 
   const transformValue = (value: string, type: string): unknown => {
@@ -176,18 +266,63 @@ const CsvImport = () => {
 
     switch (type) {
       case "integer":
-        return parseInt(value, 10) || 0;
+        const num = parseInt(value, 10);
+        return isNaN(num) ? null : num;
       case "boolean":
-        return value.toLowerCase() === "true" || value === "1";
+        return value.toLowerCase() === "true" || value === "1" || value.toLowerCase() === "yes";
       case "date":
         return value;
       case "timestamp":
-        return new Date(value).toISOString();
+        try {
+          return new Date(value).toISOString();
+        } catch {
+          return null;
+        }
       case "uuid":
         return value;
       default:
-        return value;
+        // Sanitize text to prevent XSS
+        return value.replace(/<[^>]*>/g, '').slice(0, 1000);
     }
+  };
+
+  const validateData = (): boolean => {
+    if (!selectedTable || !tableSchemas[selectedTable]) {
+      return false;
+    }
+
+    const schema = tableSchemas[selectedTable];
+    const errors: { row: number; errors: string[] }[] = [];
+    setIsValidating(true);
+
+    csvData.forEach((row, rowIndex) => {
+      const rawRecord: Record<string, string> = {};
+      
+      csvHeaders.forEach((header, index) => {
+        const mappedColumn = columnMapping[header];
+        if (mappedColumn) {
+          rawRecord[mappedColumn] = row[index] || "";
+        }
+      });
+
+      const result = schema.safeParse(rawRecord);
+      if (!result.success) {
+        const rowErrors = result.error.issues.map(issue => 
+          `${issue.path.join('.')}: ${issue.message}`
+        );
+        errors.push({ row: rowIndex + 1, errors: rowErrors });
+      }
+    });
+
+    setValidationErrors(errors);
+    setIsValidating(false);
+    
+    if (errors.length > 0) {
+      toast.error(`Validation failed: ${errors.length} rows have errors`);
+      return false;
+    }
+    
+    return true;
   };
 
   const handleImport = async () => {
@@ -203,6 +338,11 @@ const CsvImport = () => {
 
     if (missingRequired.length > 0) {
       toast.error(`Missing required columns: ${missingRequired.map((c) => c.name).join(", ")}`);
+      return;
+    }
+
+    // Validate all data first
+    if (!validateData()) {
       return;
     }
 
@@ -230,12 +370,18 @@ const CsvImport = () => {
         const { error } = await supabase.from(selectedTable as "attendance" | "profiles" | "holidays" | "shifts" | "leave_requests" | "week_offs").insert([record as never]);
 
         if (error) {
-          errors.push(`Row ${i + 1}: ${error.message}`);
+          // Sanitize error message to avoid leaking schema details
+          const safeError = error.message.includes("duplicate key") 
+            ? "Duplicate record"
+            : error.message.includes("violates foreign key")
+            ? "Referenced record not found"
+            : "Import failed";
+          errors.push(`Row ${i + 1}: ${safeError}`);
         } else {
           successCount++;
         }
       } catch (err) {
-        errors.push(`Row ${i + 1}: ${err instanceof Error ? err.message : "Unknown error"}`);
+        errors.push(`Row ${i + 1}: Import failed`);
       }
     }
 
@@ -256,6 +402,7 @@ const CsvImport = () => {
     setCsvHeaders([]);
     setColumnMapping({});
     setImportResult(null);
+    setValidationErrors([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -321,7 +468,7 @@ const CsvImport = () => {
                 <Upload className="h-5 w-5" />
                 Upload CSV File
               </CardTitle>
-              <CardDescription>Upload your CSV file to preview and import</CardDescription>
+              <CardDescription>Upload your CSV file (max 5MB, 10,000 rows)</CardDescription>
             </CardHeader>
             <CardContent>
               <input
@@ -368,6 +515,28 @@ const CsvImport = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Validation Errors</AlertTitle>
+            <AlertDescription>
+              <div className="mt-2 max-h-40 overflow-y-auto">
+                <ul className="text-sm list-disc list-inside">
+                  {validationErrors.slice(0, 20).map((err, index) => (
+                    <li key={index}>
+                      Row {err.row}: {err.errors.join(", ")}
+                    </li>
+                  ))}
+                  {validationErrors.length > 20 && (
+                    <li>...and {validationErrors.length - 20} more rows with errors</li>
+                  )}
+                </ul>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Data Preview */}
@@ -444,7 +613,24 @@ const CsvImport = () => {
         {/* Action Buttons */}
         {csvData.length > 0 && (
           <div className="flex gap-4">
-            <Button onClick={handleImport} disabled={isImporting} className="flex-1 md:flex-none">
+            <Button 
+              variant="outline" 
+              onClick={validateData} 
+              disabled={isValidating || isImporting}
+            >
+              {isValidating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Validating...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Validate Data
+                </>
+              )}
+            </Button>
+            <Button onClick={handleImport} disabled={isImporting || isValidating} className="flex-1 md:flex-none">
               {isImporting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
