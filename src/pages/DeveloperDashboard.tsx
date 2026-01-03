@@ -66,6 +66,11 @@ export default function DeveloperDashboard() {
   // Twilio SMS configuration state
   const [twilioEnabled, setTwilioEnabled] = useState(false);
   const [twilioConfigured, setTwilioConfigured] = useState(false);
+  const [twilioAccountSid, setTwilioAccountSid] = useState('');
+  const [twilioAuthToken, setTwilioAuthToken] = useState('');
+  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState('');
+  const [showTwilioKeys, setShowTwilioKeys] = useState(false);
+  const [twilioConfigSaving, setTwilioConfigSaving] = useState(false);
   
   // SMS Templates state
   const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
@@ -160,10 +165,52 @@ export default function DeveloperDashboard() {
   const isEmailConfigured = emailServiceId && emailTemplateId && emailPublicKey;
 
   const checkTwilioConfig = async () => {
-    // We'll assume Twilio is configured if the secrets exist
-    // The actual verification happens when sending OTP
-    setTwilioConfigured(true); // Secrets were entered
+    // Check if Twilio config exists in system_settings
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'twilio_config')
+      .single();
+    
+    if (data?.value) {
+      const config = data.value as { account_sid?: string; auth_token?: string; phone_number?: string };
+      setTwilioAccountSid(config.account_sid || '');
+      setTwilioAuthToken(config.auth_token || '');
+      setTwilioPhoneNumber(config.phone_number || '');
+      setTwilioConfigured(!!(config.account_sid && config.auth_token && config.phone_number));
+    }
   };
+
+  const saveTwilioConfig = async () => {
+    setTwilioConfigSaving(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'twilio_config',
+        value: {
+          account_sid: twilioAccountSid,
+          auth_token: twilioAuthToken,
+          phone_number: twilioPhoneNumber
+        }
+      }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save Twilio configuration',
+        variant: 'destructive',
+      });
+    } else {
+      setTwilioConfigured(!!(twilioAccountSid && twilioAuthToken && twilioPhoneNumber));
+      toast({
+        title: 'Success',
+        description: 'Twilio configuration saved successfully',
+      });
+    }
+    setTwilioConfigSaving(false);
+  };
+
+  const isTwilioConfigured = twilioAccountSid && twilioAuthToken && twilioPhoneNumber;
 
   const toggleTwilioSms = async (enabled: boolean) => {
     setSettingsLoading(true);
@@ -701,18 +748,67 @@ export default function DeveloperDashboard() {
                       />
                     </div>
 
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm">Twilio Credentials Configured</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Your Twilio Account SID, Auth Token, and Phone Number have been securely saved. 
-                            OTP messages will be sent from your Twilio number.
-                          </p>
-                        </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="twilio-sid">Account SID</Label>
+                        <Input
+                          id="twilio-sid"
+                          type={showTwilioKeys ? 'text' : 'password'}
+                          placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={twilioAccountSid}
+                          onChange={(e) => setTwilioAccountSid(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="twilio-token">Auth Token</Label>
+                        <Input
+                          id="twilio-token"
+                          type={showTwilioKeys ? 'text' : 'password'}
+                          placeholder="Your auth token"
+                          value={twilioAuthToken}
+                          onChange={(e) => setTwilioAuthToken(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="twilio-phone">Phone Number</Label>
+                        <Input
+                          id="twilio-phone"
+                          type={showTwilioKeys ? 'text' : 'password'}
+                          placeholder="+1234567890"
+                          value={twilioPhoneNumber}
+                          onChange={(e) => setTwilioPhoneNumber(e.target.value)}
+                        />
                       </div>
                     </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowTwilioKeys(!showTwilioKeys)}
+                      >
+                        {showTwilioKeys ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                        {showTwilioKeys ? 'Hide Keys' : 'Show Keys'}
+                      </Button>
+                      <Button onClick={saveTwilioConfig} disabled={twilioConfigSaving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {twilioConfigSaving ? 'Saving...' : 'Save Twilio Configuration'}
+                      </Button>
+                    </div>
+
+                    {isTwilioConfigured && (
+                      <div className="p-4 bg-success/10 rounded-lg border border-success/30">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-success">Twilio Credentials Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              OTP messages will be sent from your Twilio number.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>• <strong>Account SID:</strong> Found in Twilio Console → Account Info</p>
