@@ -32,10 +32,29 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get Twilio credentials from environment
-    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+    // Initialize Supabase client first to check system settings
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Try to get Twilio credentials from system_settings first, fallback to env
+    let twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    let twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    let twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+    // Check system_settings for Twilio config
+    const { data: twilioSettings } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "twilio_config")
+      .single();
+
+    if (twilioSettings?.value) {
+      const config = twilioSettings.value as { account_sid?: string; auth_token?: string; phone_number?: string };
+      if (config.account_sid) twilioAccountSid = config.account_sid;
+      if (config.auth_token) twilioAuthToken = config.auth_token;
+      if (config.phone_number) twilioPhoneNumber = config.phone_number;
+    }
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
       console.error("Twilio credentials not configured");
@@ -48,11 +67,6 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate OTP
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
-
-    // Store OTP in database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Delete any existing OTPs for this phone number
     await supabase
