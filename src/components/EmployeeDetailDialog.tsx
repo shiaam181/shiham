@@ -40,6 +40,7 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import PhotoThumbnail from '@/components/PhotoThumbnail';
 
 interface Employee {
   id: string;
@@ -61,6 +62,8 @@ interface AttendanceRecord {
   check_in_longitude: number | null;
   check_out_latitude: number | null;
   check_out_longitude: number | null;
+  check_in_photo_url: string | null;
+  check_out_photo_url: string | null;
   status: string;
   notes: string | null;
 }
@@ -317,6 +320,7 @@ export default function EmployeeDetailDialog({
                     <TableHead>Status</TableHead>
                     <TableHead>Check In</TableHead>
                     <TableHead>Check Out</TableHead>
+                    <TableHead>Photos</TableHead>
                     <TableHead>Check In Location</TableHead>
                     <TableHead>Check Out Location</TableHead>
                   </TableRow>
@@ -324,7 +328,7 @@ export default function EmployeeDetailDialog({
                 <TableBody>
                   {attendance.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No attendance records found for this period
                       </TableCell>
                     </TableRow>
@@ -342,6 +346,18 @@ export default function EmployeeDetailDialog({
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-muted-foreground" />
                             {formatTime(record.check_in_time)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <PhotoThumbnail 
+                              photoUrl={record.check_in_photo_url} 
+                              alt={`Check-in ${format(new Date(record.date), 'MMM dd')}`}
+                            />
+                            <PhotoThumbnail 
+                              photoUrl={record.check_out_photo_url} 
+                              alt={`Check-out ${format(new Date(record.date), 'MMM dd')}`}
+                            />
                           </div>
                         </TableCell>
                         <TableCell>

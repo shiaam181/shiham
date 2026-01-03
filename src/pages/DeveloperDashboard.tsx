@@ -38,6 +38,7 @@ import {
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
+import RoleBasedHeader from '@/components/RoleBasedHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -322,64 +323,7 @@ export default function DeveloperDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-gradient-to-r from-purple-900 to-purple-800 text-white">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Code className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg">Developer Panel</h1>
-                <p className="text-xs text-white/70">Full System Access</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/admin')}
-                className="text-white hover:bg-white/10"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Admin View
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/dashboard')}
-                className="text-white hover:bg-white/10"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Employee View
-              </Button>
-              
-              <NotificationBell />
-              
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                  <Code className="w-5 h-5" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium">{profile?.full_name}</p>
-                  <p className="text-xs text-white/70">Developer</p>
-                </div>
-              </div>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={signOut}
-                className="text-white hover:bg-white/10"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <RoleBasedHeader currentView="developer" />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>

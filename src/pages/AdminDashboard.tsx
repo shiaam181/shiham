@@ -48,6 +48,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
+import RoleBasedHeader from '@/components/RoleBasedHeader';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
@@ -201,54 +202,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-sidebar text-sidebar-foreground">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center">
-                <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg">Admin Dashboard</h1>
-                <p className="text-xs text-sidebar-foreground/70">AttendanceHub Management</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/dashboard')}
-                className="text-sidebar-foreground hover:bg-sidebar-accent"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Employee View
-              </Button>
-              
-              <NotificationBell />
-              
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-                  <User className="w-5 h-5" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium">{profile?.full_name}</p>
-                  <p className="text-xs text-sidebar-foreground/70">Administrator</p>
-                </div>
-              </div>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={signOut}
-                className="text-sidebar-foreground hover:bg-sidebar-accent"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <RoleBasedHeader currentView="admin" />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}
