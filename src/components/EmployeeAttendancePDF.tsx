@@ -89,7 +89,7 @@ export default function EmployeeAttendancePDF() {
 
       const formatLocation = (lat: number | null, lng: number | null) => {
         if (lat === null || lng === null) return '-';
-        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        return `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color: #1a56db; text-decoration: none;">${lat.toFixed(4)}, ${lng.toFixed(4)} 📍</a>`;
       };
 
       const formatDuration = (minutes: number | null) => {
