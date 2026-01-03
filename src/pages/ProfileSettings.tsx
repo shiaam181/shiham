@@ -148,15 +148,10 @@ export default function ProfileSettings() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('employee-photos')
-        .getPublicUrl(fileName);
-
-      // Update profile with face reference URL
+      // Update profile with face reference path (not public URL - bucket is now private)
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ face_reference_url: urlData.publicUrl })
+        .update({ face_reference_url: fileName })
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;

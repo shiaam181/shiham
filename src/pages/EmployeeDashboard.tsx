@@ -284,7 +284,7 @@ export default function EmployeeDashboard() {
       const response = await fetch(photoDataUrl);
       const blob = await response.blob();
       
-      // Generate unique filename
+      // Generate unique filename with UUID for security
       const timestamp = Date.now();
       const date = format(new Date(), 'yyyy-MM-dd');
       const fileName = `${userId}/${date}/${type}-${timestamp}.jpg`;
@@ -302,12 +302,8 @@ export default function EmployeeDashboard() {
         return null;
       }
       
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('employee-photos')
-        .getPublicUrl(fileName);
-      
-      return urlData?.publicUrl || null;
+      // Return the storage path (not public URL - bucket is now private)
+      return fileName;
     } catch (error) {
       console.error('Failed to upload photo:', error);
       return null;

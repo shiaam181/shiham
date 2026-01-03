@@ -205,6 +205,33 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_rate_limits: {
+        Row: {
+          first_request_at: string | null
+          id: string
+          ip_address: string | null
+          last_request_at: string | null
+          phone: string
+          request_count: number | null
+        }
+        Insert: {
+          first_request_at?: string | null
+          id?: string
+          ip_address?: string | null
+          last_request_at?: string | null
+          phone: string
+          request_count?: number | null
+        }
+        Update: {
+          first_request_at?: string | null
+          id?: string
+          ip_address?: string | null
+          last_request_at?: string | null
+          phone?: string
+          request_count?: number | null
+        }
+        Relationships: []
+      }
       phone_otps: {
         Row: {
           attempts: number | null
