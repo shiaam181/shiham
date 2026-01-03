@@ -35,43 +35,37 @@ export default function AttendancePhotoViewer({ record, trigger }: AttendancePho
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const getPhotoUrl = async (photoPath: string | null): Promise<string | null> => {
+    if (!photoPath) return null;
+    
+    // If it's already a full URL, use it directly
+    if (photoPath.startsWith('http')) {
+      return photoPath;
+    }
+    
+    // Otherwise, get a signed URL
+    const { data, error } = await supabase.storage
+      .from('employee-photos')
+      .createSignedUrl(photoPath, 3600);
+    
+    if (data && !error) {
+      return data.signedUrl;
+    }
+    
+    console.error('Error getting signed URL:', error);
+    return null;
+  };
+
   const loadSignedUrls = async () => {
     setIsLoading(true);
     try {
-      // Load check-in photo
-      if (record.check_in_photo_url) {
-        // Check if it's already a full URL or a storage path
-        if (record.check_in_photo_url.startsWith('http')) {
-          setCheckInPhotoUrl(record.check_in_photo_url);
-        } else {
-          const { data, error } = await supabase.storage
-            .from('employee-photos')
-            .createSignedUrl(record.check_in_photo_url, 3600);
-          
-          if (data && !error) {
-            setCheckInPhotoUrl(data.signedUrl);
-          } else {
-            console.error('Error getting check-in signed URL:', error);
-          }
-        }
-      }
-
-      // Load check-out photo
-      if (record.check_out_photo_url) {
-        if (record.check_out_photo_url.startsWith('http')) {
-          setCheckOutPhotoUrl(record.check_out_photo_url);
-        } else {
-          const { data, error } = await supabase.storage
-            .from('employee-photos')
-            .createSignedUrl(record.check_out_photo_url, 3600);
-          
-          if (data && !error) {
-            setCheckOutPhotoUrl(data.signedUrl);
-          } else {
-            console.error('Error getting check-out signed URL:', error);
-          }
-        }
-      }
+      const [checkIn, checkOut] = await Promise.all([
+        getPhotoUrl(record.check_in_photo_url),
+        getPhotoUrl(record.check_out_photo_url)
+      ]);
+      
+      setCheckInPhotoUrl(checkIn);
+      setCheckOutPhotoUrl(checkOut);
     } catch (error) {
       console.error('Error loading photos:', error);
     } finally {
