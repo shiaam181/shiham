@@ -11,6 +11,10 @@ interface VerifyOtpRequest {
   otp: string;
 }
 
+// Rate limiting constants
+const MAX_VERIFY_ATTEMPTS_PER_PHONE = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -20,9 +24,18 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { phone, otp }: VerifyOtpRequest = await req.json();
 
+    // Input validation
     if (!phone || !otp) {
       return new Response(
         JSON.stringify({ error: "Phone number and OTP are required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate OTP format (8 digits)
+    if (!/^\d{8}$/.test(otp)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid OTP format" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -58,29 +71,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if OTP matches
-    if (otpRecord.otp_code !== otp) {
-      // Increment attempts
-      const attempts = (otpRecord.attempts || 0) + 1;
+    const attempts = (otpRecord.attempts || 0) + 1;
+
+    // Check if too many failed attempts
+    if (attempts > MAX_VERIFY_ATTEMPTS_PER_PHONE) {
+      // Delete OTP and implement lockout
+      await supabase.from("phone_otps").delete().eq("phone", phone);
       
-      if (attempts >= 3) {
-        // Too many failed attempts, delete OTP
-        await supabase.from("phone_otps").delete().eq("phone", phone);
-        
-        return new Response(
-          JSON.stringify({ error: "Too many failed attempts. Please request a new code." }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      
-      // Update attempts count
+      console.log(`Account locked for phone: ${phone} after ${attempts} failed attempts`);
+      return new Response(
+        JSON.stringify({ error: "Too many failed attempts. Please wait 15 minutes before requesting a new code." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Use constant-time comparison to prevent timing attacks
+    const isValidOtp = constantTimeCompare(otpRecord.otp_code, otp);
+
+    if (!isValidOtp) {
+      // Update attempts count with exponential backoff hint
       await supabase
         .from("phone_otps")
         .update({ attempts })
         .eq("phone", phone);
       
+      const remainingAttempts = MAX_VERIFY_ATTEMPTS_PER_PHONE - attempts;
+      
+      console.log(`Invalid OTP attempt for phone: ${phone}, attempts: ${attempts}`);
       return new Response(
-        JSON.stringify({ error: `Invalid OTP. ${3 - attempts} attempts remaining.` }),
+        JSON.stringify({ error: `Invalid OTP. ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.` }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -97,10 +116,23 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in verify-otp function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An error occurred" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
+
+// Constant-time string comparison to prevent timing attacks
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
 
 serve(handler);

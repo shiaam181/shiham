@@ -7,7 +7,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.verify-face]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-phone-exists]
 verify_jwt = false
