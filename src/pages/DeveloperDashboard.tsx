@@ -166,19 +166,30 @@ export default function DeveloperDashboard() {
 
   const checkTwilioConfig = async () => {
     // Check if Twilio config exists in system_settings
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('system_settings')
       .select('value')
       .eq('key', 'twilio_config')
-      .single();
-    
-    if (data?.value) {
-      const config = data.value as { account_sid?: string; auth_token?: string; phone_number?: string };
-      setTwilioAccountSid(config.account_sid || '');
-      setTwilioAuthToken(config.auth_token || '');
-      setTwilioPhoneNumber(config.phone_number || '');
-      setTwilioConfigured(!!(config.account_sid && config.auth_token && config.phone_number));
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching Twilio config:', error);
+      return;
     }
+
+    if (!data?.value) {
+      setTwilioAccountSid('');
+      setTwilioAuthToken('');
+      setTwilioPhoneNumber('');
+      setTwilioConfigured(false);
+      return;
+    }
+
+    const config = data.value as { account_sid?: string; auth_token?: string; phone_number?: string };
+    setTwilioAccountSid(config.account_sid || '');
+    setTwilioAuthToken(config.auth_token || '');
+    setTwilioPhoneNumber(config.phone_number || '');
+    setTwilioConfigured(!!(config.account_sid && config.auth_token && config.phone_number));
   };
 
   const saveTwilioConfig = async () => {
