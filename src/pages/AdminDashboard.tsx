@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,6 +46,7 @@ import {
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
+import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface Employee {
@@ -69,6 +70,8 @@ interface AttendanceRecord {
   check_out_photo_url: string | null;
   check_in_latitude: number | null;
   check_in_longitude: number | null;
+  check_out_latitude: number | null;
+  check_out_longitude: number | null;
   notes: string | null;
   admin_notes: string | null;
   overtime_minutes: number | null;
@@ -381,65 +384,17 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
+                            <AttendancePhotoViewer
+                              record={record}
+                              trigger={
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
-                                  onClick={() => setSelectedAttendance(record)}
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Attendance Details</DialogTitle>
-                                  <DialogDescription>
-                                    {record.employee_name} - {record.date}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid grid-cols-2 gap-4 py-4">
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Check In</h4>
-                                    {record.check_in_photo_url && (
-                                      <img 
-                                        src={record.check_in_photo_url} 
-                                        alt="Check in" 
-                                        className="w-full rounded-lg mb-2"
-                                      />
-                                    )}
-                                    <p className="text-sm">
-                                      Time: {record.check_in_time 
-                                        ? format(new Date(record.check_in_time), 'hh:mm a')
-                                        : 'Not recorded'
-                                      }
-                                    </p>
-                                    {record.check_in_latitude && (
-                                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                        <MapPin className="w-3 h-3" />
-                                        {record.check_in_latitude}, {record.check_in_longitude}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Check Out</h4>
-                                    {record.check_out_photo_url && (
-                                      <img 
-                                        src={record.check_out_photo_url} 
-                                        alt="Check out" 
-                                        className="w-full rounded-lg mb-2"
-                                      />
-                                    )}
-                                    <p className="text-sm">
-                                      Time: {record.check_out_time 
-                                        ? format(new Date(record.check_out_time), 'hh:mm a')
-                                        : 'Not recorded'
-                                      }
-                                    </p>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
+                              }
+                            />
                             <Button 
                               variant="ghost" 
                               size="icon"
