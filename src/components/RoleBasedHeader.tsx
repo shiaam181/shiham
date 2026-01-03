@@ -111,7 +111,7 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
             )}
             
             {/* Admin View - visible to admins and developers */}
-            {isAdmin && (
+            {(isAdmin || isDeveloper) && (
               <Button 
                 variant="ghost" 
                 size="sm"
