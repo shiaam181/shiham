@@ -7,17 +7,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface PhotoThumbnailProps {
   photoUrl: string | null;
   alt: string;
   size?: 'sm' | 'md';
+  onClick?: () => void;
+  enableEnlarge?: boolean;
 }
 
-export default function PhotoThumbnail({ photoUrl, alt, size = 'sm' }: PhotoThumbnailProps) {
+export default function PhotoThumbnail({ 
+  photoUrl, 
+  alt, 
+  size = 'sm', 
+  onClick,
+  enableEnlarge = true 
+}: PhotoThumbnailProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [showEnlarged, setShowEnlarged] = useState(false);
 
   useEffect(() => {
     const loadImage = async () => {
@@ -57,6 +72,14 @@ export default function PhotoThumbnail({ photoUrl, alt, size = 'sm' }: PhotoThum
 
   const sizeClasses = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10';
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (enableEnlarge && imageUrl) {
+      setShowEnlarged(true);
+    }
+  };
+
   if (!photoUrl) {
     return (
       <div className={`${sizeClasses} rounded-md bg-muted flex items-center justify-center`}>
@@ -82,26 +105,47 @@ export default function PhotoThumbnail({ photoUrl, alt, size = 'sm' }: PhotoThum
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={`${sizeClasses} rounded-md overflow-hidden border border-border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all`}>
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              className={`${sizeClasses} rounded-md overflow-hidden border border-border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all`}
+              onClick={handleClick}
+            >
+              <img
+                src={imageUrl}
+                alt={alt}
+                className="w-full h-full object-cover"
+                onError={() => setHasError(true)}
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="p-0 overflow-hidden rounded-lg">
             <img
               src={imageUrl}
               alt={alt}
-              className="w-full h-full object-cover"
-              onError={() => setHasError(true)}
+              className="w-48 h-48 object-cover"
+            />
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Enlarged view dialog */}
+      <Dialog open={showEnlarged} onOpenChange={setShowEnlarged}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>{alt}</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 pt-2">
+            <img
+              src={imageUrl}
+              alt={alt}
+              className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
             />
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="p-0 overflow-hidden rounded-lg">
-          <img
-            src={imageUrl}
-            alt={alt}
-            className="w-48 h-48 object-cover"
-          />
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

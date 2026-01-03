@@ -35,6 +35,7 @@ import LeaveNotifications from '@/components/LeaveNotifications';
 import NotificationBell from '@/components/NotificationBell';
 import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
+import RoleBasedHeader from '@/components/RoleBasedHeader';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
@@ -418,72 +419,7 @@ export default function EmployeeDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
-                <Clock className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg">AttendanceHub</h1>
-                <p className="text-xs text-muted-foreground">Employee Portal</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {isDeveloper && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate('/developer')}
-                  className="hidden sm:flex border-purple-500/50 text-purple-600 hover:bg-purple-500/10"
-                >
-                  <Code className="w-4 h-4 mr-2" />
-                  Developer
-                </Button>
-              )}
-              
-              {isAdmin && !isDeveloper && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate('/admin')}
-                  className="hidden sm:flex"
-                >
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin Panel
-                </Button>
-              )}
-              
-              <NotificationBell />
-              
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => navigate('/profile')}
-                title="Profile Settings"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-              
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-primary" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium">{profile?.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{profile?.department || 'Employee'}</p>
-                </div>
-              </div>
-              
-              <Button variant="ghost" size="icon" onClick={signOut}>
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <RoleBasedHeader currentView="employee" />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Greeting & Time */}
