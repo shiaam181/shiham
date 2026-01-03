@@ -11,7 +11,7 @@ interface CheckPhoneRequest {
 }
 
 // Rate limiting to prevent enumeration
-const MAX_CHECKS_PER_IP = 20;
+const MAX_CHECKS_PER_USER = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 const handler = async (req: Request): Promise<Response> => {
@@ -21,6 +21,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify JWT token - require authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Create client with user's token to verify authentication
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      console.log("Auth error:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { phone }: CheckPhoneRequest = await req.json();
 
     if (!phone) {
@@ -39,33 +67,36 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get client IP for rate limiting
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                     req.headers.get("x-real-ip") || 
-                     "unknown";
-
-    // Check rate limits using otp_rate_limits table
+    // Check rate limits per user (not IP)
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
 
-    const { data: ipRateLimits } = await supabase
+    const { data: userRateLimits } = await supabase
       .from("otp_rate_limits")
       .select("request_count")
-      .eq("ip_address", clientIp)
+      .eq("phone", `check_${user.id}`)
       .gte("first_request_at", oneHourAgo.toISOString());
 
-    const totalIpRequests = ipRateLimits?.reduce((sum, r) => sum + (r.request_count || 0), 0) || 0;
-    if (totalIpRequests >= MAX_CHECKS_PER_IP) {
-      console.log(`Rate limit exceeded for IP: ${clientIp}`);
+    const totalUserRequests = userRateLimits?.reduce((sum, r) => sum + (r.request_count || 0), 0) || 0;
+    if (totalUserRequests >= MAX_CHECKS_PER_USER) {
+      console.log(`Rate limit exceeded for user: ${user.id}`);
       return new Response(
         JSON.stringify({ error: "Too many requests. Please try again later." }),
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Track this check for rate limiting
+    await supabase.from("otp_rate_limits").upsert({
+      phone: `check_${user.id}`,
+      ip_address: null,
+      request_count: totalUserRequests + 1,
+      first_request_at: oneHourAgo.toISOString(),
+      last_request_at: now.toISOString()
+    }, { onConflict: "phone" });
 
     // Check if user exists with this phone number (using service role to bypass RLS)
     const { data: profileData, error } = await supabase
@@ -87,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Add artificial delay to prevent timing attacks
     await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
 
-    console.log("Phone check for:", phone.slice(0, 4) + "****", "Exists:", exists, "IP:", clientIp);
+    console.log("Phone check for:", phone.slice(0, 4) + "****", "Exists:", exists, "User:", user.id);
 
     return new Response(
       JSON.stringify({ exists }),

@@ -1,5 +1,9 @@
 project_id = "kvygdphglkxqtaoxlzmh"
 
+# check-phone-exists now requires JWT authentication
+[functions.check-phone-exists]
+verify_jwt = true
+
 [functions.send-otp]
 verify_jwt = false
 
