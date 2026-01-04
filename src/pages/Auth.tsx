@@ -72,10 +72,12 @@ export default function Auth() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
 
-  // Determine which OTP options are available
+  // Determine which auth options are available
+  const hasPasswordLogin = settings.passwordLoginEnabled;
   const hasEmailOtp = settings.emailOtpEnabled;
   const hasPhoneOtp = settings.phoneOtpEnabled;
   const hasAnyOtp = hasEmailOtp || hasPhoneOtp;
+  const hasMultipleLoginMethods = (hasPasswordLogin ? 1 : 0) + (hasEmailOtp ? 1 : 0) + (hasPhoneOtp ? 1 : 0) > 1;
   const hasGoogleSignin = settings.googleSigninEnabled;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,43 +419,55 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      // Verify the OTP
-      const { data, error: otpError } = await supabase.functions.invoke('verify-email-otp', {
+      // Verify email OTP and get login token (same pattern as phone-login)
+      const { data, error } = await supabase.functions.invoke('email-login', {
         body: { email: pendingLoginEmail, otp: otpValue },
       });
 
-      if (otpError || (data && data.error)) {
+      if (error || (data && data.error)) {
         toast({
           title: 'Verification Failed',
-          description: data?.error || otpError?.message || 'Invalid OTP',
+          description: data?.error || error?.message || 'Invalid OTP',
           variant: 'destructive',
         });
         return;
       }
 
-      // Use magic link flow with the verified email
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email: pendingLoginEmail,
-        options: {
-          shouldCreateUser: false,
-        },
+      const tokenHash = data?.token_hash as string | undefined;
+
+      if (!tokenHash) {
+        toast({
+          title: 'Sign In Failed',
+          description: 'Login token missing. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Use the token to sign in directly (no magic link email sent)
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'magiclink',
       });
 
-      if (signInError) {
+      if (verifyError) {
         toast({
-          title: 'Email Verified',
-          description: 'Your email is verified. Please use password login or check your email for a magic link.',
+          title: 'Sign In Failed',
+          description: verifyError.message,
+          variant: 'destructive',
         });
-      } else {
-        toast({
-          title: 'Check Your Email',
-          description: 'A magic link has been sent to complete your login.',
-        });
+        return;
       }
+
+      toast({
+        title: 'Signed in',
+        description: 'Email verified successfully.',
+      });
 
       setShowOtpVerification(false);
       setOtpValue('');
       setPendingLoginEmail(null);
+      navigate('/');
     } catch {
       toast({
         title: 'Error',
@@ -965,13 +979,15 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLogin && hasAnyOtp && (
+              {isLogin && hasMultipleLoginMethods && (
                 <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'password' | 'email_otp' | 'phone_otp')} className="mb-4">
-                  <TabsList className={`grid w-full ${hasEmailOtp && hasPhoneOtp ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                    <TabsTrigger value="password" className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      Password
-                    </TabsTrigger>
+                  <TabsList className={`grid w-full ${[hasPasswordLogin, hasEmailOtp, hasPhoneOtp].filter(Boolean).length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    {hasPasswordLogin && (
+                      <TabsTrigger value="password" className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Password
+                      </TabsTrigger>
+                    )}
                     {hasEmailOtp && (
                       <TabsTrigger value="email_otp" className="flex items-center gap-2">
                         <Mail className="w-4 h-4" />

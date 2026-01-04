@@ -58,6 +58,7 @@ export default function DeveloperDashboard() {
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
   const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
+  const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
@@ -161,6 +162,9 @@ export default function DeveloperDashboard() {
           }
           case 'google_signin_enabled':
             setGoogleSigninEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
+            break;
+          case 'password_login_enabled':
+            setPasswordLoginEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'oauth_phone_verification_enabled':
             setOauthPhoneVerificationEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
@@ -598,6 +602,10 @@ export default function DeveloperDashboard() {
   const toggleGoogleSignin = (enabled: boolean) => 
     updateSetting('google_signin_enabled', enabled, setGoogleSigninEnabled, 
       `Google Sign-in is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const togglePasswordLogin = (enabled: boolean) => 
+    updateSetting('password_login_enabled', enabled, setPasswordLoginEnabled, 
+      `Password login is now ${enabled ? 'enabled' : 'disabled'}`);
 
   const toggleOauthPhoneVerification = (enabled: boolean) => 
     updateSetting('oauth_phone_verification_enabled', enabled, setOauthPhoneVerificationEnabled, 
@@ -1361,6 +1369,23 @@ export default function DeveloperDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="password-login" className="font-medium">
+                          Email + Password Login
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Allow users to sign in with email and password.
+                        </p>
+                      </div>
+                      <Switch
+                        id="password-login"
+                        checked={passwordLoginEnabled}
+                        onCheckedChange={togglePasswordLogin}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label htmlFor="google-signin" className="font-medium">

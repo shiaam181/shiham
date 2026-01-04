@@ -14,6 +14,7 @@ export interface SystemSettings {
   emailPublicKey: string;
   phoneOtpEnabled: boolean;
   emailOtpEnabled: boolean;
+  passwordLoginEnabled: boolean;
   resendApiKey: string;
   googleSigninEnabled: boolean;
   oauthPhoneVerificationEnabled: boolean;
@@ -32,6 +33,7 @@ const defaultSettings: SystemSettings = {
   emailPublicKey: '',
   phoneOtpEnabled: false,
   emailOtpEnabled: false,
+  passwordLoginEnabled: true,
   resendApiKey: '',
   googleSigninEnabled: true,
   oauthPhoneVerificationEnabled: true,
@@ -91,6 +93,9 @@ export function useSystemSettings() {
             break;
           case 'google_signin_enabled':
             newSettings.googleSigninEnabled = value?.enabled ?? true;
+            break;
+          case 'password_login_enabled':
+            newSettings.passwordLoginEnabled = value?.enabled ?? true;
             break;
           case 'oauth_phone_verification_enabled':
             newSettings.oauthPhoneVerificationEnabled = value?.enabled ?? true;
