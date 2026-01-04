@@ -1116,6 +1116,16 @@ export default function Auth() {
             </CardContent>
           </Card>
           )}
+          
+          {/* Footer with Privacy Policy */}
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            <p>
+              By continuing, you agree to our{' '}
+              <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+              {' '}and{' '}
+              <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
