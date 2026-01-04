@@ -48,17 +48,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get Resend API key - first from system settings, then env vars
+    let resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+    // Check system_settings for Resend config
+    const { data: resendSettings } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "resend_config")
+      .maybeSingle();
+
+    if (resendSettings?.value) {
+      const config = resendSettings.value as { api_key?: string };
+      if (config.api_key) resendApiKey = config.api_key;
+    }
     
     if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured");
+      console.error("Resend API key not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured" }),
+        JSON.stringify({ error: "Email service not configured. Please add Resend API key in Developer Settings." }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
     // Rate limiting: Check if too many requests from this email
