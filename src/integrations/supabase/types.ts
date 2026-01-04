@@ -310,6 +310,7 @@ export type Database = {
           id: string
           is_active: boolean
           phone: string | null
+          phone_verified: boolean
           position: string | null
           shift_id: string | null
           updated_at: string
@@ -326,6 +327,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           phone?: string | null
+          phone_verified?: boolean
           position?: string | null
           shift_id?: string | null
           updated_at?: string
@@ -342,6 +344,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           phone?: string | null
+          phone_verified?: boolean
           position?: string | null
           shift_id?: string | null
           updated_at?: string
