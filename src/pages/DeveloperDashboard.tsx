@@ -618,66 +618,66 @@ export default function DeveloperDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="roles">Role Management</TabsTrigger>
-            <TabsTrigger value="settings">System Settings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Overview</TabsTrigger>
+            <TabsTrigger value="roles" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Roles</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                    <Code className="w-6 h-6 text-purple-500" />
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <Card className="p-3 sm:p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Code className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Access Level</p>
-                    <p className="text-xl font-display font-bold">Developer</p>
-                  </div>
-                </div>
-              </Card>
-              
-              <Card className="p-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                    <Database className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Database</p>
-                    <p className="text-xl font-display font-bold">Connected</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">Access Level</p>
+                    <p className="text-sm sm:text-xl font-display font-bold truncate">Developer</p>
                   </div>
                 </div>
               </Card>
               
-              <Card className="p-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                    <Key className="w-6 h-6 text-green-500" />
+              <Card className="p-3 sm:p-6">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+                    <Database className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">API Status</p>
-                    <p className="text-xl font-display font-bold">Active</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">Database</p>
+                    <p className="text-sm sm:text-xl font-display font-bold truncate">Connected</p>
                   </div>
                 </div>
               </Card>
               
-              <Card className="p-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                    <Bell className="w-6 h-6 text-orange-500" />
+              <Card className="p-3 sm:p-6">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                    <Key className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Notifications</p>
-                    <p className="text-xl font-display font-bold">Enabled</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">API Status</p>
+                    <p className="text-sm sm:text-xl font-display font-bold truncate">Active</p>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-3 sm:p-6">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+                    <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">Notifications</p>
+                    <p className="text-sm sm:text-xl font-display font-bold truncate">Enabled</p>
                   </div>
                 </div>
               </Card>
             </div>
 
             {/* Quick Actions Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
               <Card 
                 className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-purple-500/20 hover:border-purple-500/40"
                 onClick={() => setActiveTab('roles')}
