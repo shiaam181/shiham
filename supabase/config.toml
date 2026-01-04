@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.verify-email-otp]
 verify_jwt = false
+
+[functions.email-login]
+verify_jwt = false
