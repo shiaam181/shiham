@@ -332,6 +332,82 @@ export default function Auth() {
   };
 
   const verifyOtpAndLogin = async () => {
+    if (otpMethod === 'phone') {
+      if (!pendingLoginPhone || otpValue.length !== 6) {
+        toast({
+          title: 'Invalid OTP',
+          description: 'Please enter the 6-digit code sent to your phone.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsVerifyingOtp(true);
+      try {
+        // Verify phone OTP + sign in (server generates a magic link token for the matched email)
+        const { data, error } = await supabase.functions.invoke('phone-login', {
+          body: { phone: pendingLoginPhone, otp: otpValue },
+        });
+
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Verification Failed',
+            description: data?.error || error?.message || 'Invalid OTP',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const email = data?.email as string | undefined;
+        const tokenHash = data?.token_hash as string | undefined;
+
+        if (!email || !tokenHash) {
+          toast({
+            title: 'Sign In Failed',
+            description: 'Login token missing. Please try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          email,
+          token: tokenHash,
+          type: 'magiclink',
+        });
+
+        if (verifyError) {
+          toast({
+            title: 'Sign In Failed',
+            description: verifyError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        toast({
+          title: 'Signed in',
+          description: 'Phone verified successfully.',
+        });
+
+        setShowOtpVerification(false);
+        setOtpValue('');
+        setPendingLoginPhone(null);
+        navigate('/');
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsVerifyingOtp(false);
+      }
+
+      return;
+    }
+
+    // Email OTP login
     if (!pendingLoginEmail || otpValue.length !== 6) {
       toast({
         title: 'Invalid OTP',
@@ -347,18 +423,17 @@ export default function Auth() {
       const { data, error: otpError } = await supabase.functions.invoke('verify-email-otp', {
         body: { email: pendingLoginEmail, otp: otpValue },
       });
-      
+
       if (otpError || (data && data.error)) {
         toast({
           title: 'Verification Failed',
           description: data?.error || otpError?.message || 'Invalid OTP',
           variant: 'destructive',
         });
-        setIsVerifyingOtp(false);
         return;
       }
 
-      // Use Supabase magic link flow with the verified email
+      // Use magic link flow with the verified email
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email: pendingLoginEmail,
         options: {
@@ -367,7 +442,6 @@ export default function Auth() {
       });
 
       if (signInError) {
-        // If OTP login fails, inform user to use password
         toast({
           title: 'Email Verified',
           description: 'Your email is verified. Please use password login or check your email for a magic link.',
@@ -378,11 +452,11 @@ export default function Auth() {
           description: 'A magic link has been sent to complete your login.',
         });
       }
-      
+
       setShowOtpVerification(false);
       setOtpValue('');
       setPendingLoginEmail(null);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An unexpected error occurred. Please try again.',
@@ -726,6 +800,7 @@ export default function Auth() {
                     setOtpValue('');
                     setPendingSignupData(null);
                     setPendingLoginEmail(null);
+                    setPendingLoginPhone(null);
                   }}
                   className="text-sm text-muted-foreground hover:text-primary"
                 >

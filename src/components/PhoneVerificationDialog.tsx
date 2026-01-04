@@ -66,10 +66,10 @@ export function PhoneVerificationDialog({
   };
 
   const verifyOtp = async () => {
-    if (otp.length !== 8) {
+    if (otp.length !== 6) {
       toast({
         title: 'Invalid OTP',
-        description: 'Please enter the 8-digit code',
+        description: 'Please enter the 6-digit code',
         variant: 'destructive',
       });
       return;
@@ -149,13 +149,13 @@ export function PhoneVerificationDialog({
             <div className="space-y-4">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Enter the 8-digit code sent to your phone
+                  Enter the 6-digit code sent to your phone
                 </p>
                 <div className="flex justify-center">
                   <InputOTP
                     value={otp}
                     onChange={setOtp}
-                    maxLength={8}
+                    maxLength={6}
                   >
                     <InputOTPGroup>
                       <InputOTPSlot index={0} />
@@ -164,8 +164,6 @@ export function PhoneVerificationDialog({
                       <InputOTPSlot index={3} />
                       <InputOTPSlot index={4} />
                       <InputOTPSlot index={5} />
-                      <InputOTPSlot index={6} />
-                      <InputOTPSlot index={7} />
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
@@ -173,7 +171,7 @@ export function PhoneVerificationDialog({
 
               <Button 
                 onClick={verifyOtp} 
-                disabled={isVerifying || otp.length !== 8}
+                disabled={isVerifying || otp.length !== 6}
                 className="w-full"
               >
                 {isVerifying ? (
