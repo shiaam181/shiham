@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, CheckCircle2, XCircle, Clock, Calendar, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle2, XCircle, Clock, Calendar, Trash2, ExternalLink } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
 interface Notification {
@@ -40,6 +41,7 @@ interface LeaveRequest {
 }
 
 export default function NotificationBell() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -195,7 +197,11 @@ export default function NotificationBell() {
                 className={`flex items-start gap-3 p-3 cursor-pointer ${
                   !notification.read ? 'bg-accent/50' : ''
                 }`}
-                onClick={() => markAsRead(notification.id)}
+                onClick={() => {
+                  markAsRead(notification.id);
+                  setIsOpen(false);
+                  navigate(`/notifications?id=${notification.id}`);
+                }}
               >
                 <div className="flex-shrink-0 mt-0.5">
                   {getNotificationIcon(notification.type)}
@@ -218,9 +224,12 @@ export default function NotificationBell() {
                   <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                     {notification.message}
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
-                  </p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground/70">
+                      {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                    </p>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground/50" />
+                  </div>
                 </div>
                 {!notification.read && (
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />

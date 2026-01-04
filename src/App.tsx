@@ -21,6 +21,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import WeekOffManagement from "./pages/WeekOffManagement";
 import CompanySettings from "./pages/CompanySettings";
 import CsvImport from "./pages/CsvImport";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -168,6 +169,7 @@ function AppRoutes() {
       <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
       <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
       <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
