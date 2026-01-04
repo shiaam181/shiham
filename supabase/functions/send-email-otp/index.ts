@@ -50,25 +50,32 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get Resend API key - first from system settings, then env vars
+    // Get Resend API key - prioritize env vars (backend secrets)
     let resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-    // Check system_settings for Resend config
-    const { data: resendSettings } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "resend_config")
-      .maybeSingle();
+    // Fallback to system_settings only if env var not set
+    if (!resendApiKey) {
+      const { data: resendSettings } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "resend_config")
+        .maybeSingle();
 
-    if (resendSettings?.value) {
-      const config = resendSettings.value as { api_key?: string };
-      if (config.api_key) resendApiKey = config.api_key;
+      if (resendSettings?.value) {
+        const config = resendSettings.value as { api_key?: string };
+        // Only use if not placeholder value
+        if (config.api_key && config.api_key !== 'configured_via_backend') {
+          resendApiKey = config.api_key;
+        }
+      }
     }
+
+    console.log("Resend config status:", { hasApiKey: !!resendApiKey });
     
     if (!resendApiKey) {
       console.error("Resend API key not configured");
       return new Response(
-        JSON.stringify({ error: "Email service not configured. Please add Resend API key in Developer Settings." }),
+        JSON.stringify({ error: "Email service not configured. Please add RESEND_API_KEY in backend secrets." }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

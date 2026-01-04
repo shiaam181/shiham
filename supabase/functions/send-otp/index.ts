@@ -147,28 +147,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get Twilio credentials - first from system settings, then env vars
+    // Get Twilio credentials - prioritize env vars (backend secrets)
     let twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     let twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
     let twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    // Check system_settings for Twilio config
-    const { data: twilioSettings } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "twilio_config")
-      .maybeSingle();
+    // Fallback to system_settings only if env vars not set
+    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+      const { data: twilioSettings } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "twilio_config")
+        .maybeSingle();
 
-    if (twilioSettings?.value) {
-      const config = twilioSettings.value as { 
-        account_sid?: string; 
-        auth_token?: string; 
-        phone_number?: string 
-      };
-      if (config.account_sid) twilioAccountSid = config.account_sid;
-      if (config.auth_token) twilioAuthToken = config.auth_token;
-      if (config.phone_number) twilioPhoneNumber = config.phone_number;
+      if (twilioSettings?.value) {
+        const config = twilioSettings.value as { 
+          account_sid?: string; 
+          auth_token?: string; 
+          phone_number?: string 
+        };
+        // Only use if not placeholder values
+        if (config.account_sid && config.account_sid !== 'configured_via_backend') {
+          twilioAccountSid = twilioAccountSid || config.account_sid;
+        }
+        if (config.auth_token && config.auth_token !== 'configured_via_backend') {
+          twilioAuthToken = twilioAuthToken || config.auth_token;
+        }
+        if (config.phone_number && config.phone_number !== 'configured_via_backend') {
+          twilioPhoneNumber = twilioPhoneNumber || config.phone_number;
+        }
+      }
     }
+
+    console.log("Twilio config status:", {
+      hasSid: !!twilioAccountSid,
+      hasToken: !!twilioAuthToken,
+      hasPhone: !!twilioPhoneNumber
+    });
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
       console.error("Twilio credentials not configured");
