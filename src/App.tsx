@@ -23,6 +23,8 @@ import CompanySettings from "./pages/CompanySettings";
 import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -170,6 +172,8 @@ function AppRoutes() {
       <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
       <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
