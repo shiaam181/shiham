@@ -170,8 +170,16 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error sending email:", emailError);
       // Clean up the OTP if email fails
       await supabase.from("phone_otps").delete().eq("phone", email);
+      
+      // Provide helpful error message for Resend domain verification
+      const errorObj = emailError as { message?: string; statusCode?: number; name?: string };
+      const isValidationError = errorObj.name === 'validation_error' || errorObj.statusCode === 403;
+      const errorMessage = isValidationError
+        ? "Email failed: Using test domain (onboarding@resend.dev) only allows sending to your registered Resend email. Verify your domain at resend.com/domains to send to other addresses."
+        : "Failed to send verification email";
+      
       return new Response(
-        JSON.stringify({ error: "Failed to send verification email" }),
+        JSON.stringify({ error: errorMessage }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
