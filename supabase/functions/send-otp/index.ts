@@ -11,12 +11,12 @@ interface SendOtpRequest {
   type?: 'signup' | 'login';
 }
 
-// Generate cryptographically secure 8-digit OTP
+// Generate cryptographically secure 6-digit OTP
 function generateSecureOtp(): string {
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
-  // Generate 8-digit OTP (10000000 to 99999999)
-  return String(10000000 + (array[0] % 90000000));
+  // Generate 6-digit OTP (100000 to 999999)
+  return String(100000 + (array[0] % 900000));
 }
 
 // Rate limiting constants
@@ -123,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
       .delete()
       .lt("first_request_at", oneHourAgo.toISOString());
 
-    // Generate secure 8-digit OTP
+    // Generate secure 6-digit OTP
     const otpCode = generateSecureOtp();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 

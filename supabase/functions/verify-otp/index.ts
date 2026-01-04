@@ -32,8 +32,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate OTP format (8 digits)
-    if (!/^\d{8}$/.test(otp)) {
+    // Validate OTP format (6 digits)
+    if (!/^\d{6}$/.test(otp)) {
       return new Response(
         JSON.stringify({ error: "Invalid OTP format" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
