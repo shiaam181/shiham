@@ -986,15 +986,15 @@ export default function DeveloperDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Resend Email OTP Configuration */}
+                {/* Email OTP Configuration - Priority Info */}
                 <Card className={`mt-6 ${emailOtpEnabled ? 'border-success/50' : ''}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Mail className="w-5 h-5" />
-                      Resend Email (Email OTP)
+                      Email OTP Configuration
                     </CardTitle>
                     <CardDescription>
-                      Enable Resend for email OTP verification during signup/login. Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>
+                      Configure email service for OTP verification during signup/login. <strong>EmailJS is used if configured, otherwise Resend is used as fallback.</strong>
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1015,8 +1015,26 @@ export default function DeveloperDashboard() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="resend-key">Resend API Key</Label>
+                    {/* Service Priority Info */}
+                    <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                      <div className="flex items-start gap-3">
+                        <Key className="w-5 h-5 text-blue-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm text-blue-600">Email Service Priority</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            <strong>1st Priority:</strong> EmailJS (if configured above) - Free & no domain verification needed<br />
+                            <strong>2nd Priority:</strong> Resend (fallback) - Requires domain verification for external emails
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Current: {isEmailConfigured ? '✅ EmailJS will be used' : (isResendConfigured ? '⚠️ Resend will be used (fallback)' : '❌ No email service configured')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resend Configuration (Fallback) */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <Label className="text-sm font-medium">Resend API Key (Fallback Option)</Label>
                       <div className="flex gap-2">
                         <Input
                           id="resend-key"
@@ -1033,12 +1051,19 @@ export default function DeveloperDashboard() {
                         >
                           {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </Button>
+                        <Button onClick={saveResendConfig} disabled={resendConfigSaving} size="sm">
+                          <Save className="w-4 h-4 mr-1" />
+                          {resendConfigSaving ? 'Saving...' : 'Save'}
+                        </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Note: Resend test domain only sends to your registered email. <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary underline">Verify domain</a> for other recipients.
+                      </p>
                     </div>
                     
                     {/* Test Section */}
                     <div className="p-4 bg-muted/30 rounded-lg border border-dashed space-y-3">
-                      <Label className="text-sm font-medium">Test Resend Configuration</Label>
+                      <Label className="text-sm font-medium">Test Email OTP Configuration</Label>
                       <div className="flex gap-2">
                         <Input
                           type="email"
@@ -1050,7 +1075,7 @@ export default function DeveloperDashboard() {
                         <Button
                           variant="outline"
                           onClick={testResendCredentials}
-                          disabled={testingResend || (!isResendConfigured && !resendBackendConfigured)}
+                          disabled={testingResend || (!isEmailConfigured && !isResendConfigured && !resendBackendConfigured)}
                         >
                           {testingResend ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1061,50 +1086,38 @@ export default function DeveloperDashboard() {
                           ) : (
                             <PlayCircle className="w-4 h-4 mr-2" />
                           )}
-                          Test
+                          Test Email OTP
                         </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-end">
-                      <Button onClick={saveResendConfig} disabled={resendConfigSaving}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {resendConfigSaving ? 'Saving...' : 'Save Resend Configuration'}
-                      </Button>
-                    </div>
 
-                    {resendBackendConfigured && (
-                      <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                    {resendBackendConfigured && !isEmailConfigured && (
+                      <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
                         <div className="flex items-start gap-3">
-                          <Key className="w-5 h-5 text-blue-500 mt-0.5" />
+                          <Key className="w-5 h-5 text-amber-500 mt-0.5" />
                           <div>
-                            <p className="font-medium text-sm text-blue-600">Backend Secret Configured</p>
+                            <p className="font-medium text-sm text-amber-600">Resend Backend Secret Configured</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              RESEND_API_KEY is set in backend secrets. You can test it below without entering the key here.
+                              RESEND_API_KEY is set in backend. Configure EmailJS above for free unlimited emails without domain verification.
                             </p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {!resendBackendConfigured && isResendConfigured && (
+                    {isEmailConfigured && (
                       <div className="p-4 bg-success/10 rounded-lg border border-success/30">
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
                           <div>
-                            <p className="font-medium text-sm text-success">Resend API Configured</p>
+                            <p className="font-medium text-sm text-success">EmailJS Configured ✓</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Email OTP messages will be sent via Resend.
+                              Email OTP will be sent via EmailJS. No domain verification required!
                             </p>
                           </div>
                         </div>
                       </div>
                     )}
-
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com/api-keys</a></p>
-                      <p>• Verify your sending domain at <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com/domains</a></p>
-                    </div>
                   </CardContent>
                 </Card>
 
