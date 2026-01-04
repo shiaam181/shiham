@@ -371,11 +371,9 @@ export default function Auth() {
         }
 
         const { error: verifyError } = await supabase.auth.verifyOtp({
-          email,
           token_hash: tokenHash,
           type: 'magiclink',
         });
-
         if (verifyError) {
           toast({
             title: 'Sign In Failed',
