@@ -34,7 +34,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { phone, otp }: PhoneLoginRequest = await req.json();
+    let { phone, otp }: PhoneLoginRequest = await req.json();
+    phone = phone.replace(/\s+/g, '');
 
     // Input validation
     if (!phone || !otp) {

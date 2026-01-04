@@ -49,7 +49,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { phone }: CheckPhoneRequest = await req.json();
+    let { phone }: CheckPhoneRequest = await req.json();
+    phone = phone.replace(/\s+/g, '');
 
     if (!phone) {
       return new Response(

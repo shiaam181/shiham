@@ -125,7 +125,7 @@ export default function Auth() {
           return;
         }
         
-        const fullPhone = countryCode + phoneNumber.replace(/^0+/, '');
+        const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
         
         const { data, error } = await supabase.functions.invoke('send-otp', {
           body: { phone: fullPhone, type: 'signup' },
@@ -212,7 +212,7 @@ export default function Auth() {
         return;
       }
       
-      const fullPhone = countryCode + phoneNumber.replace(/^0+/, '');
+      const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
       
       setIsSendingOtp(true);
       try {
