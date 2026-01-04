@@ -50,8 +50,8 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
     return <Navigate to="/auth" replace />;
   }
 
-  // Check phone verification for OAuth users (if phone OTP is enabled)
-  if (settings.phoneOtpEnabled && profile && !profile.phone_verified && !isDeveloper) {
+  // Check phone verification for OAuth users (if OAuth + phone verification is enabled)
+  if (settings.oauthPhoneVerificationEnabled && profile && !profile.phone_verified && !isDeveloper) {
     return <Navigate to="/phone-verify" replace />;
   }
 
@@ -179,8 +179,8 @@ const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If phone OTP is disabled or already verified, go to dashboard
-  if (!settings.phoneOtpEnabled || profile?.phone_verified || isDeveloper) {
+  // If OAuth + phone verification is disabled or already verified, go to dashboard
+  if (!settings.oauthPhoneVerificationEnabled || profile?.phone_verified || isDeveloper) {
     return <Navigate to="/dashboard" replace />;
   }
 

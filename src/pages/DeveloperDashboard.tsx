@@ -58,6 +58,7 @@ export default function DeveloperDashboard() {
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
   const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
+  const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // EmailJS configuration state
@@ -160,6 +161,9 @@ export default function DeveloperDashboard() {
           }
           case 'google_signin_enabled':
             setGoogleSigninEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
+            break;
+          case 'oauth_phone_verification_enabled':
+            setOauthPhoneVerificationEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
         }
       });
@@ -594,6 +598,10 @@ export default function DeveloperDashboard() {
   const toggleGoogleSignin = (enabled: boolean) => 
     updateSetting('google_signin_enabled', enabled, setGoogleSigninEnabled, 
       `Google Sign-in is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const toggleOauthPhoneVerification = (enabled: boolean) => 
+    updateSetting('oauth_phone_verification_enabled', enabled, setOauthPhoneVerificationEnabled, 
+      `OAuth + Phone Verification is now ${enabled ? 'enabled' : 'disabled'}`);
 
   if (authLoading) {
     return (
@@ -1400,6 +1408,23 @@ export default function DeveloperDashboard() {
                         id="email-otp-auth"
                         checked={emailOtpEnabled}
                         onCheckedChange={toggleEmailOtp}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="oauth-phone-verify" className="font-medium">
+                          OAuth + Phone Verification
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Require phone OTP verification after Google sign-in. Users must verify their phone number to access the app.
+                        </p>
+                      </div>
+                      <Switch
+                        id="oauth-phone-verify"
+                        checked={oauthPhoneVerificationEnabled}
+                        onCheckedChange={toggleOauthPhoneVerification}
                         disabled={settingsLoading}
                       />
                     </div>
