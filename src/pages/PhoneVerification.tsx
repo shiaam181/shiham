@@ -9,22 +9,24 @@ import { useToast } from '@/hooks/use-toast';
 import { Clock, Phone, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
+import { CountryCodeSelect } from '@/components/CountryCodeSelect';
 
 export default function PhoneVerification() {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [phone, setPhone] = useState(profile?.phone || '');
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone?.replace(/^\+\d+/, '') || '');
+  const [countryCode, setCountryCode] = useState('+91');
   const [otpValue, setOtpValue] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  
+  const fullPhone = countryCode + phoneNumber.replace(/^0+/, '');
 
   const sendOtp = async () => {
-    const phoneValue = phone.trim();
-    
-    if (!phoneValue) {
+    if (!phoneNumber.trim()) {
       toast({
         title: 'Phone Required',
         description: 'Please enter your phone number',
@@ -36,7 +38,7 @@ export default function PhoneVerification() {
     setIsSendingOtp(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: phoneValue, type: 'verification' },
+        body: { phone: fullPhone, type: 'verification' },
       });
 
       if (error || (data && data.error)) {
@@ -51,7 +53,7 @@ export default function PhoneVerification() {
       setShowOtpInput(true);
       toast({
         title: 'Verification Code Sent!',
-        description: `A 6-digit code has been sent to ${phoneValue}`,
+        description: `A 6-digit code has been sent to ${fullPhone}`,
       });
     } finally {
       setIsSendingOtp(false);
@@ -71,7 +73,7 @@ export default function PhoneVerification() {
     setIsVerifying(true);
     try {
       const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { phone: phone.trim(), otp: otpValue },
+        body: { phone: fullPhone, otp: otpValue },
       });
 
       if (error || (data && data.error)) {
@@ -87,7 +89,7 @@ export default function PhoneVerification() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          phone: phone.trim(),
+          phone: fullPhone,
           phone_verified: true 
         })
         .eq('user_id', user?.id);
@@ -143,7 +145,7 @@ export default function PhoneVerification() {
             </CardTitle>
             <CardDescription className="text-sm">
               {showOtpInput 
-                ? <>We've sent a verification code to<br /><strong className="text-foreground">{phone}</strong></>
+                ? <>We've sent a verification code to<br /><strong className="text-foreground">{fullPhone}</strong></>
                 : 'Please verify your phone number to continue using the app'}
             </CardDescription>
           </CardHeader>
@@ -152,16 +154,20 @@ export default function PhoneVerification() {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+1234567890"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Include country code (e.g., +1 for US)
-                  </p>
+                  <div className="flex gap-2">
+                    <CountryCodeSelect
+                      value={countryCode}
+                      onChange={setCountryCode}
+                    />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="8592812851"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
 
                 <Button
@@ -169,7 +175,7 @@ export default function PhoneVerification() {
                   variant="hero"
                   size="lg"
                   className="w-full"
-                  disabled={isSendingOtp || !phone.trim()}
+                  disabled={isSendingOtp || !phoneNumber.trim()}
                 >
                   {isSendingOtp ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

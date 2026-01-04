@@ -13,6 +13,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { CountryCodeSelect } from '@/components/CountryCodeSelect';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -46,6 +47,7 @@ export default function Auth() {
     confirmPassword: '',
     phone: '',
   });
+  const [countryCode, setCountryCode] = useState('+91');
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // OTP States
@@ -117,14 +119,16 @@ export default function Auth() {
         });
       } else {
         // Phone OTP - validate phone
-        const phone = formData.phone.trim();
-        if (!phone) {
+        const phoneNumber = formData.phone.trim();
+        if (!phoneNumber) {
           setErrors({ phone: 'Phone number is required for phone verification' });
           return;
         }
         
+        const fullPhone = countryCode + phoneNumber.replace(/^0+/, '');
+        
         const { data, error } = await supabase.functions.invoke('send-otp', {
-          body: { phone, type: 'signup' },
+          body: { phone: fullPhone, type: 'signup' },
         });
         
         if (error || (data && data.error)) {
@@ -140,13 +144,13 @@ export default function Auth() {
           email: validated.email,
           password: validated.password,
           fullName: validated.fullName,
-          phone,
+          phone: fullPhone,
         });
         setOtpType('signup');
         setShowOtpVerification(true);
         toast({
           title: 'Verification Code Sent!',
-          description: `A verification code has been sent to ${phone}`,
+          description: `A verification code has been sent to ${fullPhone}`,
         });
       }
     } catch (error) {
@@ -201,17 +205,19 @@ export default function Auth() {
         setIsSendingOtp(false);
       }
     } else {
-      const phoneValue = formData.phone.trim();
+      const phoneNumber = formData.phone.trim();
       
-      if (!phoneValue) {
+      if (!phoneNumber) {
         setErrors({ phone: 'Please enter your phone number' });
         return;
       }
       
+      const fullPhone = countryCode + phoneNumber.replace(/^0+/, '');
+      
       setIsSendingOtp(true);
       try {
         const { data, error } = await supabase.functions.invoke('send-otp', {
-          body: { phone: phoneValue, type: 'login' },
+          body: { phone: fullPhone, type: 'login' },
         });
         
         if (error || (data && data.error)) {
@@ -223,12 +229,12 @@ export default function Auth() {
           return;
         }
         
-        setPendingLoginPhone(phoneValue);
+        setPendingLoginPhone(fullPhone);
         setOtpType('login');
         setShowOtpVerification(true);
         toast({
           title: 'Verification Code Sent!',
-          description: `A verification code has been sent to ${phoneValue}`,
+          description: `A verification code has been sent to ${fullPhone}`,
         });
       } finally {
         setIsSendingOtp(false);
@@ -948,15 +954,21 @@ export default function Auth() {
                 {isLogin && loginMethod === 'phone_otp' && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="+1234567890"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className={errors.phone ? 'border-destructive' : ''}
-                    />
+                    <div className="flex gap-2">
+                      <CountryCodeSelect
+                        value={countryCode}
+                        onChange={setCountryCode}
+                      />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="8592812851"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
+                      />
+                    </div>
                     {errors.phone && (
                       <p className="text-sm text-destructive">{errors.phone}</p>
                     )}
@@ -967,15 +979,21 @@ export default function Auth() {
                 {!isLogin && hasPhoneOtp && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="+1234567890"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className={errors.phone ? 'border-destructive' : ''}
-                    />
+                    <div className="flex gap-2">
+                      <CountryCodeSelect
+                        value={countryCode}
+                        onChange={setCountryCode}
+                      />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="8592812851"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
+                      />
+                    </div>
                     {errors.phone && (
                       <p className="text-sm text-destructive">{errors.phone}</p>
                     )}
