@@ -197,37 +197,37 @@ export default function HolidayManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 sm:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-warning" />
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
                 </div>
-                <div>
-                  <h1 className="font-display font-bold text-lg">Holiday Management</h1>
-                  <p className="text-xs text-muted-foreground">Manage company holidays</p>
+                <div className="min-w-0">
+                  <h1 className="font-display font-bold text-sm sm:text-lg truncate">Holiday Management</h1>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage company holidays</p>
                 </div>
               </div>
             </div>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="hero" onClick={() => handleOpenDialog()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Holiday
+                <Button variant="hero" size="sm" onClick={() => handleOpenDialog()} className="shrink-0">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Holiday</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[90vw] sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{editingHoliday ? 'Edit Holiday' : 'Add Holiday'}</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="text-base sm:text-lg">{editingHoliday ? 'Edit Holiday' : 'Add Holiday'}</DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm">
                     {editingHoliday ? 'Update holiday details' : 'Add a new company holiday'}
                   </DialogDescription>
                 </DialogHeader>
@@ -261,7 +261,7 @@ export default function HolidayManagement() {
                     />
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2">
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
@@ -276,59 +276,60 @@ export default function HolidayManagement() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Company Holidays</CardTitle>
-            <CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Company Holidays</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {holidays.length} {holidays.length === 1 ? 'holiday' : 'holidays'} configured
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
+          <CardContent className="px-3 sm:px-6">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>Holiday Name</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Holiday Name</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Date</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Description</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {holidays.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
                         No holidays configured. Add your first holiday.
                       </TableCell>
                     </TableRow>
                   ) : (
                     holidays.map((holiday) => (
                       <TableRow key={holiday.id}>
-                        <TableCell className="font-medium">{holiday.name}</TableCell>
-                        <TableCell>{format(new Date(holiday.date), 'MMMM d, yyyy')}</TableCell>
-                        <TableCell className="text-muted-foreground max-w-xs truncate">
+                        <TableCell className="font-medium text-xs sm:text-sm">{holiday.name}</TableCell>
+                        <TableCell className="text-xs sm:text-sm">{format(new Date(holiday.date), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-muted-foreground max-w-xs truncate text-xs sm:text-sm hidden sm:table-cell">
                           {holiday.description || '-'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="w-7 h-7 sm:w-8 sm:h-8"
                               onClick={() => handleOpenDialog(holiday)}
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                <Button variant="ghost" size="icon" className="w-7 h-7 sm:w-8 sm:h-8">
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogTitle className="text-base sm:text-lg">Delete Holiday</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-xs sm:text-sm">
                                     Are you sure you want to delete "{holiday.name}"? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>

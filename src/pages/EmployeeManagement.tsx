@@ -140,22 +140,22 @@ export default function EmployeeManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 sm:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
-                <div>
-                  <h1 className="font-display font-bold text-lg">Employee Management</h1>
-                  <p className="text-xs text-muted-foreground">Manage employee profiles & attendance</p>
+                <div className="min-w-0">
+                  <h1 className="font-display font-bold text-sm sm:text-lg truncate">Employee Management</h1>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage employee profiles & attendance</p>
                 </div>
               </div>
             </div>
@@ -166,88 +166,88 @@ export default function EmployeeManagement() {
                 placeholder="Search employees..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-[250px]"
+                className="pl-9 w-full"
               />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">{employees.length}</p>
-                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-lg sm:text-2xl font-display font-bold">{employees.length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
-                <UserCheck className="w-5 h-5 text-success" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-success-soft flex items-center justify-center shrink-0">
+                <UserCheck className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">{employees.filter(e => e.is_active).length}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
+                <p className="text-lg sm:text-2xl font-display font-bold">{employees.filter(e => e.is_active).length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Active</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-destructive-soft flex items-center justify-center">
-                <UserX className="w-5 h-5 text-destructive" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-destructive-soft flex items-center justify-center shrink-0">
+                <UserX className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">{employees.filter(e => !e.is_active).length}</p>
-                <p className="text-xs text-muted-foreground">Inactive</p>
+                <p className="text-lg sm:text-2xl font-display font-bold">{employees.filter(e => !e.is_active).length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Inactive</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-info-soft flex items-center justify-center">
-                <Building className="w-5 h-5 text-info" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-info-soft flex items-center justify-center shrink-0">
+                <Building className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">
+                <p className="text-lg sm:text-2xl font-display font-bold">
                   {new Set(employees.map(e => e.department).filter(Boolean)).size}
                 </p>
-                <p className="text-xs text-muted-foreground">Departments</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Departments</p>
               </div>
             </div>
           </Card>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>All Employees</CardTitle>
-            <CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">All Employees</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Click on an employee to view details and attendance history
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
+          <CardContent className="px-3 sm:px-6">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Position</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Contact</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-sm">
                         No employees found
                       </TableCell>
                     </TableRow>
@@ -259,71 +259,72 @@ export default function EmployeeManagement() {
                         onClick={() => handleOpenDetail(employee)}
                       >
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="font-semibold text-primary">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <span className="font-semibold text-primary text-xs sm:text-sm">
                                 {employee.full_name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <div>
-                              <p className="font-medium">{employee.full_name}</p>
-                              <p className="text-xs text-muted-foreground">{employee.email}</p>
+                            <div className="min-w-0">
+                              <p className="font-medium text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">{employee.full_name}</p>
+                              <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-none">{employee.email}</p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Building className="w-4 h-4 text-muted-foreground" />
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <Building className="w-4 h-4 text-muted-foreground shrink-0" />
                             {employee.department || '-'}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Briefcase className="w-4 h-4 text-muted-foreground" />
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <Briefcase className="w-4 h-4 text-muted-foreground shrink-0" />
                             {employee.position || '-'}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           {employee.phone ? (
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-4 h-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2 text-xs sm:text-sm">
+                              <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                               {employee.phone}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs sm:text-sm">-</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={employee.is_active ? 'present' : 'absent'}>
+                          <Badge variant={employee.is_active ? 'present' : 'absent'} className="text-[10px] sm:text-xs">
                             {employee.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="w-7 h-7 sm:w-8 sm:h-8"
                               onClick={() => handleOpenDetail(employee)}
                               title="View Details"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="w-7 h-7 sm:w-8 sm:h-8">
                                   {employee.is_active ? (
-                                    <UserX className="w-4 h-4 text-destructive" />
+                                    <UserX className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
                                   ) : (
-                                    <UserCheck className="w-4 h-4 text-success" />
+                                    <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
                                   )}
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>
+                                  <AlertDialogTitle className="text-base sm:text-lg">
                                     {employee.is_active ? 'Deactivate' : 'Activate'} Employee
                                   </AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogDescription className="text-xs sm:text-sm">
                                     {employee.is_active
                                       ? `Are you sure you want to deactivate ${employee.full_name}? They will no longer be able to mark attendance.`
                                       : `Are you sure you want to activate ${employee.full_name}? They will be able to mark attendance again.`

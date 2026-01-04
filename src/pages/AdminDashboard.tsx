@@ -204,53 +204,53 @@ export default function AdminDashboard() {
       {/* Header */}
       <RoleBasedHeader currentView="admin" />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 sm:pb-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Employees</p>
-                <p className="text-3xl font-display font-bold mt-1">{stats.totalEmployees}</p>
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Employees</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1">{stats.totalEmployees}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Present Today</p>
-                <p className="text-3xl font-display font-bold mt-1 text-success">{stats.presentToday}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-success" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Absent Today</p>
-                <p className="text-3xl font-display font-bold mt-1 text-destructive">{stats.absentToday}</p>
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Present Today</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-success">{stats.presentToday}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-destructive-soft flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-destructive" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-success-soft flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">On Leave</p>
-                <p className="text-3xl font-display font-bold mt-1 text-info">{stats.onLeave}</p>
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Absent Today</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-destructive">{stats.absentToday}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-info-soft flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-info" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-destructive-soft flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">On Leave</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-info">{stats.onLeave}</p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-info" />
               </div>
             </div>
           </Card>
@@ -258,53 +258,53 @@ export default function AdminDashboard() {
 
         {/* Today's Attendance */}
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardHeader className="pb-3 sm:pb-6">
+            <div className="flex flex-col gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" />
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   Attendance Records
                 </CardTitle>
-                <CardDescription>View and manage employee attendance</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">View and manage employee attendance</CardDescription>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-auto"
+                  className="w-full sm:w-auto"
                 />
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-initial">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search employees..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-[200px]"
+                    className="pl-9 w-full sm:w-[200px]"
                   />
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
+          <CardContent className="px-3 sm:px-6">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Check In</TableHead>
-                    <TableHead>Check Out</TableHead>
-                    <TableHead>Photos</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Check In</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Check Out</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Photos</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAttendance.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
                         No attendance records found for this date
                       </TableCell>
                     </TableRow>
@@ -312,29 +312,29 @@ export default function AdminDashboard() {
                     filteredAttendance.map((record) => (
                       <TableRow key={record.id}>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="w-5 h-5 text-primary" />
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                             </div>
-                            <span className="font-medium">{record.employee_name}</span>
+                            <span className="font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">{record.employee_name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
                           {record.employee_department || '-'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs sm:text-sm">
                           {record.check_in_time 
                             ? format(new Date(record.check_in_time), 'hh:mm a')
                             : '-'
                           }
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-xs sm:text-sm">
                           {record.check_out_time 
                             ? format(new Date(record.check_out_time), 'hh:mm a')
                             : '-'
                           }
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             <PhotoThumbnail 
                               photoUrl={record.check_in_photo_url} 
@@ -347,32 +347,34 @@ export default function AdminDashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(record.status)}>
+                          <Badge variant={getStatusBadgeVariant(record.status)} className="text-[10px] sm:text-xs">
                             {record.status.replace('_', ' ')}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <AttendancePhotoViewer
                               record={record}
                               trigger={
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
+                                  className="w-7 h-7 sm:w-8 sm:h-8"
                                 >
-                                  <Eye className="w-4 h-4" />
+                                  <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </Button>
                               }
                             />
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              className="w-7 h-7 sm:w-8 sm:h-8"
                               onClick={() => {
                                 setEditingRecord(record);
                                 setShowEditDialog(true);
                               }}
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -386,7 +388,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
           <Card 
             className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
             onClick={() => navigate('/admin/employees')}

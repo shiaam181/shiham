@@ -80,32 +80,32 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
 
   return (
     <header className={`sticky top-0 z-50 border-b border-border/50 ${getHeaderStyles()}`}>
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
               currentView === 'developer' ? 'bg-white/20' : 'bg-sidebar-primary text-sidebar-primary-foreground'
             }`}>
               {getIcon()}
             </div>
-            <div>
-              <h1 className="font-display font-bold text-lg">{title.main}</h1>
-              <p className={`text-xs ${currentView === 'developer' ? 'text-white/70' : 'text-sidebar-foreground/70'}`}>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-sm sm:text-lg truncate">{title.main}</h1>
+              <p className={`text-[10px] sm:text-xs truncate ${currentView === 'developer' ? 'text-white/70' : 'text-sidebar-foreground/70'}`}>
                 {title.sub}
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Developer View - only visible to developers */}
             {isDeveloper && (
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/developer')}
-                className={getActiveButtonStyles(currentView === 'developer')}
+                className={`px-2 sm:px-3 ${getActiveButtonStyles(currentView === 'developer')}`}
               >
-                <Code className="w-4 h-4 mr-2" />
+                <Code className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Developer</span>
               </Button>
             )}
@@ -116,9 +116,9 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/admin')}
-                className={getActiveButtonStyles(currentView === 'admin')}
+                className={`px-2 sm:px-3 ${getActiveButtonStyles(currentView === 'admin')}`}
               >
-                <Shield className="w-4 h-4 mr-2" />
+                <Shield className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Admin</span>
               </Button>
             )}
@@ -128,15 +128,15 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/dashboard')}
-              className={getActiveButtonStyles(currentView === 'employee')}
+              className={`px-2 sm:px-3 ${getActiveButtonStyles(currentView === 'employee')}`}
             >
-              <User className="w-4 h-4 mr-2" />
+              <User className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Employee</span>
             </Button>
             
             <NotificationBell />
             
-            <div className="flex items-center gap-2 ml-2">
+            <div className="hidden sm:flex items-center gap-2 ml-2">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
                 currentView === 'developer' ? 'bg-white/20' : 'bg-sidebar-accent'
               }`}>
@@ -144,7 +144,7 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
                  role === 'admin' ? <Shield className="w-5 h-5" /> : 
                  <User className="w-5 h-5" />}
               </div>
-              <div className="hidden sm:block">
+              <div>
                 <p className="text-sm font-medium">{profile?.full_name}</p>
                 <p className={`text-xs ${currentView === 'developer' ? 'text-white/70' : 'text-sidebar-foreground/70'}`}>
                   {getRoleLabel()}
@@ -156,9 +156,9 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
               variant="ghost" 
               size="icon" 
               onClick={signOut}
-              className={getButtonStyles()}
+              className={`w-8 h-8 sm:w-9 sm:h-9 ${getButtonStyles()}`}
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
