@@ -67,19 +67,21 @@ export default function DeveloperDashboard() {
   const [emailConfigSaving, setEmailConfigSaving] = useState(false);
   
   // Twilio SMS configuration state (Phone OTP)
-  const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
+  const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(true);
   const [twilioConfigured, setTwilioConfigured] = useState(false);
   const [twilioAccountSid, setTwilioAccountSid] = useState('');
   const [twilioAuthToken, setTwilioAuthToken] = useState('');
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState('');
   const [showTwilioKeys, setShowTwilioKeys] = useState(false);
   const [twilioConfigSaving, setTwilioConfigSaving] = useState(false);
+  const [twilioBackendConfigured, setTwilioBackendConfigured] = useState(false);
   
   // Resend Email OTP configuration state
-  const [emailOtpEnabled, setEmailOtpEnabled] = useState(false);
+  const [emailOtpEnabled, setEmailOtpEnabled] = useState(true);
   const [resendApiKey, setResendApiKey] = useState('');
   const [showResendKey, setShowResendKey] = useState(false);
   const [resendConfigSaving, setResendConfigSaving] = useState(false);
+  const [resendBackendConfigured, setResendBackendConfigured] = useState(false);
   
   // SMS Templates state
   const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
@@ -137,14 +139,16 @@ export default function DeveloperDashboard() {
             break;
           }
           case 'phone_otp_enabled':
-            setPhoneOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
+            setPhoneOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'email_otp_enabled':
-            setEmailOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
+            setEmailOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
             break;
           case 'resend_config': {
             const resendConfig = setting.value as { api_key?: string };
-            setResendApiKey(resendConfig?.api_key || '');
+            const apiKey = resendConfig?.api_key || '';
+            setResendApiKey(apiKey === 'configured_via_backend' ? '' : apiKey);
+            setResendBackendConfigured(apiKey === 'configured_via_backend' || apiKey === '');
             break;
           }
           case 'sms_templates': {
@@ -209,14 +213,18 @@ export default function DeveloperDashboard() {
       setTwilioAuthToken('');
       setTwilioPhoneNumber('');
       setTwilioConfigured(false);
+      // Check if backend secrets might be configured
+      setTwilioBackendConfigured(true);
       return;
     }
 
     const config = data.value as { account_sid?: string; auth_token?: string; phone_number?: string };
-    setTwilioAccountSid(config.account_sid || '');
-    setTwilioAuthToken(config.auth_token || '');
-    setTwilioPhoneNumber(config.phone_number || '');
-    setTwilioConfigured(!!(config.account_sid && config.auth_token && config.phone_number));
+    const isPlaceholder = config.account_sid === 'configured_via_backend';
+    setTwilioBackendConfigured(isPlaceholder);
+    setTwilioAccountSid(isPlaceholder ? '' : (config.account_sid || ''));
+    setTwilioAuthToken(isPlaceholder ? '' : (config.auth_token || ''));
+    setTwilioPhoneNumber(isPlaceholder ? '' : (config.phone_number || ''));
+    setTwilioConfigured(isPlaceholder || !!(config.account_sid && config.auth_token && config.phone_number));
   };
 
   const saveTwilioConfig = async () => {
@@ -248,8 +256,8 @@ export default function DeveloperDashboard() {
     setTwilioConfigSaving(false);
   };
 
-  const isTwilioConfigured = twilioAccountSid && twilioAuthToken && twilioPhoneNumber;
-  const isResendConfigured = !!resendApiKey;
+  const isTwilioConfigured = twilioBackendConfigured || (twilioAccountSid && twilioAuthToken && twilioPhoneNumber);
+  const isResendConfigured = resendBackendConfigured || !!resendApiKey;
 
   const togglePhoneOtp = async (enabled: boolean) => {
     setSettingsLoading(true);
@@ -1042,7 +1050,7 @@ export default function DeveloperDashboard() {
                         <Button
                           variant="outline"
                           onClick={testResendCredentials}
-                          disabled={testingResend || !isResendConfigured}
+                          disabled={testingResend || (!isResendConfigured && !resendBackendConfigured)}
                         >
                           {testingResend ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1065,7 +1073,21 @@ export default function DeveloperDashboard() {
                       </Button>
                     </div>
 
-                    {isResendConfigured && (
+                    {resendBackendConfigured && (
+                      <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <div className="flex items-start gap-3">
+                          <Key className="w-5 h-5 text-blue-500 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-blue-600">Backend Secret Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              RESEND_API_KEY is set in backend secrets. You can test it below without entering the key here.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!resendBackendConfigured && isResendConfigured && (
                       <div className="p-4 bg-success/10 rounded-lg border border-success/30">
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
@@ -1161,7 +1183,7 @@ export default function DeveloperDashboard() {
                         <Button
                           variant="outline"
                           onClick={testTwilioCredentials}
-                          disabled={testingTwilio || !isTwilioConfigured}
+                          disabled={testingTwilio || (!isTwilioConfigured && !twilioBackendConfigured)}
                         >
                           {testingTwilio ? (
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1192,7 +1214,21 @@ export default function DeveloperDashboard() {
                       </Button>
                     </div>
 
-                    {isTwilioConfigured && (
+                    {twilioBackendConfigured && (
+                      <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                        <div className="flex items-start gap-3">
+                          <Key className="w-5 h-5 text-blue-500 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-blue-600">Backend Secrets Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set in backend secrets. You can test it below without entering keys here.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!twilioBackendConfigured && isTwilioConfigured && (
                       <div className="p-4 bg-success/10 rounded-lg border border-success/30">
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
