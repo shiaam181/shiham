@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff, Phone } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -29,8 +30,9 @@ const signupSchema = z.object({
 });
 
 export default function Auth() {
+  const { settings } = useSystemSettings();
   const [isLogin, setIsLogin] = useState(true);
-  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'email_otp' | 'phone_otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -42,6 +44,7 @@ export default function Auth() {
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -51,12 +54,15 @@ export default function Auth() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [otpType, setOtpType] = useState<'signup' | 'login'>('signup');
+  const [otpMethod, setOtpMethod] = useState<'email' | 'phone'>('email');
   const [pendingSignupData, setPendingSignupData] = useState<{
     email: string;
     password: string;
     fullName: string;
+    phone?: string;
   } | null>(null);
   const [pendingLoginEmail, setPendingLoginEmail] = useState<string | null>(null);
+  const [pendingLoginPhone, setPendingLoginPhone] = useState<string | null>(null);
   
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -64,43 +70,84 @@ export default function Auth() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
 
+  // Determine which OTP options are available
+  const hasEmailOtp = settings.emailOtpEnabled;
+  const hasPhoneOtp = settings.phoneOtpEnabled;
+  const hasAnyOtp = hasEmailOtp || hasPhoneOtp;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const sendSignupOtp = async () => {
+  const sendSignupOtp = async (method: 'email' | 'phone') => {
     try {
       const validated = signupSchema.parse(formData);
       
       setIsSendingOtp(true);
+      setOtpMethod(method);
       
-      // Call our email OTP edge function
-      const { data, error } = await supabase.functions.invoke('send-email-otp', {
-        body: { email: validated.email, type: 'verification' },
-      });
-      
-      if (error || (data && data.error)) {
-        toast({
-          title: 'Failed to send OTP',
-          description: data?.error || error?.message || 'Email service error',
-          variant: 'destructive',
+      if (method === 'email') {
+        // Call email OTP edge function
+        const { data, error } = await supabase.functions.invoke('send-email-otp', {
+          body: { email: validated.email, type: 'verification' },
         });
-        return;
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to send OTP',
+            description: data?.error || error?.message || 'Email service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        setPendingSignupData({
+          email: validated.email,
+          password: validated.password,
+          fullName: validated.fullName,
+        });
+        setOtpType('signup');
+        setShowOtpVerification(true);
+        toast({
+          title: 'Verification Code Sent!',
+          description: `A 6-digit code has been sent to ${validated.email}`,
+        });
+      } else {
+        // Phone OTP - validate phone
+        const phone = formData.phone.trim();
+        if (!phone) {
+          setErrors({ phone: 'Phone number is required for phone verification' });
+          return;
+        }
+        
+        const { data, error } = await supabase.functions.invoke('send-otp', {
+          body: { phone, type: 'signup' },
+        });
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to send OTP',
+            description: data?.error || error?.message || 'SMS service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        setPendingSignupData({
+          email: validated.email,
+          password: validated.password,
+          fullName: validated.fullName,
+          phone,
+        });
+        setOtpType('signup');
+        setShowOtpVerification(true);
+        toast({
+          title: 'Verification Code Sent!',
+          description: `A verification code has been sent to ${phone}`,
+        });
       }
-      
-      setPendingSignupData({
-        email: validated.email,
-        password: validated.password,
-        fullName: validated.fullName,
-      });
-      setOtpType('signup');
-      setShowOtpVerification(true);
-      toast({
-        title: 'Verification Code Sent!',
-        description: `A 6-digit code has been sent to ${validated.email}`,
-      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -116,39 +163,75 @@ export default function Auth() {
     }
   };
 
-  const sendLoginOtp = async () => {
-    const emailValue = formData.email.trim();
+  const sendLoginOtp = async (method: 'email' | 'phone') => {
+    setOtpMethod(method);
     
-    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-      setErrors({ email: 'Please enter a valid email address' });
-      return;
-    }
-    
-    setIsSendingOtp(true);
-    try {
-      // Call our email OTP edge function
-      const { data, error } = await supabase.functions.invoke('send-email-otp', {
-        body: { email: emailValue, type: 'verification' },
-      });
+    if (method === 'email') {
+      const emailValue = formData.email.trim();
       
-      if (error || (data && data.error)) {
-        toast({
-          title: 'Failed to send OTP',
-          description: data?.error || error?.message || 'Email service error',
-          variant: 'destructive',
-        });
+      if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        setErrors({ email: 'Please enter a valid email address' });
         return;
       }
       
-      setPendingLoginEmail(emailValue);
-      setOtpType('login');
-      setShowOtpVerification(true);
-      toast({
-        title: 'Verification Code Sent!',
-        description: `A 6-digit code has been sent to ${emailValue}`,
-      });
-    } finally {
-      setIsSendingOtp(false);
+      setIsSendingOtp(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('send-email-otp', {
+          body: { email: emailValue, type: 'verification' },
+        });
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to send OTP',
+            description: data?.error || error?.message || 'Email service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        setPendingLoginEmail(emailValue);
+        setOtpType('login');
+        setShowOtpVerification(true);
+        toast({
+          title: 'Verification Code Sent!',
+          description: `A 6-digit code has been sent to ${emailValue}`,
+        });
+      } finally {
+        setIsSendingOtp(false);
+      }
+    } else {
+      const phoneValue = formData.phone.trim();
+      
+      if (!phoneValue) {
+        setErrors({ phone: 'Please enter your phone number' });
+        return;
+      }
+      
+      setIsSendingOtp(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('send-otp', {
+          body: { phone: phoneValue, type: 'login' },
+        });
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to send OTP',
+            description: data?.error || error?.message || 'SMS service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        setPendingLoginPhone(phoneValue);
+        setOtpType('login');
+        setShowOtpVerification(true);
+        toast({
+          title: 'Verification Code Sent!',
+          description: `A verification code has been sent to ${phoneValue}`,
+        });
+      } finally {
+        setIsSendingOtp(false);
+      }
     }
   };
 
@@ -317,18 +400,77 @@ export default function Auth() {
     }
   };
 
+  const handleDirectSignup = async () => {
+    try {
+      const validated = signupSchema.parse(formData);
+      setIsLoading(true);
+      
+      const { error: signUpError } = await signUp(
+        validated.email,
+        validated.password,
+        validated.fullName
+      );
+      
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast({
+            title: 'Account Exists',
+            description: 'This email is already registered. Please sign in instead.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Sign Up Failed',
+            description: signUpError.message,
+            variant: 'destructive',
+          });
+        }
+        return;
+      }
+      
+      toast({
+        title: 'Account created!',
+        description: 'Please set up face verification to continue.',
+      });
+      navigate('/face-setup');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isLogin) {
-      // For signup, send email OTP first
-      await sendSignupOtp();
+      // For signup, use email OTP if enabled, otherwise phone OTP
+      if (hasEmailOtp) {
+        await sendSignupOtp('email');
+      } else if (hasPhoneOtp) {
+        await sendSignupOtp('phone');
+      } else {
+        // No OTP enabled - direct signup
+        await handleDirectSignup();
+      }
       return;
     }
     
-    if (loginMethod === 'otp') {
-      // Email OTP login
-      await sendLoginOtp();
+    if (loginMethod === 'email_otp') {
+      await sendLoginOtp('email');
+      return;
+    }
+    
+    if (loginMethod === 'phone_otp') {
+      await sendLoginOtp('phone');
       return;
     }
     
@@ -431,7 +573,13 @@ export default function Auth() {
     { icon: Shield, title: 'Face Recognition', desc: 'AI-powered face verification' },
   ];
 
-  const getDisplayEmail = () => {
+  const getDisplayContact = () => {
+    if (otpMethod === 'phone') {
+      if (otpType === 'signup' && pendingSignupData?.phone) {
+        return pendingSignupData.phone;
+      }
+      return pendingLoginPhone || '';
+    }
     if (otpType === 'signup' && pendingSignupData) {
       return pendingSignupData.email;
     }
@@ -453,12 +601,14 @@ export default function Auth() {
           <Card variant="elevated" className="border-0 shadow-xl">
             <CardHeader className="space-y-1 pb-4 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Mail className="w-8 h-8 text-primary" />
+                {otpMethod === 'phone' ? <Phone className="w-8 h-8 text-primary" /> : <Mail className="w-8 h-8 text-primary" />}
               </div>
-              <CardTitle className="text-2xl font-display">Verify Your Email</CardTitle>
+              <CardTitle className="text-2xl font-display">
+                {otpMethod === 'phone' ? 'Verify Your Phone' : 'Verify Your Email'}
+              </CardTitle>
               <CardDescription>
-                We've sent a 6-digit code to<br />
-                <strong className="text-foreground">{getDisplayEmail()}</strong>
+                We've sent a verification code to<br />
+                <strong className="text-foreground">{getDisplayContact()}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -681,17 +831,25 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLogin && (
-                <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'password' | 'otp')} className="mb-4">
-                  <TabsList className="grid w-full grid-cols-2">
+              {isLogin && hasAnyOtp && (
+                <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'password' | 'email_otp' | 'phone_otp')} className="mb-4">
+                  <TabsList className={`grid w-full ${hasEmailOtp && hasPhoneOtp ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     <TabsTrigger value="password" className="flex items-center gap-2">
                       <Shield className="w-4 h-4" />
                       Password
                     </TabsTrigger>
-                    <TabsTrigger value="otp" className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Email OTP
-                    </TabsTrigger>
+                    {hasEmailOtp && (
+                      <TabsTrigger value="email_otp" className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email OTP
+                      </TabsTrigger>
+                    )}
+                    {hasPhoneOtp && (
+                      <TabsTrigger value="phone_otp" className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Phone OTP
+                      </TabsTrigger>
+                    )}
                   </TabsList>
                 </Tabs>
               )}
@@ -730,6 +888,44 @@ export default function Auth() {
                     <p className="text-sm text-destructive">{errors.email}</p>
                   )}
                 </div>
+
+                {/* Phone input for phone OTP login */}
+                {isLogin && loginMethod === 'phone_otp' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="+1234567890"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={errors.phone ? 'border-destructive' : ''}
+                    />
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Phone input for signup when phone OTP is enabled */}
+                {!isLogin && hasPhoneOtp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number {hasEmailOtp ? '(Optional for Phone OTP)' : ''}</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="+1234567890"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={errors.phone ? 'border-destructive' : ''}
+                    />
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">{errors.phone}</p>
+                    )}
+                  </div>
+                )}
                 
                 {/* Password fields - only show for password login or signup */}
                 {(isLogin && loginMethod === 'password') && (
@@ -824,9 +1020,15 @@ export default function Auth() {
                   </>
                 )}
 
-                {isLogin && loginMethod === 'otp' && (
+                {isLogin && loginMethod === 'email_otp' && (
                   <p className="text-xs text-muted-foreground">
                     We'll send a 6-digit verification code to your email
+                  </p>
+                )}
+                
+                {isLogin && loginMethod === 'phone_otp' && (
+                  <p className="text-xs text-muted-foreground">
+                    We'll send a verification code to your phone number
                   </p>
                 )}
 
@@ -842,8 +1044,8 @@ export default function Auth() {
                   ) : (
                     <>
                       {isLogin 
-                        ? (loginMethod === 'otp' ? 'Send Verification Code' : 'Sign In')
-                        : 'Continue with Email Verification'}
+                        ? (loginMethod !== 'password' ? 'Send Verification Code' : 'Sign In')
+                        : (hasAnyOtp ? 'Continue with Verification' : 'Sign Up')}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -900,7 +1102,7 @@ export default function Auth() {
                     onClick={() => {
                       setIsLogin(!isLogin);
                       setErrors({});
-                      setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
+                      setFormData({ fullName: '', email: '', password: '', confirmPassword: '', phone: '' });
                       setLoginMethod('password');
                       setShowPassword(false);
                       setShowConfirmPassword(false);

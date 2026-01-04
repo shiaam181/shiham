@@ -63,14 +63,20 @@ export default function DeveloperDashboard() {
   const [showEmailKeys, setShowEmailKeys] = useState(false);
   const [emailConfigSaving, setEmailConfigSaving] = useState(false);
   
-  // Twilio SMS configuration state
-  const [twilioEnabled, setTwilioEnabled] = useState(false);
+  // Twilio SMS configuration state (Phone OTP)
+  const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
   const [twilioConfigured, setTwilioConfigured] = useState(false);
   const [twilioAccountSid, setTwilioAccountSid] = useState('');
   const [twilioAuthToken, setTwilioAuthToken] = useState('');
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState('');
   const [showTwilioKeys, setShowTwilioKeys] = useState(false);
   const [twilioConfigSaving, setTwilioConfigSaving] = useState(false);
+  
+  // Resend Email OTP configuration state
+  const [emailOtpEnabled, setEmailOtpEnabled] = useState(false);
+  const [resendApiKey, setResendApiKey] = useState('');
+  const [showResendKey, setShowResendKey] = useState(false);
+  const [resendConfigSaving, setResendConfigSaving] = useState(false);
   
   // SMS Templates state
   const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
@@ -117,9 +123,17 @@ export default function DeveloperDashboard() {
             setEmailPublicKey(emailConfig?.public_key || '');
             break;
           }
-          case 'twilio_sms_enabled':
-            setTwilioEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
+          case 'phone_otp_enabled':
+            setPhoneOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
             break;
+          case 'email_otp_enabled':
+            setEmailOtpEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
+            break;
+          case 'resend_config': {
+            const resendConfig = setting.value as { api_key?: string };
+            setResendApiKey(resendConfig?.api_key || '');
+            break;
+          }
           case 'sms_templates': {
             const templates = setting.value as { otp_signup?: string; otp_login?: string };
             if (templates?.otp_signup) setSmsTemplateSignup(templates.otp_signup);
@@ -222,27 +236,74 @@ export default function DeveloperDashboard() {
   };
 
   const isTwilioConfigured = twilioAccountSid && twilioAuthToken && twilioPhoneNumber;
+  const isResendConfigured = !!resendApiKey;
 
-  const toggleTwilioSms = async (enabled: boolean) => {
+  const togglePhoneOtp = async (enabled: boolean) => {
     setSettingsLoading(true);
     const { error } = await supabase
       .from('system_settings')
-      .upsert({ key: 'twilio_sms_enabled', value: { enabled } }, { onConflict: 'key' });
+      .upsert({ key: 'phone_otp_enabled', value: { enabled } }, { onConflict: 'key' });
     
     if (error) {
       toast({
         title: 'Error',
-        description: 'Failed to update Twilio SMS setting',
+        description: 'Failed to update Phone OTP setting',
         variant: 'destructive',
       });
     } else {
-      setTwilioEnabled(enabled);
+      setPhoneOtpEnabled(enabled);
       toast({
         title: 'Setting Updated',
-        description: `Twilio SMS for OTP is now ${enabled ? 'enabled' : 'disabled'}`,
+        description: `Phone OTP verification is now ${enabled ? 'enabled' : 'disabled'}`,
       });
     }
     setSettingsLoading(false);
+  };
+
+  const toggleEmailOtp = async (enabled: boolean) => {
+    setSettingsLoading(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({ key: 'email_otp_enabled', value: { enabled } }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update Email OTP setting',
+        variant: 'destructive',
+      });
+    } else {
+      setEmailOtpEnabled(enabled);
+      toast({
+        title: 'Setting Updated',
+        description: `Email OTP verification is now ${enabled ? 'enabled' : 'disabled'}`,
+      });
+    }
+    setSettingsLoading(false);
+  };
+
+  const saveResendConfig = async () => {
+    setResendConfigSaving(true);
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'resend_config',
+        value: { api_key: resendApiKey }
+      }, { onConflict: 'key' });
+    
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save Resend configuration',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: 'Resend API configuration saved successfully',
+      });
+    }
+    setResendConfigSaving(false);
   };
 
   const saveSmsTemplates = async () => {
@@ -730,8 +791,85 @@ export default function DeveloperDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Twilio SMS Configuration */}
-                <Card className={`mt-6 ${twilioEnabled ? 'border-success/50' : ''}`}>
+                {/* Resend Email OTP Configuration */}
+                <Card className={`mt-6 ${emailOtpEnabled ? 'border-success/50' : ''}`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Mail className="w-5 h-5" />
+                      Resend Email (Email OTP)
+                    </CardTitle>
+                    <CardDescription>
+                      Enable Resend for email OTP verification during signup/login. Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com</a>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div className="space-y-1">
+                        <Label className="font-medium flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          Enable Email OTP Verification
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          When enabled, users can verify via email OTP during signup/login
+                        </p>
+                      </div>
+                      <Switch
+                        checked={emailOtpEnabled}
+                        onCheckedChange={toggleEmailOtp}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="resend-key">Resend API Key</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="resend-key"
+                          type={showResendKey ? 'text' : 'password'}
+                          placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={resendApiKey}
+                          onChange={(e) => setResendApiKey(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowResendKey(!showResendKey)}
+                        >
+                          {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-end">
+                      <Button onClick={saveResendConfig} disabled={resendConfigSaving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {resendConfigSaving ? 'Saving...' : 'Save Resend Configuration'}
+                      </Button>
+                    </div>
+
+                    {isResendConfigured && (
+                      <div className="p-4 bg-success/10 rounded-lg border border-success/30">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-success">Resend API Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Email OTP messages will be sent via Resend.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com/api-keys</a></p>
+                      <p>• Verify your sending domain at <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary underline">resend.com/domains</a></p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className={`mt-6 ${phoneOtpEnabled ? 'border-success/50' : ''}`}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <MessageSquare className="w-5 h-5" />
@@ -749,12 +887,12 @@ export default function DeveloperDashboard() {
                           Enable Phone OTP Verification
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          When enabled, new users must verify their phone number with a 6-digit OTP code during signup
+                          When enabled, users can verify via phone OTP during signup/login
                         </p>
                       </div>
                       <Switch
-                        checked={twilioEnabled}
-                        onCheckedChange={toggleTwilioSms}
+                        checked={phoneOtpEnabled}
+                        onCheckedChange={togglePhoneOtp}
                         disabled={settingsLoading}
                       />
                     </div>
