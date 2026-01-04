@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
@@ -10,6 +10,30 @@ interface CameraCaptureProps {
   onClose: () => void;
   type: 'check-in' | 'check-out';
   referenceEmbedding?: number[] | null;
+}
+
+// Helper to validate and normalize embedding (could be object from JSON)
+function normalizeEmbedding(embedding: unknown): number[] | null {
+  if (!embedding) return null;
+  
+  // If it's already a proper array
+  if (Array.isArray(embedding) && embedding.length === 128) {
+    const allNumbers = embedding.every(v => typeof v === 'number' && !isNaN(v));
+    return allNumbers ? embedding : null;
+  }
+  
+  // If it's an object (from JSON storage), convert to array
+  if (typeof embedding === 'object' && embedding !== null) {
+    const arr: number[] = [];
+    for (let i = 0; i < 128; i++) {
+      const val = (embedding as Record<string, unknown>)[String(i)];
+      if (typeof val !== 'number' || isNaN(val)) return null;
+      arr.push(val);
+    }
+    return arr.length === 128 ? arr : null;
+  }
+  
+  return null;
 }
 
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
@@ -27,6 +51,14 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     confidence: number;
     reason: string;
   } | null>(null);
+
+  // Normalize the reference embedding once (handles JSON object format from DB)
+  const validReferenceEmbedding = useMemo(() => {
+    return normalizeEmbedding(referenceEmbedding);
+  }, [referenceEmbedding]);
+
+  // Track if face verification is required
+  const requiresFaceVerification = validReferenceEmbedding !== null;
 
   // Load face models on mount
   useEffect(() => {
@@ -132,15 +164,16 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     setCapturedImage(dataUrl);
     stopCamera();
 
-    // If we have a reference embedding, verify face locally
-    if (referenceEmbedding && referenceEmbedding.length > 0) {
+    // If we have a VALID reference embedding, verify face locally
+    if (requiresFaceVerification) {
       await verifyFaceLocally(canvas);
     }
   };
 
   const verifyFaceLocally = async (canvas: HTMLCanvasElement) => {
-    if (!referenceEmbedding || referenceEmbedding.length === 0) {
-      setVerificationResult({ match: true, confidence: 100, reason: 'No reference embedding - verification skipped' });
+    if (!validReferenceEmbedding) {
+      // This should not happen since we check requiresFaceVerification before calling
+      setVerificationResult({ match: false, confidence: 0, reason: 'No valid reference face registered' });
       return;
     }
 
@@ -160,7 +193,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
 
       // Compare embeddings locally (cosine similarity)
       const similarityThreshold = confidenceThreshold / 100;
-      const result = compareFaceEmbeddings(referenceEmbedding, capturedEmbedding, similarityThreshold);
+      const result = compareFaceEmbeddings(validReferenceEmbedding, capturedEmbedding, similarityThreshold);
+      console.log('Face verification result:', result);
       setVerificationResult(result);
     } catch (error) {
       console.error('Face verification error:', error);
@@ -182,15 +216,16 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
 
   const confirmPhoto = () => {
     if (capturedImage) {
+      // STRICT: If face verification is required, must pass verification
       const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-      const faceVerified = referenceEmbedding && referenceEmbedding.length > 0 ? meetsThreshold : true;
+      const faceVerified = requiresFaceVerification ? meetsThreshold : true;
       onCapture(capturedImage, faceVerified);
     }
   };
 
-  // Face must meet threshold if reference exists - no bypass allowed
+  // STRICT: Face MUST meet threshold if valid reference exists - NO bypass allowed
   const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-  const canConfirm = !referenceEmbedding || referenceEmbedding.length === 0 || meetsThreshold;
+  const canConfirm = !requiresFaceVerification || meetsThreshold;
 
   if (modelsLoading) {
     return (
@@ -267,7 +302,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
           )}
 
           {/* Verification Status */}
-          {capturedImage && referenceEmbedding && referenceEmbedding.length > 0 && (
+          {capturedImage && requiresFaceVerification && (
             <div className="absolute bottom-4 left-4 right-4">
               {isVerifying ? (
                 <div className="bg-black/70 backdrop-blur rounded-lg p-3 flex items-center gap-3">
@@ -285,7 +320,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
                   )}
                   <div className="flex-1">
                     <p className="text-white text-sm font-medium">
-                      {meetsThreshold ? 'Face Verified' : 'Face Not Matched'}
+                      {meetsThreshold ? 'Face Verified ✓' : 'Face Not Matched ✗'}
                     </p>
                     <p className="text-white/80 text-xs">
                       {verificationResult.confidence}% confidence (required: {confidenceThreshold}%)
@@ -339,8 +374,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         </div>
 
         <p className="text-xs text-center text-muted-foreground pb-4 px-4">
-          {referenceEmbedding && referenceEmbedding.length > 0
-            ? 'Face verification is performed locally on your device'
+          {requiresFaceVerification
+            ? 'Face verification is required - your face must match your registered photo'
             : 'Position your face within the guide for best results'
           }
         </p>
