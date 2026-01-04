@@ -234,8 +234,24 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Twilio SMS error:", errorText);
       // Clean up OTP on failure
       await supabase.from("phone_otps").delete().eq("phone", phone);
+      
+      // Parse Twilio error for better user messaging
+      let userMessage = "Failed to send SMS. Please try again.";
+      try {
+        const twilioError = JSON.parse(errorText);
+        if (twilioError.code === 21408) {
+          userMessage = "SMS delivery to this region is not enabled. Please contact administrator or use email verification.";
+        } else if (twilioError.code === 21211) {
+          userMessage = "Invalid phone number format. Please check and try again.";
+        } else if (twilioError.code === 21614) {
+          userMessage = "This phone number cannot receive SMS. Please use a different number.";
+        }
+      } catch (e) {
+        // Keep default message
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Failed to send SMS" }),
+        JSON.stringify({ error: userMessage }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
