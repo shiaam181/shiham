@@ -16,13 +16,17 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-  Shield
+  Shield,
+  LogOut
 } from 'lucide-react';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -441,7 +445,37 @@ export default function ProfileSettings() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Account Actions */}
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <LogOut className="w-5 h-5" />
+              Account Actions
+            </CardTitle>
+            <CardDescription>Sign out of your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full" 
+              onClick={async () => {
+                await signOut();
+                navigate('/auth');
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+        
+        {/* Add padding for bottom nav on mobile */}
+        {isMobile && <div className="h-20" />}
       </main>
+
+      {/* Mobile Bottom Nav */}
+      {isMobile && <MobileBottomNav />}
 
       {/* Phone Verification Dialog */}
       <PhoneVerificationDialog
