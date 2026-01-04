@@ -57,6 +57,7 @@ export default function DeveloperDashboard() {
   const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
+  const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // EmailJS configuration state
@@ -157,6 +158,9 @@ export default function DeveloperDashboard() {
             if (templates?.otp_login) setSmsTemplateLogin(templates.otp_login);
             break;
           }
+          case 'google_signin_enabled':
+            setGoogleSigninEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
+            break;
         }
       });
     }
@@ -586,6 +590,10 @@ export default function DeveloperDashboard() {
   const toggleOvertimeTracking = (enabled: boolean) => 
     updateSetting('overtime_tracking_enabled', enabled, setOvertimeTrackingEnabled, 
       `Overtime tracking is now ${enabled ? 'enabled' : 'disabled'}`);
+
+  const toggleGoogleSignin = (enabled: boolean) => 
+    updateSetting('google_signin_enabled', enabled, setGoogleSigninEnabled, 
+      `Google Sign-in is now ${enabled ? 'enabled' : 'disabled'}`);
 
   if (authLoading) {
     return (
@@ -1327,6 +1335,71 @@ export default function DeveloperDashboard() {
                         id="marketing-page"
                         checked={marketingPageEnabled}
                         onCheckedChange={toggleMarketingPage}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Authentication Settings */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Shield className="w-5 h-5" />
+                      Authentication Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Control login methods and authentication options
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="google-signin" className="font-medium">
+                          Google Sign-in
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Allow users to sign in with their Google account. Disable if OAuth is not configured.
+                        </p>
+                      </div>
+                      <Switch
+                        id="google-signin"
+                        checked={googleSigninEnabled}
+                        onCheckedChange={toggleGoogleSignin}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="phone-otp-auth" className="font-medium">
+                          Phone OTP Login
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Allow users to sign in/sign up using phone OTP verification (requires Twilio).
+                        </p>
+                      </div>
+                      <Switch
+                        id="phone-otp-auth"
+                        checked={phoneOtpEnabled}
+                        onCheckedChange={togglePhoneOtp}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="email-otp-auth" className="font-medium">
+                          Email OTP Login
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Allow users to sign in/sign up using email OTP verification (requires EmailJS or Resend).
+                        </p>
+                      </div>
+                      <Switch
+                        id="email-otp-auth"
+                        checked={emailOtpEnabled}
+                        onCheckedChange={toggleEmailOtp}
                         disabled={settingsLoading}
                       />
                     </div>
