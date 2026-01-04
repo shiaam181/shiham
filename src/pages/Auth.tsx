@@ -372,7 +372,7 @@ export default function Auth() {
 
         const { error: verifyError } = await supabase.auth.verifyOtp({
           email,
-          token: tokenHash,
+          token_hash: tokenHash,
           type: 'magiclink',
         });
 
