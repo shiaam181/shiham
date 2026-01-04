@@ -229,72 +229,73 @@ export default function LeaveManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 sm:pb-6">
       {/* Header */}
       <RoleBasedHeader currentView={fromDeveloper ? 'developer' : 'admin'} />
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="font-display font-bold text-lg">Leave Management</h1>
-            <p className="text-xs text-muted-foreground">Review and manage leave requests</p>
+          <div className="min-w-0">
+            <h1 className="font-display font-bold text-sm sm:text-lg truncate">Leave Management</h1>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Review and manage leave requests</p>
           </div>
         </div>
+        
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-warning-soft flex items-center justify-center">
-                <Clock className="w-5 h-5 text-warning" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-warning-soft flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">
+                <p className="text-lg sm:text-2xl font-display font-bold">
                   {leaveRequests.filter(r => r.status === 'pending').length}
                 </p>
-                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Pending</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
-                <Check className="w-5 h-5 text-success" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-success-soft flex items-center justify-center shrink-0">
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">
+                <p className="text-lg sm:text-2xl font-display font-bold">
                   {leaveRequests.filter(r => r.status === 'approved').length}
                 </p>
-                <p className="text-xs text-muted-foreground">Approved</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Approved</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-destructive-soft flex items-center justify-center">
-                <X className="w-5 h-5 text-destructive" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-destructive-soft flex items-center justify-center shrink-0">
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">
+                <p className="text-lg sm:text-2xl font-display font-bold">
                   {leaveRequests.filter(r => r.status === 'rejected').length}
                 </p>
-                <p className="text-xs text-muted-foreground">Rejected</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Rejected</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-accent-foreground" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-accent-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-display font-bold">{leaveRequests.length}</p>
-                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-lg sm:text-2xl font-display font-bold">{leaveRequests.length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Total</p>
               </div>
             </div>
           </Card>
@@ -302,38 +303,39 @@ export default function LeaveManagement() {
 
         {/* Leave Requests Table */}
         <Card>
-          <CardHeader>
-            <CardTitle>Leave Requests</CardTitle>
-            <CardDescription>Review and manage employee leave requests</CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Leave Requests</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Review and manage employee leave requests</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="pending">
+              <TabsList className="mb-4 w-full grid grid-cols-4 h-auto p-1">
+                <TabsTrigger value="pending" className="text-[10px] sm:text-sm py-2 px-1">
                   Pending ({leaveRequests.filter(r => r.status === 'pending').length})
                 </TabsTrigger>
-                <TabsTrigger value="approved">Approved</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="approved" className="text-[10px] sm:text-sm py-2 px-1">Approved</TabsTrigger>
+                <TabsTrigger value="rejected" className="text-[10px] sm:text-sm py-2 px-1">Rejected</TabsTrigger>
+                <TabsTrigger value="all" className="text-[10px] sm:text-sm py-2 px-1">All</TabsTrigger>
               </TabsList>
 
               <TabsContent value={activeTab}>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Leave Type</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Leave Type</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Duration</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Days</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Reason</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredRequests.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
                           No leave requests found
                         </TableCell>
                       </TableRow>
@@ -346,32 +348,32 @@ export default function LeaveManagement() {
                           <TableRow key={request.id}>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <User className="w-4 h-4 text-primary" />
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <User className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                                 </div>
-                                <div>
-                                  <p className="font-medium">{profile?.full_name || 'Unknown'}</p>
-                                  <p className="text-xs text-muted-foreground">{profile?.department || '-'}</p>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">{profile?.full_name || 'Unknown'}</p>
+                                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[80px] sm:max-w-none hidden sm:block">{profile?.department || '-'}</p>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>{getLeaveTypeBadge(request.leave_type)}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{getLeaveTypeBadge(request.leave_type)}</TableCell>
                             <TableCell>
-                              <div className="text-sm">
-                                <p>{format(new Date(request.start_date), 'MMM d, yyyy')}</p>
-                                <p className="text-muted-foreground">to {format(new Date(request.end_date), 'MMM d, yyyy')}</p>
+                              <div className="text-[10px] sm:text-sm">
+                                <p>{format(new Date(request.start_date), 'MMM d')}</p>
+                                <p className="text-muted-foreground">to {format(new Date(request.end_date), 'MMM d')}</p>
                               </div>
                             </TableCell>
-                            <TableCell>{days} day{days > 1 ? 's' : ''}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">{request.reason || '-'}</TableCell>
+                            <TableCell className="hidden md:table-cell text-xs sm:text-sm">{days}d</TableCell>
+                            <TableCell className="hidden lg:table-cell max-w-[150px] truncate text-xs sm:text-sm">{request.reason || '-'}</TableCell>
                             <TableCell>{getStatusBadge(request.status)}</TableCell>
                             <TableCell className="text-right">
                               {request.status === 'pending' ? (
-                                <Button variant="outline" size="sm" onClick={() => openReviewDialog(request)}>
+                                <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => openReviewDialog(request)}>
                                   Review
                                 </Button>
                               ) : (
-                                <Button variant="ghost" size="sm" onClick={() => openReviewDialog(request)}>
+                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={() => openReviewDialog(request)}>
                                   View
                                 </Button>
                               )}
@@ -382,6 +384,7 @@ export default function LeaveManagement() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

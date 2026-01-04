@@ -417,93 +417,95 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 sm:pb-6">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-info-soft flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-info" />
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
                 </div>
-                <div>
-                  <h1 className="font-display font-bold text-lg">Attendance Reports</h1>
-                  <p className="text-xs text-muted-foreground">Monthly analytics & export</p>
+                <div className="min-w-0">
+                  <h1 className="font-display font-bold text-sm sm:text-lg truncate">Attendance Reports</h1>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Monthly analytics & export</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Input
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-auto"
+                className="w-full sm:w-auto"
               />
-              <Button variant="outline" onClick={exportToCSV}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Button variant="hero" onClick={exportToPDF}>
-                <FileText className="w-4 h-4 mr-2" />
-                Export PDF
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={exportToCSV} className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                  <FileSpreadsheet className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Export </span>CSV
+                </Button>
+                <Button variant="hero" size="sm" onClick={exportToPDF} className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                  <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Export </span>PDF
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Employees</p>
-                <p className="text-3xl font-display font-bold mt-1">{totalStats.totalEmployees}</p>
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Employees</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1">{totalStats.totalEmployees}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Attendance</p>
-                <p className="text-3xl font-display font-bold mt-1 text-success">{totalStats.avgAttendance}%</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-success-soft flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-success" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Late Check-ins</p>
-                <p className="text-3xl font-display font-bold mt-1 text-warning">{totalStats.totalLateCheckIns}</p>
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Avg Attendance</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-success">{totalStats.avgAttendance}%</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-warning-soft flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-warning" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-success-soft flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
               </div>
             </div>
           </Card>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Absences</p>
-                <p className="text-3xl font-display font-bold mt-1 text-destructive">{totalStats.totalAbsent}</p>
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Late Check-ins</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-warning">{totalStats.totalLateCheckIns}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-destructive-soft flex items-center justify-center">
-                <XCircle className="w-6 h-6 text-destructive" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-3 sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Absences</p>
+                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-destructive">{totalStats.totalAbsent}</p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-destructive-soft flex items-center justify-center shrink-0">
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
               </div>
             </div>
           </Card>
@@ -511,58 +513,60 @@ export default function Reports() {
 
         {/* Detailed Report */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Monthly Attendance Summary
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')} - {stats.length} employees
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
+          <CardContent className="px-3 sm:px-6">
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-center">Present</TableHead>
-                    <TableHead className="text-center">Absent</TableHead>
-                    <TableHead className="text-center">Leave</TableHead>
-                    <TableHead className="text-center">Late</TableHead>
-                    <TableHead className="text-center">Early Out</TableHead>
-                    <TableHead className="text-center">Attendance %</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center">Present</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center">Absent</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center hidden sm:table-cell">Leave</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Late</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Early Out</TableHead>
+                    <TableHead className="text-xs sm:text-sm text-center">%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {stats.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
                         No data available for this period
                       </TableCell>
                     </TableRow>
                   ) : (
                     stats.map((stat) => (
                       <TableRow key={stat.employee.id}>
-                        <TableCell className="font-medium">{stat.employee.full_name}</TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="font-medium text-xs sm:text-sm">
+                          <span className="truncate max-w-[80px] sm:max-w-none block">{stat.employee.full_name}</span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
                           {stat.employee.department || '-'}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="success-soft">{stat.present}</Badge>
+                          <Badge variant="success-soft" className="text-[10px] sm:text-xs">{stat.present}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="destructive-soft">{stat.absent}</Badge>
+                          <Badge variant="destructive-soft" className="text-[10px] sm:text-xs">{stat.absent}</Badge>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="info-soft">{stat.leave}</Badge>
+                        <TableCell className="text-center hidden sm:table-cell">
+                          <Badge variant="info-soft" className="text-[10px] sm:text-xs">{stat.leave}</Badge>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="warning-soft">{stat.lateCheckIns}</Badge>
+                        <TableCell className="text-center hidden lg:table-cell">
+                          <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.lateCheckIns}</Badge>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="warning-soft">{stat.earlyCheckOuts}</Badge>
+                        <TableCell className="text-center hidden lg:table-cell">
+                          <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.earlyCheckOuts}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge 
@@ -573,6 +577,7 @@ export default function Reports() {
                                   ? 'warning' 
                                   : 'destructive'
                             }
+                            className="text-[10px] sm:text-xs"
                           >
                             {stat.attendancePercentage}%
                           </Badge>
