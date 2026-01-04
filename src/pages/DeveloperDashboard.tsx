@@ -33,7 +33,10 @@ import {
   Eye,
   EyeOff,
   Phone,
-  MessageSquare
+  MessageSquare,
+  PlayCircle,
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -82,6 +85,16 @@ export default function DeveloperDashboard() {
   const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
   const [smsTemplateLogin, setSmsTemplateLogin] = useState('Your AttendanceHub login code is: {{OTP}}. This code expires in 5 minutes.');
   const [smsTemplatesSaving, setSmsTemplatesSaving] = useState(false);
+  
+  // Test states
+  const [testingTwilio, setTestingTwilio] = useState(false);
+  const [twilioTestResult, setTwilioTestResult] = useState<'success' | 'error' | null>(null);
+  const [testingResend, setTestingResend] = useState(false);
+  const [resendTestResult, setResendTestResult] = useState<'success' | 'error' | null>(null);
+  const [testingEmailJS, setTestingEmailJS] = useState(false);
+  const [emailJSTestResult, setEmailJSTestResult] = useState<'success' | 'error' | null>(null);
+  const [testEmail, setTestEmail] = useState('');
+  const [testPhone, setTestPhone] = useState('');
 
   useEffect(() => {
     fetchSettings();
@@ -331,6 +344,149 @@ export default function DeveloperDashboard() {
       });
     }
     setSmsTemplatesSaving(false);
+  };
+
+  // Test Twilio credentials
+  const testTwilioCredentials = async () => {
+    if (!testPhone) {
+      toast({
+        title: 'Phone Required',
+        description: 'Please enter a phone number to test SMS delivery',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setTestingTwilio(true);
+    setTwilioTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phone: testPhone, type: 'login' }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setTwilioTestResult('success');
+        toast({
+          title: 'Twilio Test Passed',
+          description: 'SMS sent successfully! Check your phone for the test OTP.',
+        });
+      } else {
+        throw new Error(data?.message || 'Failed to send SMS');
+      }
+    } catch (error: any) {
+      setTwilioTestResult('error');
+      toast({
+        title: 'Twilio Test Failed',
+        description: error.message || 'Failed to send test SMS',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingTwilio(false);
+    }
+  };
+
+  // Test Resend credentials
+  const testResendCredentials = async () => {
+    if (!testEmail) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter an email address to test email delivery',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setTestingResend(true);
+    setResendTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email-otp', {
+        body: { email: testEmail, type: 'verification' }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setResendTestResult('success');
+        toast({
+          title: 'Resend Test Passed',
+          description: 'Email sent successfully! Check your inbox for the test OTP.',
+        });
+      } else {
+        throw new Error(data?.message || data?.error || 'Failed to send email');
+      }
+    } catch (error: any) {
+      setResendTestResult('error');
+      toast({
+        title: 'Resend Test Failed',
+        description: error.message || 'Failed to send test email',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingResend(false);
+    }
+  };
+
+  // Test EmailJS credentials
+  const testEmailJSCredentials = async () => {
+    if (!emailServiceId || !emailTemplateId || !emailPublicKey) {
+      toast({
+        title: 'Configuration Required',
+        description: 'Please fill in all EmailJS credentials first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!testEmail) {
+      toast({
+        title: 'Email Required',
+        description: 'Please enter an email address to test email delivery',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setTestingEmailJS(true);
+    setEmailJSTestResult(null);
+    
+    try {
+      // Dynamically import emailjs
+      const emailjs = await import('@emailjs/browser');
+      
+      await emailjs.send(
+        emailServiceId,
+        emailTemplateId,
+        {
+          to_email: testEmail,
+          to_name: 'Test User',
+          leave_type: 'Test',
+          start_date: new Date().toLocaleDateString(),
+          end_date: new Date().toLocaleDateString(),
+          status: 'Approved',
+          admin_notes: 'This is a test email from AttendanceHub developer settings.',
+        },
+        emailPublicKey
+      );
+      
+      setEmailJSTestResult('success');
+      toast({
+        title: 'EmailJS Test Passed',
+        description: 'Email sent successfully! Check your inbox.',
+      });
+    } catch (error: any) {
+      setEmailJSTestResult('error');
+      toast({
+        title: 'EmailJS Test Failed',
+        description: error.message || 'Failed to send test email',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingEmailJS(false);
+    }
   };
 
   const saveFaceThreshold = async (threshold: number) => {
@@ -774,6 +930,37 @@ export default function DeveloperDashboard() {
                         />
                       </div>
                     </div>
+                    
+                    {/* Test Section */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-dashed space-y-3">
+                      <Label className="text-sm font-medium">Test EmailJS Configuration</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          placeholder="Enter test email address"
+                          value={testEmail}
+                          onChange={(e) => setTestEmail(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={testEmailJSCredentials}
+                          disabled={testingEmailJS || !isEmailConfigured}
+                        >
+                          {testingEmailJS ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : emailJSTestResult === 'success' ? (
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                          ) : emailJSTestResult === 'error' ? (
+                            <XCircle className="w-4 h-4 mr-2 text-destructive" />
+                          ) : (
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Test
+                        </Button>
+                      </div>
+                    </div>
+                    
                     <div className="flex items-center justify-between">
                       <Button
                         variant="ghost"
@@ -837,6 +1024,36 @@ export default function DeveloperDashboard() {
                           onClick={() => setShowResendKey(!showResendKey)}
                         >
                           {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Test Section */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-dashed space-y-3">
+                      <Label className="text-sm font-medium">Test Resend Configuration</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          placeholder="Enter test email address"
+                          value={testEmail}
+                          onChange={(e) => setTestEmail(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={testResendCredentials}
+                          disabled={testingResend || !isResendConfigured}
+                        >
+                          {testingResend ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : resendTestResult === 'success' ? (
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                          ) : resendTestResult === 'error' ? (
+                            <XCircle className="w-4 h-4 mr-2 text-destructive" />
+                          ) : (
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Test
                         </Button>
                       </div>
                     </div>
@@ -927,6 +1144,36 @@ export default function DeveloperDashboard() {
                           value={twilioPhoneNumber}
                           onChange={(e) => setTwilioPhoneNumber(e.target.value)}
                         />
+                      </div>
+                    </div>
+                    
+                    {/* Test Section */}
+                    <div className="p-4 bg-muted/30 rounded-lg border border-dashed space-y-3">
+                      <Label className="text-sm font-medium">Test Twilio Configuration</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="tel"
+                          placeholder="Enter test phone number (+1234567890)"
+                          value={testPhone}
+                          onChange={(e) => setTestPhone(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={testTwilioCredentials}
+                          disabled={testingTwilio || !isTwilioConfigured}
+                        >
+                          {testingTwilio ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : twilioTestResult === 'success' ? (
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                          ) : twilioTestResult === 'error' ? (
+                            <XCircle className="w-4 h-4 mr-2 text-destructive" />
+                          ) : (
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Test
+                        </Button>
                       </div>
                     </div>
                     
