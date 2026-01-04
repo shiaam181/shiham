@@ -12,7 +12,9 @@ export interface SystemSettings {
   emailServiceId: string;
   emailTemplateId: string;
   emailPublicKey: string;
-  twilioSmsEnabled: boolean;
+  phoneOtpEnabled: boolean;
+  emailOtpEnabled: boolean;
+  resendApiKey: string;
 }
 
 const defaultSettings: SystemSettings = {
@@ -26,7 +28,9 @@ const defaultSettings: SystemSettings = {
   emailServiceId: '',
   emailTemplateId: '',
   emailPublicKey: '',
-  twilioSmsEnabled: false,
+  phoneOtpEnabled: false,
+  emailOtpEnabled: false,
+  resendApiKey: '',
 };
 
 export function useSystemSettings() {
@@ -72,8 +76,14 @@ export function useSystemSettings() {
             newSettings.emailTemplateId = value?.template_id ?? '';
             newSettings.emailPublicKey = value?.public_key ?? '';
             break;
-          case 'twilio_sms_enabled':
-            newSettings.twilioSmsEnabled = value?.enabled ?? false;
+          case 'phone_otp_enabled':
+            newSettings.phoneOtpEnabled = value?.enabled ?? false;
+            break;
+          case 'email_otp_enabled':
+            newSettings.emailOtpEnabled = value?.enabled ?? false;
+            break;
+          case 'resend_config':
+            newSettings.resendApiKey = (value as { api_key?: string })?.api_key ?? '';
             break;
         }
       });
