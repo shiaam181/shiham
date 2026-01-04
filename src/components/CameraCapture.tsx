@@ -1,9 +1,11 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { extractFaceEmbedding, compareFaceEmbeddings, loadFaceModels } from '@/lib/faceRecognition';
+import { LivenessDetector, LivenessState, resetLivenessDetector } from '@/lib/livenessDetection';
 
 interface CameraCaptureProps {
   onCapture: (photoDataUrl: string, faceVerified: boolean) => void;
@@ -39,13 +41,24 @@ function normalizeEmbedding(embedding: unknown): number[] | null {
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const livenessDetectorRef = useRef<LivenessDetector | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState(60); // Default threshold (60% ~= cosine similarity 0.6)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(60);
+  const [livenessEnabled, setLivenessEnabled] = useState(true);
+  const [livenessState, setLivenessState] = useState<LivenessState>({
+    isLive: false,
+    blinkCount: 0,
+    status: 'detecting',
+    message: 'Position your face in the frame',
+    progress: 0,
+  });
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     confidence: number;
@@ -71,22 +84,75 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
       });
   }, []);
 
-  // Fetch the confidence threshold from system settings
+  // Fetch settings (threshold and liveness enabled)
   useEffect(() => {
-    const fetchThreshold = async () => {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'face_verification_threshold')
-        .maybeSingle();
+    const fetchSettings = async () => {
+      const [thresholdRes, livenessRes] = await Promise.all([
+        supabase.from('system_settings').select('value').eq('key', 'face_verification_threshold').maybeSingle(),
+        supabase.from('system_settings').select('value').eq('key', 'liveness_detection_enabled').maybeSingle(),
+      ]);
       
-      if (data?.value) {
-        const threshold = (data.value as { threshold?: number })?.threshold ?? 60;
+      if (thresholdRes.data?.value) {
+        const threshold = (thresholdRes.data.value as { threshold?: number })?.threshold ?? 60;
         setConfidenceThreshold(threshold);
       }
+      
+      if (livenessRes.data?.value) {
+        const enabled = (livenessRes.data.value as { enabled?: boolean })?.enabled ?? true;
+        setLivenessEnabled(enabled);
+      }
     };
-    fetchThreshold();
+    fetchSettings();
   }, []);
+
+  // Initialize liveness detector
+  useEffect(() => {
+    if (livenessEnabled && requiresFaceVerification) {
+      livenessDetectorRef.current = new LivenessDetector();
+    }
+    return () => {
+      resetLivenessDetector();
+      livenessDetectorRef.current = null;
+    };
+  }, [livenessEnabled, requiresFaceVerification]);
+
+  // Liveness detection loop
+  const runLivenessDetection = useCallback(async () => {
+    if (!videoRef.current || !livenessDetectorRef.current || !livenessEnabled || !requiresFaceVerification) {
+      return;
+    }
+
+    if (capturedImage) return; // Stop if photo already captured
+
+    try {
+      const state = await livenessDetectorRef.current.detectFromVideo(videoRef.current);
+      setLivenessState(state);
+      
+      // Continue detection if not verified and not failed
+      if (state.status !== 'verified' && state.status !== 'failed') {
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setTimeout(runLivenessDetection, 100); // Run at ~10fps for performance
+        });
+      }
+    } catch (err) {
+      console.error('Liveness detection error:', err);
+    }
+  }, [capturedImage, livenessEnabled, requiresFaceVerification]);
+
+  useEffect(() => {
+    if (!modelsLoading && !isLoading && !capturedImage && livenessEnabled && requiresFaceVerification) {
+      // Start liveness detection after a short delay
+      const timeout = setTimeout(() => {
+        runLivenessDetection();
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [modelsLoading, isLoading, capturedImage, livenessEnabled, requiresFaceVerification, runLivenessDetection]);
 
   useEffect(() => {
     if (!modelsLoading) {
@@ -94,6 +160,9 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
     return () => {
       stopCamera();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, [modelsLoading]);
 
@@ -164,6 +233,11 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     setCapturedImage(dataUrl);
     stopCamera();
 
+    // Cancel liveness detection
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
     // If we have a VALID reference embedding, verify face locally
     if (requiresFaceVerification) {
       await verifyFaceLocally(canvas);
@@ -172,14 +246,12 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
 
   const verifyFaceLocally = async (canvas: HTMLCanvasElement) => {
     if (!validReferenceEmbedding) {
-      // This should not happen since we check requiresFaceVerification before calling
       setVerificationResult({ match: false, confidence: 0, reason: 'No valid reference face registered' });
       return;
     }
 
     setIsVerifying(true);
     try {
-      // Extract embedding from captured image
       const capturedEmbedding = await extractFaceEmbedding(canvas);
       
       if (!capturedEmbedding) {
@@ -191,7 +263,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         return;
       }
 
-      // Compare embeddings locally (cosine similarity)
       const similarityThreshold = confidenceThreshold / 100;
       const result = compareFaceEmbeddings(validReferenceEmbedding, capturedEmbedding, similarityThreshold);
       console.log('Face verification result:', result);
@@ -211,12 +282,22 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const retakePhoto = () => {
     setCapturedImage(null);
     setVerificationResult(null);
+    // Reset liveness detector
+    if (livenessDetectorRef.current) {
+      livenessDetectorRef.current.reset();
+    }
+    setLivenessState({
+      isLive: false,
+      blinkCount: 0,
+      status: 'detecting',
+      message: 'Position your face in the frame',
+      progress: 0,
+    });
     startCamera();
   };
 
   const confirmPhoto = () => {
     if (capturedImage) {
-      // STRICT: If face verification is required, must pass verification
       const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
       const faceVerified = requiresFaceVerification ? meetsThreshold : true;
       onCapture(capturedImage, faceVerified);
@@ -225,7 +306,11 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
 
   // STRICT: Face MUST meet threshold if valid reference exists - NO bypass allowed
   const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-  const canConfirm = !requiresFaceVerification || meetsThreshold;
+  
+  // Liveness must pass (if enabled) AND face must match (if required)
+  const livenessOk = !livenessEnabled || !requiresFaceVerification || livenessState.isLive || livenessState.status === 'verified';
+  const canCapture = !livenessEnabled || !requiresFaceVerification || livenessOk;
+  const canConfirm = (!requiresFaceVerification || meetsThreshold);
 
   if (modelsLoading) {
     return (
@@ -297,11 +382,38 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
           {/* Face Guide Overlay */}
           {!capturedImage && !error && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-48 h-60 border-2 border-dashed border-white/50 rounded-full" />
+              <div className={`w-48 h-60 border-2 border-dashed rounded-full transition-colors ${
+                livenessState.status === 'verified' ? 'border-success' : 
+                livenessState.status === 'failed' ? 'border-destructive' : 'border-white/50'
+              }`} />
             </div>
           )}
 
-          {/* Verification Status */}
+          {/* Liveness Detection Status */}
+          {!capturedImage && !error && livenessEnabled && requiresFaceVerification && (
+            <div className="absolute top-4 left-4 right-4">
+              <div className={`backdrop-blur rounded-lg p-3 ${
+                livenessState.status === 'verified' ? 'bg-success/80' :
+                livenessState.status === 'failed' ? 'bg-destructive/80' : 'bg-black/70'
+              }`}>
+                <div className="flex items-center gap-3 mb-2">
+                  {livenessState.status === 'verified' ? (
+                    <Eye className="w-5 h-5 text-white" />
+                  ) : livenessState.status === 'waiting' ? (
+                    <EyeOff className="w-5 h-5 text-white animate-pulse" />
+                  ) : (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  )}
+                  <span className="text-white text-sm font-medium flex-1">
+                    {livenessState.message}
+                  </span>
+                </div>
+                <Progress value={livenessState.progress} className="h-1.5" />
+              </div>
+            </div>
+          )}
+
+          {/* Verification Status (after capture) */}
           {capturedImage && requiresFaceVerification && (
             <div className="absolute bottom-4 left-4 right-4">
               {isVerifying ? (
@@ -342,10 +454,10 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
               size="lg"
               className="flex-1"
               onClick={capturePhoto}
-              disabled={isLoading || !!error}
+              disabled={isLoading || !!error || !canCapture}
             >
               <Camera className="w-5 h-5 mr-2" />
-              Capture Photo
+              {!canCapture ? 'Blink to Verify' : 'Capture Photo'}
             </Button>
           ) : (
             <>
@@ -374,7 +486,9 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         </div>
 
         <p className="text-xs text-center text-muted-foreground pb-4 px-4">
-          {requiresFaceVerification
+          {requiresFaceVerification && livenessEnabled
+            ? 'Blink to prove you\'re real, then capture photo for verification'
+            : requiresFaceVerification
             ? 'Face verification is required - your face must match your registered photo'
             : 'Position your face within the guide for best results'
           }
