@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
 import ResetPassword from "./pages/ResetPassword";
+import PhoneVerification from "./pages/PhoneVerification";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
@@ -31,8 +33,9 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) => {
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
+  const { settings, isLoading: settingsLoading } = useSystemSettings();
 
-  if (isLoading || settingLoading) {
+  if (isLoading || settingLoading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -45,6 +48,11 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check phone verification for OAuth users (if phone OTP is enabled)
+  if (settings.phoneOtpEnabled && profile && !profile.phone_verified && !isDeveloper) {
+    return <Navigate to="/phone-verify" replace />;
   }
 
   // Developers bypass face setup, also skip if face verification is disabled
@@ -152,12 +160,40 @@ const DeveloperRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
+const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, profile, isDeveloper, isLoading } = useAuth();
+  const { settings, isLoading: settingsLoading } = useSystemSettings();
+
+  if (isLoading || settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If phone OTP is disabled or already verified, go to dashboard
+  if (!settings.phoneOtpEnabled || profile?.phone_verified || isDeveloper) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
       <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />

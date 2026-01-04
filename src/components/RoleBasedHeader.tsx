@@ -6,7 +6,8 @@ import {
   LogOut, 
   User, 
   Shield, 
-  Code 
+  Code,
+  Settings
 } from 'lucide-react';
 
 interface RoleBasedHeaderProps {
@@ -132,6 +133,16 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
             >
               <User className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Employee</span>
+            </Button>
+
+            {/* Settings button */}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/profile')}
+              className={`px-2 sm:px-3 ${getButtonStyles()}`}
+            >
+              <Settings className="w-4 h-4" />
             </Button>
             
             <NotificationBell />

@@ -240,7 +240,7 @@ export default function Auth() {
     if (!pendingSignupData || otpValue.length !== 6) {
       toast({
         title: 'Invalid OTP',
-        description: 'Please enter the 6-digit code sent to your email.',
+        description: `Please enter the 6-digit code sent to your ${otpMethod === 'phone' ? 'phone' : 'email'}.`,
         variant: 'destructive',
       });
       return;
@@ -248,9 +248,14 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      // Verify the OTP using our email OTP edge function
-      const { data, error: otpError } = await supabase.functions.invoke('verify-email-otp', {
-        body: { email: pendingSignupData.email, otp: otpValue },
+      // Verify the OTP using appropriate edge function
+      const verifyFunction = otpMethod === 'phone' ? 'verify-otp' : 'verify-email-otp';
+      const verifyBody = otpMethod === 'phone' 
+        ? { phone: pendingSignupData.phone, otp: otpValue }
+        : { email: pendingSignupData.email, otp: otpValue };
+      
+      const { data, error: otpError } = await supabase.functions.invoke(verifyFunction, {
+        body: verifyBody,
       });
       
       if (otpError || (data && data.error)) {
@@ -267,7 +272,8 @@ export default function Auth() {
       const { error: signUpError } = await signUp(
         pendingSignupData.email,
         pendingSignupData.password,
-        pendingSignupData.fullName
+        pendingSignupData.fullName,
+        pendingSignupData.phone
       );
       
       if (signUpError) {
@@ -286,10 +292,26 @@ export default function Auth() {
         }
         return;
       }
+
+      // If phone was verified, mark it as verified in the profile
+      // This will happen after the profile is created by the trigger
+      if (otpMethod === 'phone' && pendingSignupData.phone) {
+        // Wait a bit for the profile to be created by trigger
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Update phone_verified status
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          await supabase
+            .from('profiles')
+            .update({ phone_verified: true })
+            .eq('user_id', currentUser.id);
+        }
+      }
       
       toast({
         title: 'Account created!',
-        description: 'Email verified successfully. Please set up face verification to continue.',
+        description: `${otpMethod === 'phone' ? 'Phone' : 'Email'} verified successfully. Please set up face verification to continue.`,
       });
       navigate('/face-setup');
     } catch (error) {
@@ -368,33 +390,64 @@ export default function Auth() {
   const resendOtp = async () => {
     setIsSendingOtp(true);
     try {
-      let email: string;
-      
-      if (otpType === 'signup' && pendingSignupData) {
-        email = pendingSignupData.email;
-      } else if (otpType === 'login' && pendingLoginEmail) {
-        email = pendingLoginEmail;
-      } else {
-        return;
-      }
-      
-      const { data, error } = await supabase.functions.invoke('send-email-otp', {
-        body: { email, type: 'verification' },
-      });
-      
-      if (error || (data && data.error)) {
-        toast({
-          title: 'Failed to resend code',
-          description: data?.error || error?.message || 'Email service error',
-          variant: 'destructive',
+      if (otpMethod === 'phone') {
+        // Resend phone OTP
+        let phone: string;
+        if (otpType === 'signup' && pendingSignupData?.phone) {
+          phone = pendingSignupData.phone;
+        } else if (otpType === 'login' && pendingLoginPhone) {
+          phone = pendingLoginPhone;
+        } else {
+          return;
+        }
+        
+        const { data, error } = await supabase.functions.invoke('send-otp', {
+          body: { phone, type: otpType },
         });
-        return;
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to resend code',
+            description: data?.error || error?.message || 'SMS service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        toast({
+          title: 'Code Resent!',
+          description: `A new verification code has been sent to ${phone}`,
+        });
+      } else {
+        // Resend email OTP
+        let email: string;
+        
+        if (otpType === 'signup' && pendingSignupData) {
+          email = pendingSignupData.email;
+        } else if (otpType === 'login' && pendingLoginEmail) {
+          email = pendingLoginEmail;
+        } else {
+          return;
+        }
+        
+        const { data, error } = await supabase.functions.invoke('send-email-otp', {
+          body: { email, type: 'verification' },
+        });
+        
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Failed to resend code',
+            description: data?.error || error?.message || 'Email service error',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        toast({
+          title: 'Code Resent!',
+          description: `A new verification code has been sent to ${email}`,
+        });
       }
-      
-      toast({
-        title: 'Code Resent!',
-        description: `A new verification code has been sent to ${email}`,
-      });
       setOtpValue('');
     } finally {
       setIsSendingOtp(false);
@@ -453,11 +506,12 @@ export default function Auth() {
     e.preventDefault();
     
     if (!isLogin) {
-      // For signup, use email OTP if enabled, otherwise phone OTP
-      if (hasEmailOtp) {
-        await sendSignupOtp('email');
-      } else if (hasPhoneOtp) {
+      // For signup, always use phone OTP if enabled (mandatory phone verification)
+      // Otherwise fallback to email OTP, then direct signup
+      if (hasPhoneOtp) {
         await sendSignupOtp('phone');
+      } else if (hasEmailOtp) {
+        await sendSignupOtp('email');
       } else {
         // No OTP enabled - direct signup
         await handleDirectSignup();
@@ -909,10 +963,10 @@ export default function Auth() {
                   </div>
                 )}
 
-                {/* Phone input for signup when phone OTP is enabled */}
+                {/* Phone input for signup when phone OTP is enabled - REQUIRED */}
                 {!isLogin && hasPhoneOtp && (
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number {hasEmailOtp ? '(Optional for Phone OTP)' : ''}</Label>
+                    <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
                     <Input
                       id="phone"
                       name="phone"
