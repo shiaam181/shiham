@@ -322,6 +322,16 @@ export default function EmployeeDashboard() {
       return;
     }
 
+    // STRICT: Block check-in/check-out if face verification is enabled but failed
+    if (systemSettings.faceVerificationEnabled && profile?.face_embedding && !faceVerified) {
+      toast({
+        title: 'Face Verification Failed',
+        description: 'Your face did not match the registered photo. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Only require location if GPS tracking is enabled
     if (systemSettings.gpsTrackingEnabled && !location) {
       toast({
