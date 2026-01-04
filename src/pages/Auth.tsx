@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Phone, Smartphone } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
-import { CountryCodeSelect } from '@/components/CountryCodeSelect';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const loginSchema = z.object({
@@ -19,13 +18,8 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-const phoneLoginSchema = z.object({
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[\d]+$/, 'Please enter only digits'),
-});
-
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').regex(/^[\d]+$/, 'Please enter only digits'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
@@ -36,15 +30,15 @@ const signupSchema = z.object({
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
-  const [countryCode, setCountryCode] = useState('+91');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
-    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -61,9 +55,8 @@ export default function Auth() {
     email: string;
     password: string;
     fullName: string;
-    phone: string;
   } | null>(null);
-  const [pendingLoginPhone, setPendingLoginPhone] = useState<string | null>(null);
+  const [pendingLoginEmail, setPendingLoginEmail] = useState<string | null>(null);
   
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -77,28 +70,21 @@ export default function Auth() {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Format phone number with country code
-  const formatPhoneWithCountryCode = (phone: string, code: string): string => {
-    const cleaned = phone.replace(/[\s-]/g, '').replace(/^0+/, '');
-    return `${code}${cleaned}`;
-  };
-
-  const sendPhoneOtp = async () => {
+  const sendSignupOtp = async () => {
     try {
       const validated = signupSchema.parse(formData);
       
       setIsSendingOtp(true);
-      const formattedPhone = formatPhoneWithCountryCode(validated.phone, countryCode);
       
-      // Call our custom Twilio edge function
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone, type: 'signup' },
+      // Call our email OTP edge function
+      const { data, error } = await supabase.functions.invoke('send-email-otp', {
+        body: { email: validated.email, type: 'verification' },
       });
       
       if (error || (data && data.error)) {
         toast({
           title: 'Failed to send OTP',
-          description: data?.error || error?.message || 'SMS service error',
+          description: data?.error || error?.message || 'Email service error',
           variant: 'destructive',
         });
         return;
@@ -108,13 +94,12 @@ export default function Auth() {
         email: validated.email,
         password: validated.password,
         fullName: validated.fullName,
-        phone: validated.phone,
       });
       setOtpType('signup');
       setShowOtpVerification(true);
       toast({
-        title: 'OTP Sent!',
-        description: `A verification code has been sent to ${formattedPhone}`,
+        title: 'Verification Code Sent!',
+        description: `A 6-digit code has been sent to ${validated.email}`,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -132,58 +117,36 @@ export default function Auth() {
   };
 
   const sendLoginOtp = async () => {
+    const emailValue = formData.email.trim();
+    
+    if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      setErrors({ email: 'Please enter a valid email address' });
+      return;
+    }
+    
+    setIsSendingOtp(true);
     try {
-      const validated = phoneLoginSchema.parse({ phone: formData.phone });
-      
-      setIsSendingOtp(true);
-      const formattedPhone = formatPhoneWithCountryCode(validated.phone, countryCode);
-      
-      // Check if user exists using edge function (bypasses RLS)
-      const { data: checkData, error: checkError } = await supabase.functions.invoke('check-phone-exists', {
-        body: { phone: formattedPhone },
-      });
-      
-      if (checkError || !checkData?.exists) {
-        toast({
-          title: 'Account Not Found',
-          description: 'No account found with this phone number. Please sign up first.',
-          variant: 'destructive',
-        });
-        setIsSendingOtp(false);
-        return;
-      }
-      
-      // Call our custom Twilio edge function
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone, type: 'login' },
+      // Call our email OTP edge function
+      const { data, error } = await supabase.functions.invoke('send-email-otp', {
+        body: { email: emailValue, type: 'verification' },
       });
       
       if (error || (data && data.error)) {
         toast({
           title: 'Failed to send OTP',
-          description: data?.error || error?.message || 'SMS service error',
+          description: data?.error || error?.message || 'Email service error',
           variant: 'destructive',
         });
         return;
       }
       
-      setPendingLoginPhone(formattedPhone);
+      setPendingLoginEmail(emailValue);
       setOtpType('login');
       setShowOtpVerification(true);
       toast({
-        title: 'OTP Sent!',
-        description: `A verification code has been sent to ${formattedPhone}`,
+        title: 'Verification Code Sent!',
+        description: `A 6-digit code has been sent to ${emailValue}`,
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-      }
     } finally {
       setIsSendingOtp(false);
     }
@@ -193,7 +156,7 @@ export default function Auth() {
     if (!pendingSignupData || otpValue.length !== 6) {
       toast({
         title: 'Invalid OTP',
-        description: 'Please enter the 6-digit code sent to your phone.',
+        description: 'Please enter the 6-digit code sent to your email.',
         variant: 'destructive',
       });
       return;
@@ -201,11 +164,9 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      const formattedPhone = formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
-      
-      // Verify the OTP using our custom edge function
-      const { data, error: otpError } = await supabase.functions.invoke('verify-otp', {
-        body: { phone: formattedPhone, otp: otpValue },
+      // Verify the OTP using our email OTP edge function
+      const { data, error: otpError } = await supabase.functions.invoke('verify-email-otp', {
+        body: { email: pendingSignupData.email, otp: otpValue },
       });
       
       if (otpError || (data && data.error)) {
@@ -222,8 +183,7 @@ export default function Auth() {
       const { error: signUpError } = await signUp(
         pendingSignupData.email,
         pendingSignupData.password,
-        pendingSignupData.fullName,
-        formattedPhone
+        pendingSignupData.fullName
       );
       
       if (signUpError) {
@@ -245,7 +205,7 @@ export default function Auth() {
       
       toast({
         title: 'Account created!',
-        description: 'Phone verified successfully. Please set up face verification to continue.',
+        description: 'Email verified successfully. Please set up face verification to continue.',
       });
       navigate('/face-setup');
     } catch (error) {
@@ -260,10 +220,10 @@ export default function Auth() {
   };
 
   const verifyOtpAndLogin = async () => {
-    if (!pendingLoginPhone || otpValue.length !== 6) {
+    if (!pendingLoginEmail || otpValue.length !== 6) {
       toast({
         title: 'Invalid OTP',
-        description: 'Please enter the 6-digit code sent to your phone.',
+        description: 'Please enter the 6-digit code sent to your email.',
         variant: 'destructive',
       });
       return;
@@ -271,52 +231,45 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      // Call the phone-login edge function which verifies OTP and returns session token
-      const { data, error: loginError } = await supabase.functions.invoke('phone-login', {
-        body: { phone: pendingLoginPhone, otp: otpValue },
+      // Verify the OTP
+      const { data, error: otpError } = await supabase.functions.invoke('verify-email-otp', {
+        body: { email: pendingLoginEmail, otp: otpValue },
       });
       
-      if (loginError || (data && data.error)) {
+      if (otpError || (data && data.error)) {
         toast({
-          title: 'Login Failed',
-          description: data?.error || loginError?.message || 'Failed to login',
+          title: 'Verification Failed',
+          description: data?.error || otpError?.message || 'Invalid OTP',
           variant: 'destructive',
         });
         setIsVerifyingOtp(false);
         return;
       }
 
-      // Verify the token hash to create a session
-      if (data.token_hash) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: data.token_hash,
-          type: 'magiclink',
-        });
+      // Use Supabase magic link flow with the verified email
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: pendingLoginEmail,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
 
-        if (verifyError) {
-          toast({
-            title: 'Login Failed',
-            description: verifyError.message || 'Failed to create session',
-            variant: 'destructive',
-          });
-          setIsVerifyingOtp(false);
-          return;
-        }
-
+      if (signInError) {
+        // If OTP login fails, inform user to use password
         toast({
-          title: 'Welcome back!',
-          description: 'You have successfully signed in.',
+          title: 'Email Verified',
+          description: 'Your email is verified. Please use password login or check your email for a magic link.',
         });
-        
-        navigate('/dashboard');
       } else {
         toast({
-          title: 'Error',
-          description: 'Failed to create session. Please try email login.',
-          variant: 'destructive',
+          title: 'Check Your Email',
+          description: 'A magic link has been sent to complete your login.',
         });
       }
       
+      setShowOtpVerification(false);
+      setOtpValue('');
+      setPendingLoginEmail(null);
     } catch (error) {
       toast({
         title: 'Error',
@@ -325,42 +278,38 @@ export default function Auth() {
       });
     } finally {
       setIsVerifyingOtp(false);
-      setShowOtpVerification(false);
-      setOtpValue('');
-      setPendingLoginPhone(null);
     }
   };
 
   const resendOtp = async () => {
     setIsSendingOtp(true);
     try {
-      let formattedPhone: string;
+      let email: string;
       
       if (otpType === 'signup' && pendingSignupData) {
-        formattedPhone = formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
-      } else if (otpType === 'login' && pendingLoginPhone) {
-        formattedPhone = pendingLoginPhone;
+        email = pendingSignupData.email;
+      } else if (otpType === 'login' && pendingLoginEmail) {
+        email = pendingLoginEmail;
       } else {
         return;
       }
       
-      // Call our custom Twilio edge function
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { phone: formattedPhone, type: otpType },
+      const { data, error } = await supabase.functions.invoke('send-email-otp', {
+        body: { email, type: 'verification' },
       });
       
       if (error || (data && data.error)) {
         toast({
-          title: 'Failed to resend OTP',
-          description: data?.error || error?.message || 'SMS service error',
+          title: 'Failed to resend code',
+          description: data?.error || error?.message || 'Email service error',
           variant: 'destructive',
         });
         return;
       }
       
       toast({
-        title: 'OTP Resent!',
-        description: `A new verification code has been sent to ${formattedPhone}`,
+        title: 'Code Resent!',
+        description: `A new verification code has been sent to ${email}`,
       });
       setOtpValue('');
     } finally {
@@ -372,13 +321,13 @@ export default function Auth() {
     e.preventDefault();
     
     if (!isLogin) {
-      // For signup, send OTP first
-      await sendPhoneOtp();
+      // For signup, send email OTP first
+      await sendSignupOtp();
       return;
     }
     
-    if (loginMethod === 'phone') {
-      // Phone login with OTP
+    if (loginMethod === 'otp') {
+      // Email OTP login
       await sendLoginOtp();
       return;
     }
@@ -482,11 +431,11 @@ export default function Auth() {
     { icon: Shield, title: 'Face Recognition', desc: 'AI-powered face verification' },
   ];
 
-  const getDisplayPhone = () => {
+  const getDisplayEmail = () => {
     if (otpType === 'signup' && pendingSignupData) {
-      return formatPhoneWithCountryCode(pendingSignupData.phone, countryCode);
+      return pendingSignupData.email;
     }
-    return pendingLoginPhone || '';
+    return pendingLoginEmail || '';
   };
 
   // OTP Verification Screen
@@ -504,12 +453,12 @@ export default function Auth() {
           <Card variant="elevated" className="border-0 shadow-xl">
             <CardHeader className="space-y-1 pb-4 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Smartphone className="w-8 h-8 text-primary" />
+                <Mail className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl font-display">Verify Your Phone</CardTitle>
+              <CardTitle className="text-2xl font-display">Verify Your Email</CardTitle>
               <CardDescription>
                 We've sent a 6-digit code to<br />
-                <strong className="text-foreground">{getDisplayPhone()}</strong>
+                <strong className="text-foreground">{getDisplayEmail()}</strong>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -556,7 +505,7 @@ export default function Auth() {
                     disabled={isSendingOtp}
                     className="text-primary hover:underline font-medium disabled:opacity-50"
                   >
-                    {isSendingOtp ? 'Sending...' : 'Resend OTP'}
+                    {isSendingOtp ? 'Sending...' : 'Resend Code'}
                   </button>
                 </p>
                 <button
@@ -565,7 +514,7 @@ export default function Auth() {
                     setShowOtpVerification(false);
                     setOtpValue('');
                     setPendingSignupData(null);
-                    setPendingLoginPhone(null);
+                    setPendingLoginEmail(null);
                   }}
                   className="text-sm text-muted-foreground hover:text-primary"
                 >
@@ -733,15 +682,15 @@ export default function Auth() {
             </CardHeader>
             <CardContent>
               {isLogin && (
-                <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'email' | 'phone')} className="mb-4">
+                <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'password' | 'otp')} className="mb-4">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="email" className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Email
+                    <TabsTrigger value="password" className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Password
                     </TabsTrigger>
-                    <TabsTrigger value="phone" className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      Phone
+                    <TabsTrigger value="otp" className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email OTP
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -765,70 +714,25 @@ export default function Auth() {
                     )}
                   </div>
                 )}
-
-                {(!isLogin || loginMethod === 'phone') && (
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="flex gap-2">
-                      <CountryCodeSelect 
-                        value={countryCode} 
-                        onChange={setCountryCode}
-                        disabled={isSendingOtp}
-                      />
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="9876543210"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className={`flex-1 ${errors.phone ? 'border-destructive' : ''}`}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">OTP will be sent for verification</p>
-                    {errors.phone && (
-                      <p className="text-sm text-destructive">{errors.phone}</p>
-                    )}
-                  </div>
-                )}
                 
-                {(isLogin && loginMethod === 'email') && (
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="you@company.com"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={errors.email ? 'border-destructive' : ''}
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                )}
-
-                {!isLogin && (
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="you@company.com"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={errors.email ? 'border-destructive' : ''}
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive">{errors.email}</p>
-                    )}
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={errors.email ? 'border-destructive' : ''}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
+                </div>
                 
-                {(isLogin && loginMethod === 'email') && (
+                {/* Password fields - only show for password login or signup */}
+                {(isLogin && loginMethod === 'password') && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
@@ -843,15 +747,24 @@ export default function Auth() {
                         Forgot password?
                       </button>
                     </div>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={errors.password ? 'border-destructive' : ''}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-sm text-destructive">{errors.password}</p>
                     )}
@@ -862,35 +775,59 @@ export default function Auth() {
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={errors.password ? 'border-destructive' : ''}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          name="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                       {errors.password && (
                         <p className="text-sm text-destructive">{errors.password}</p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className={errors.confirmPassword ? 'border-destructive' : ''}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className={`pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                       {errors.confirmPassword && (
                         <p className="text-sm text-destructive">{errors.confirmPassword}</p>
                       )}
                     </div>
                   </>
+                )}
+
+                {isLogin && loginMethod === 'otp' && (
+                  <p className="text-xs text-muted-foreground">
+                    We'll send a 6-digit verification code to your email
+                  </p>
                 )}
 
                 <Button 
@@ -905,8 +842,8 @@ export default function Auth() {
                   ) : (
                     <>
                       {isLogin 
-                        ? (loginMethod === 'phone' ? 'Send OTP' : 'Sign In')
-                        : 'Send OTP & Continue'}
+                        ? (loginMethod === 'otp' ? 'Send Verification Code' : 'Sign In')
+                        : 'Continue with Email Verification'}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -963,8 +900,10 @@ export default function Auth() {
                     onClick={() => {
                       setIsLogin(!isLogin);
                       setErrors({});
-                      setFormData({ fullName: '', phone: '', email: '', password: '', confirmPassword: '' });
-                      setLoginMethod('email');
+                      setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
+                      setLoginMethod('password');
+                      setShowPassword(false);
+                      setShowConfirmPassword(false);
                     }}
                     className="ml-1 text-primary font-medium hover:underline"
                   >
