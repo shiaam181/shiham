@@ -14,6 +14,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Bell, CheckCircle2, XCircle, Clock, Calendar, Trash2, ExternalLink } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import {
+  addNotificationDismissed,
+  addNotificationRead,
+  getNotificationPrefs,
+  markAllNotificationsRead,
+} from '@/lib/notificationPrefs';
 
 interface Notification {
   id: string;
@@ -60,20 +66,24 @@ export default function NotificationBell() {
 
       if (error) throw error;
 
-      const notifs: Notification[] = (data || []).map((leave: LeaveRequest) => ({
-        id: leave.id,
-        type: leave.status === 'approved' ? 'leave_approved' : 'leave_rejected',
-        title: leave.status === 'approved' ? 'Leave Approved' : 'Leave Rejected',
-        message: `Your ${leave.leave_type} leave (${format(new Date(leave.start_date), 'MMM d')} - ${format(new Date(leave.end_date), 'MMM d')}) has been ${leave.status}${leave.admin_notes ? `. Note: ${leave.admin_notes}` : ''}`,
-        timestamp: new Date(leave.updated_at),
-        read: false,
-        data: {
-          leaveId: leave.id,
-          leaveType: leave.leave_type,
-          startDate: leave.start_date,
-          endDate: leave.end_date,
-        },
-      }));
+      const prefs = getNotificationPrefs(user.id);
+
+      const notifs: Notification[] = (data || [])
+        .map((leave: LeaveRequest) => ({
+          id: leave.id,
+          type: (leave.status === 'approved' ? 'leave_approved' : 'leave_rejected') as Notification['type'],
+          title: leave.status === 'approved' ? 'Leave Approved' : 'Leave Rejected',
+          message: `Your ${leave.leave_type} leave (${format(new Date(leave.start_date), 'MMM d')} - ${format(new Date(leave.end_date), 'MMM d')}) has been ${leave.status}${leave.admin_notes ? `. Note: ${leave.admin_notes}` : ''}`,
+          timestamp: new Date(leave.updated_at),
+          read: prefs.readIds.has(leave.id),
+          data: {
+            leaveId: leave.id,
+            leaveType: leave.leave_type,
+            startDate: leave.start_date,
+            endDate: leave.end_date,
+          },
+        }))
+        .filter((n) => !prefs.dismissedIds.has(n.id));
 
       setNotifications(notifs);
     } catch (error) {
@@ -102,13 +112,18 @@ export default function NotificationBell() {
         (payload) => {
           const leave = payload.new as LeaveRequest;
           if (leave.status === 'approved' || leave.status === 'rejected') {
+            const prefs = getNotificationPrefs(user.id);
+
+            // If user dismissed it before, don't re-add it.
+            if (prefs.dismissedIds.has(leave.id)) return;
+
             const newNotif: Notification = {
               id: leave.id,
-              type: leave.status === 'approved' ? 'leave_approved' : 'leave_rejected',
+              type: (leave.status === 'approved' ? 'leave_approved' : 'leave_rejected') as Notification['type'],
               title: leave.status === 'approved' ? 'Leave Approved' : 'Leave Rejected',
               message: `Your ${leave.leave_type} leave has been ${leave.status}`,
               timestamp: new Date(),
-              read: false,
+              read: prefs.readIds.has(leave.id),
               data: {
                 leaveId: leave.id,
                 leaveType: leave.leave_type,
@@ -116,7 +131,7 @@ export default function NotificationBell() {
                 endDate: leave.end_date,
               },
             };
-            setNotifications(prev => [newNotif, ...prev.filter(n => n.id !== leave.id)]);
+            setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== leave.id)]);
           }
         }
       )
@@ -130,17 +145,18 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    if (user) addNotificationRead(user.id, id);
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (user) markAllNotificationsRead(user.id, notifications.map((n) => n.id));
   };
 
   const clearNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (user) addNotificationDismissed(user.id, id);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -175,7 +191,9 @@ export default function NotificationBell() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={markAllAsRead}
+               onClick={() => {
+                 markAllAsRead();
+               }}
               className="h-auto py-1 px-2 text-xs"
             >
               Mark all read
