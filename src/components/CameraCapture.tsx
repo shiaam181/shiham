@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX, Eye, EyeOff } from 'lucide-react';
+import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX, Smile } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { extractFaceEmbedding, compareFaceEmbeddings, loadFaceModels } from '@/lib/faceRecognition';
 import { LivenessDetector, LivenessState, resetLivenessDetector } from '@/lib/livenessDetection';
@@ -54,7 +54,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const [livenessEnabled, setLivenessEnabled] = useState(true);
   const [livenessState, setLivenessState] = useState<LivenessState>({
     isLive: false,
-    blinkCount: 0,
+    smileDetected: false,
     status: 'detecting',
     message: 'Position your face in the frame',
     progress: 0,
@@ -288,7 +288,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
     setLivenessState({
       isLive: false,
-      blinkCount: 0,
+      smileDetected: false,
       status: 'detecting',
       message: 'Position your face in the frame',
       progress: 0,
@@ -308,7 +308,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
   
   // Liveness must pass (if enabled) AND face must match (if required)
-  const livenessOk = !livenessEnabled || !requiresFaceVerification || livenessState.isLive || livenessState.status === 'verified';
+  const livenessOk = !livenessEnabled || !requiresFaceVerification || livenessState.status === 'verified';
   const canCapture = !livenessEnabled || !requiresFaceVerification || livenessOk;
   const canConfirm = (!requiresFaceVerification || meetsThreshold);
 
@@ -398,9 +398,9 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
               }`}>
                 <div className="flex items-center gap-3 mb-2">
                   {livenessState.status === 'verified' ? (
-                    <Eye className="w-5 h-5 text-white" />
-                  ) : livenessState.status === 'waiting' ? (
-                    <EyeOff className="w-5 h-5 text-white animate-pulse" />
+                    <Smile className="w-5 h-5 text-white" />
+                  ) : livenessState.status === 'smile_detected' ? (
+                    <Smile className="w-5 h-5 text-white animate-pulse" />
                   ) : (
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
                   )}
@@ -457,7 +457,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
               disabled={isLoading || !!error || !canCapture}
             >
               <Camera className="w-5 h-5 mr-2" />
-              {!canCapture ? 'Blink to Verify' : 'Capture Photo'}
+              {!canCapture ? 'Smile to Verify 😊' : 'Capture Photo'}
             </Button>
           ) : (
             <>

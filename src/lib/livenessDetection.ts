@@ -1,48 +1,56 @@
 import * as faceapi from 'face-api.js';
 
-/**
- * Eye Aspect Ratio (EAR) calculation for blink detection
- * EAR drops significantly when eyes are closed
- */
-function calculateEAR(eye: faceapi.Point[]): number {
-  // Eye landmarks order: 0-5 for each eye
-  // Vertical distances
-  const v1 = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
-  const v2 = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
-  // Horizontal distance
-  const h = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
-  
-  if (h === 0) return 0;
-  return (v1 + v2) / (2.0 * h);
-}
-
 export interface LivenessState {
   isLive: boolean;
-  blinkCount: number;
-  status: 'waiting' | 'detecting' | 'blink_detected' | 'verified' | 'failed';
+  smileDetected: boolean;
+  status: 'waiting' | 'detecting' | 'smile_detected' | 'verified' | 'failed';
   message: string;
   progress: number; // 0-100
 }
 
-const EAR_THRESHOLD = 0.21; // Below this = eyes closed
-const REQUIRED_BLINKS = 1;
-const MAX_DETECTION_TIME = 15000; // 15 seconds to complete
+const SMILE_THRESHOLD = 0.7; // Minimum smile probability to detect
+const SMILE_HOLD_FRAMES = 5; // Number of consecutive frames with smile needed
+const MAX_DETECTION_TIME = 20000; // 20 seconds to complete
+
+// Load face expression model
+let expressionModelLoaded = false;
+let expressionModelLoading = false;
+
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+
+export async function loadExpressionModel(): Promise<void> {
+  if (expressionModelLoaded) return;
+  if (expressionModelLoading) {
+    while (expressionModelLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return;
+  }
+
+  expressionModelLoading = true;
+  try {
+    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+    expressionModelLoaded = true;
+    console.log('Face expression model loaded successfully');
+  } catch (error) {
+    console.error('Failed to load expression model:', error);
+    throw error;
+  } finally {
+    expressionModelLoading = false;
+  }
+}
 
 export class LivenessDetector {
-  private blinkCount = 0;
-  private wasEyesClosed = false;
-  private earHistory: number[] = [];
+  private smileFrameCount = 0;
   private startTime: number | null = null;
   private isVerified = false;
-  private lastEAR = 0;
+  private smileDetected = false;
 
   reset() {
-    this.blinkCount = 0;
-    this.wasEyesClosed = false;
-    this.earHistory = [];
+    this.smileFrameCount = 0;
     this.startTime = null;
     this.isVerified = false;
-    this.lastEAR = 0;
+    this.smileDetected = false;
   }
 
   async detectFromVideo(
@@ -57,7 +65,7 @@ export class LivenessDetector {
     if (elapsed > MAX_DETECTION_TIME) {
       return {
         isLive: false,
-        blinkCount: this.blinkCount,
+        smileDetected: this.smileDetected,
         status: 'failed',
         message: 'Liveness check timed out. Please try again.',
         progress: 100,
@@ -67,7 +75,7 @@ export class LivenessDetector {
     if (this.isVerified) {
       return {
         isLive: true,
-        blinkCount: this.blinkCount,
+        smileDetected: true,
         status: 'verified',
         message: 'Liveness verified! You may capture now.',
         progress: 100,
@@ -75,77 +83,72 @@ export class LivenessDetector {
     }
 
     try {
-      // Detect face with landmarks
+      // Ensure expression model is loaded
+      await loadExpressionModel();
+
+      // Detect face with expressions
       const detection = await faceapi
         .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-        .withFaceLandmarks();
+        .withFaceExpressions();
 
       if (!detection) {
         return {
           isLive: false,
-          blinkCount: this.blinkCount,
+          smileDetected: this.smileDetected,
           status: 'detecting',
           message: 'Position your face in the frame',
-          progress: Math.min(50, (this.blinkCount / REQUIRED_BLINKS) * 100),
+          progress: 0,
         };
       }
 
-      const landmarks = detection.landmarks;
-      const leftEye = landmarks.getLeftEye();
-      const rightEye = landmarks.getRightEye();
+      const expressions = detection.expressions;
+      const smileProbability = expressions.happy;
 
-      // Calculate EAR for both eyes
-      const leftEAR = calculateEAR(leftEye);
-      const rightEAR = calculateEAR(rightEye);
-      const avgEAR = (leftEAR + rightEAR) / 2;
-      
-      this.lastEAR = avgEAR;
-      this.earHistory.push(avgEAR);
-      
-      // Keep last 30 frames (~1 second at 30fps)
-      if (this.earHistory.length > 30) {
-        this.earHistory.shift();
-      }
+      console.log(`Smile probability: ${(smileProbability * 100).toFixed(1)}%`);
 
-      // Detect blink: transition from open -> closed -> open
-      const eyesClosed = avgEAR < EAR_THRESHOLD;
-      
-      if (eyesClosed && !this.wasEyesClosed) {
-        // Eyes just closed
-        this.wasEyesClosed = true;
-      } else if (!eyesClosed && this.wasEyesClosed) {
-        // Eyes just opened = completed blink
-        this.wasEyesClosed = false;
-        this.blinkCount++;
-        console.log(`Blink detected! Count: ${this.blinkCount}, EAR: ${avgEAR.toFixed(3)}`);
-      }
+      // Check if smiling
+      if (smileProbability >= SMILE_THRESHOLD) {
+        this.smileFrameCount++;
+        this.smileDetected = true;
+        
+        // Need sustained smile for verification
+        if (this.smileFrameCount >= SMILE_HOLD_FRAMES) {
+          this.isVerified = true;
+          return {
+            isLive: true,
+            smileDetected: true,
+            status: 'verified',
+            message: 'Liveness verified! You may capture now.',
+            progress: 100,
+          };
+        }
 
-      // Check if liveness verified
-      if (this.blinkCount >= REQUIRED_BLINKS) {
-        this.isVerified = true;
+        const progress = (this.smileFrameCount / SMILE_HOLD_FRAMES) * 100;
         return {
-          isLive: true,
-          blinkCount: this.blinkCount,
-          status: 'verified',
-          message: 'Liveness verified! You may capture now.',
-          progress: 100,
+          isLive: false,
+          smileDetected: true,
+          status: 'smile_detected',
+          message: `Keep smiling... ${Math.round(progress)}%`,
+          progress,
+        };
+      } else {
+        // Reset count if smile drops
+        this.smileFrameCount = Math.max(0, this.smileFrameCount - 1);
+        
+        return {
+          isLive: false,
+          smileDetected: this.smileDetected,
+          status: 'waiting',
+          message: '😊 Please smile to verify you\'re real',
+          progress: (this.smileFrameCount / SMILE_HOLD_FRAMES) * 100,
         };
       }
-
-      const progress = (this.blinkCount / REQUIRED_BLINKS) * 100;
-      return {
-        isLive: false,
-        blinkCount: this.blinkCount,
-        status: 'waiting',
-        message: `Please blink to verify you're real (${this.blinkCount}/${REQUIRED_BLINKS})`,
-        progress,
-      };
 
     } catch (error) {
       console.error('Liveness detection error:', error);
       return {
         isLive: false,
-        blinkCount: this.blinkCount,
+        smileDetected: this.smileDetected,
         status: 'detecting',
         message: 'Detecting face...',
         progress: 0,
@@ -157,8 +160,8 @@ export class LivenessDetector {
     return this.isVerified;
   }
 
-  getBlinkCount(): number {
-    return this.blinkCount;
+  getSmileDetected(): boolean {
+    return this.smileDetected;
   }
 }
 
