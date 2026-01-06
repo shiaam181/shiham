@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +18,7 @@ import {
   addNotificationRead,
   getNotificationPrefs,
   markAllNotificationsRead,
+  NotificationPrefs,
 } from '@/lib/notificationPrefs';
 
 interface Notification {
@@ -51,6 +51,13 @@ export default function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPrefs>({ readIds: new Set(), dismissedIds: new Set() });
+
+  // Fetch prefs from backend on mount
+  useEffect(() => {
+    if (!user) return;
+    getNotificationPrefs(user.id).then(setPrefs);
+  }, [user]);
 
   const fetchRecentLeaves = useCallback(async () => {
     if (!user) return;
@@ -65,8 +72,6 @@ export default function NotificationBell() {
         .limit(10);
 
       if (error) throw error;
-
-      const prefs = getNotificationPrefs(user.id);
 
       const notifs: Notification[] = (data || [])
         .map((leave: LeaveRequest) => ({
@@ -89,7 +94,7 @@ export default function NotificationBell() {
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  }, [user]);
+  }, [user, prefs]);
 
   useEffect(() => {
     fetchRecentLeaves();
@@ -112,8 +117,6 @@ export default function NotificationBell() {
         (payload) => {
           const leave = payload.new as LeaveRequest;
           if (leave.status === 'approved' || leave.status === 'rejected') {
-            const prefs = getNotificationPrefs(user.id);
-
             // If user dismissed it before, don't re-add it.
             if (prefs.dismissedIds.has(leave.id)) return;
 
@@ -140,23 +143,30 @@ export default function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, prefs]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    if (user) addNotificationRead(user.id, id);
+    setPrefs((prev) => ({ ...prev, readIds: new Set([...prev.readIds, id]) }));
+    if (user) await addNotificationRead(user.id, id);
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const ids = notifications.map((n) => n.id);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    if (user) markAllNotificationsRead(user.id, notifications.map((n) => n.id));
+    setPrefs((prev) => ({ ...prev, readIds: new Set([...prev.readIds, ...ids]) }));
+    if (user) await markAllNotificationsRead(user.id, ids);
   };
 
-  const clearNotification = (id: string) => {
+  const clearNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    if (user) addNotificationDismissed(user.id, id);
+    setPrefs((prev) => ({
+      readIds: new Set([...prev.readIds, id]),
+      dismissedIds: new Set([...prev.dismissedIds, id]),
+    }));
+    if (user) await addNotificationDismissed(user.id, id);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -191,9 +201,9 @@ export default function NotificationBell() {
             <Button
               variant="ghost"
               size="sm"
-               onClick={() => {
-                 markAllAsRead();
-               }}
+              onClick={() => {
+                markAllAsRead();
+              }}
               className="h-auto py-1 px-2 text-xs"
             >
               Mark all read
