@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
@@ -24,6 +25,7 @@ import WeekOffManagement from "./pages/WeekOffManagement";
 import CompanySettings from "./pages/CompanySettings";
 import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -189,29 +191,33 @@ const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
-      <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
-      <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
-      <Route path="/admin/reports" element={<AdminRoute><Reports /></AdminRoute>} />
-      <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
-      <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
-      <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
-      <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
-      <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
-      <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
-      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<TermsOfService />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/install" element={<Install />} />
+        <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
+        <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
+        <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
+        <Route path="/admin/reports" element={<AdminRoute><Reports /></AdminRoute>} />
+        <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
+        <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
+        <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
+        <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
+        <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
+        <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <PWAInstallPrompt />
+    </>
   );
 }
 
