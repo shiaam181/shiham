@@ -1,69 +1,92 @@
+import { supabase } from '@/integrations/supabase/client';
+
 export type NotificationPrefs = {
   readIds: Set<string>;
   dismissedIds: Set<string>;
 };
 
-type StoredPrefs = {
-  readIds: string[];
-  dismissedIds: string[];
-};
+// Fetch notification prefs from backend
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
+  if (!userId) return { readIds: new Set(), dismissedIds: new Set() };
 
-function storageKey(userId: string) {
-  return `attendancehub:notif_prefs:${userId}`;
-}
-
-function safeParse(json: string | null): StoredPrefs | null {
-  if (!json) return null;
   try {
-    const parsed = JSON.parse(json) as Partial<StoredPrefs>;
-    return {
-      readIds: Array.isArray(parsed.readIds) ? parsed.readIds.filter((x) => typeof x === 'string') : [],
-      dismissedIds: Array.isArray(parsed.dismissedIds)
-        ? parsed.dismissedIds.filter((x) => typeof x === 'string')
-        : [],
-    };
-  } catch {
-    return null;
+    const { data, error } = await supabase
+      .from('notification_prefs')
+      .select('notification_id, is_read, is_dismissed')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching notification prefs:', error);
+      return { readIds: new Set(), dismissedIds: new Set() };
+    }
+
+    const readIds = new Set<string>();
+    const dismissedIds = new Set<string>();
+
+    for (const row of data || []) {
+      if (row.is_read) readIds.add(row.notification_id);
+      if (row.is_dismissed) dismissedIds.add(row.notification_id);
+    }
+
+    return { readIds, dismissedIds };
+  } catch (err) {
+    console.error('Error fetching notification prefs:', err);
+    return { readIds: new Set(), dismissedIds: new Set() };
   }
 }
 
-export function getNotificationPrefs(userId: string): NotificationPrefs {
-  if (!userId) return { readIds: new Set(), dismissedIds: new Set() };
+// Upsert a notification pref record
+async function upsertNotificationPref(
+  userId: string,
+  notificationId: string,
+  updates: { is_read?: boolean; is_dismissed?: boolean }
+) {
+  if (!userId || !notificationId) return;
 
-  const stored = safeParse(localStorage.getItem(storageKey(userId)));
-  return {
-    readIds: new Set(stored?.readIds ?? []),
-    dismissedIds: new Set(stored?.dismissedIds ?? []),
-  };
+  try {
+    // Try to update first
+    const { data: existing } = await supabase
+      .from('notification_prefs')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('notification_id', notificationId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('notification_prefs')
+        .update(updates)
+        .eq('user_id', userId)
+        .eq('notification_id', notificationId);
+    } else {
+      await supabase.from('notification_prefs').insert({
+        user_id: userId,
+        notification_id: notificationId,
+        is_read: updates.is_read ?? false,
+        is_dismissed: updates.is_dismissed ?? false,
+      });
+    }
+  } catch (err) {
+    console.error('Error upserting notification pref:', err);
+  }
 }
 
-function saveNotificationPrefs(userId: string, prefs: NotificationPrefs) {
-  const payload: StoredPrefs = {
-    readIds: Array.from(prefs.readIds),
-    dismissedIds: Array.from(prefs.dismissedIds),
-  };
-  localStorage.setItem(storageKey(userId), JSON.stringify(payload));
+export async function addNotificationRead(userId: string, id: string) {
+  await upsertNotificationPref(userId, id, { is_read: true });
 }
 
-export function addNotificationRead(userId: string, id: string) {
-  if (!userId || !id) return;
-  const prefs = getNotificationPrefs(userId);
-  prefs.readIds.add(id);
-  saveNotificationPrefs(userId, prefs);
+export async function addNotificationDismissed(userId: string, id: string) {
+  await upsertNotificationPref(userId, id, { is_read: true, is_dismissed: true });
 }
 
-export function addNotificationDismissed(userId: string, id: string) {
-  if (!userId || !id) return;
-  const prefs = getNotificationPrefs(userId);
-  prefs.dismissedIds.add(id);
-  // also mark as read to avoid badge count
-  prefs.readIds.add(id);
-  saveNotificationPrefs(userId, prefs);
-}
+export async function markAllNotificationsRead(userId: string, ids: string[]) {
+  if (!userId || ids.length === 0) return;
 
-export function markAllNotificationsRead(userId: string, ids: string[]) {
-  if (!userId) return;
-  const prefs = getNotificationPrefs(userId);
-  for (const id of ids) prefs.readIds.add(id);
-  saveNotificationPrefs(userId, prefs);
+  try {
+    // Batch upsert - for each ID, upsert the pref
+    const promises = ids.map((id) => upsertNotificationPref(userId, id, { is_read: true }));
+    await Promise.all(promises);
+  } catch (err) {
+    console.error('Error marking all notifications read:', err);
+  }
 }

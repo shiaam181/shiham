@@ -244,6 +244,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_prefs: {
+        Row: {
+          created_at: string
+          id: string
+          is_dismissed: boolean
+          is_read: boolean
+          notification_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          notification_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          notification_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       otp_rate_limits: {
         Row: {
           first_request_at: string | null
