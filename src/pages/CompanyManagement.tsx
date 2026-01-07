@@ -32,7 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2 } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import TopHeader from '@/components/TopHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -44,6 +47,9 @@ interface Company {
   invite_code: string;
   is_active: boolean;
   created_at: string;
+  invite_max_uses: number | null;
+  invite_uses_count: number;
+  invite_expires_at: string | null;
 }
 
 interface CompanyUser {
@@ -76,6 +82,14 @@ export default function CompanyManagement() {
 
   const [publicAppUrl, setPublicAppUrl] = useState('');
   const [isSavingPublicUrl, setIsSavingPublicUrl] = useState(false);
+
+  // Invite settings dialog state
+  const [showInviteSettingsDialog, setShowInviteSettingsDialog] = useState(false);
+  const [inviteSettingsCompany, setInviteSettingsCompany] = useState<Company | null>(null);
+  const [inviteMaxUses, setInviteMaxUses] = useState<string>('unlimited');
+  const [inviteMaxUsesCustom, setInviteMaxUsesCustom] = useState('');
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<Date | undefined>(undefined);
+  const [isSavingInviteSettings, setIsSavingInviteSettings] = useState(false);
 
   useEffect(() => {
     if (!isDeveloper) {
@@ -279,6 +293,93 @@ export default function CompanyManagement() {
       }
     } else {
       copyInviteLink(inviteCode);
+    }
+  };
+
+  const openInviteSettingsDialog = (company: Company) => {
+    setInviteSettingsCompany(company);
+    if (company.invite_max_uses === null) {
+      setInviteMaxUses('unlimited');
+      setInviteMaxUsesCustom('');
+    } else {
+      setInviteMaxUses('limited');
+      setInviteMaxUsesCustom(company.invite_max_uses.toString());
+    }
+    setInviteExpiresAt(company.invite_expires_at ? new Date(company.invite_expires_at) : undefined);
+    setShowInviteSettingsDialog(true);
+  };
+
+  const saveInviteSettings = async () => {
+    if (!inviteSettingsCompany) return;
+
+    setIsSavingInviteSettings(true);
+    try {
+      const maxUses = inviteMaxUses === 'unlimited' ? null : parseInt(inviteMaxUsesCustom) || null;
+      const expiresAt = inviteExpiresAt ? inviteExpiresAt.toISOString() : null;
+
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          invite_max_uses: maxUses,
+          invite_expires_at: expiresAt,
+        })
+        .eq('id', inviteSettingsCompany.id);
+
+      if (error) throw error;
+
+      // Update local state
+      const updatedCompany = {
+        ...inviteSettingsCompany,
+        invite_max_uses: maxUses,
+        invite_expires_at: expiresAt,
+      };
+
+      setCompanies(companies.map(c => c.id === inviteSettingsCompany.id ? updatedCompany : c));
+      if (selectedCompany?.id === inviteSettingsCompany.id) {
+        setSelectedCompany(updatedCompany);
+      }
+
+      setShowInviteSettingsDialog(false);
+      toast({
+        title: 'Invite Settings Updated',
+        description: 'Invite link settings have been saved.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save invite settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingInviteSettings(false);
+    }
+  };
+
+  const resetInviteUsage = async (company: Company) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ invite_uses_count: 0 })
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      const updatedCompany = { ...company, invite_uses_count: 0 };
+      setCompanies(companies.map(c => c.id === company.id ? updatedCompany : c));
+      if (selectedCompany?.id === company.id) {
+        setSelectedCompany(updatedCompany);
+      }
+
+      toast({
+        title: 'Usage Reset',
+        description: 'Invite link usage count has been reset to 0.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset usage',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -578,29 +679,67 @@ export default function CompanyManagement() {
                 {selectedCompany ? selectedCompany.name : 'Company Details'}
               </CardTitle>
               {selectedCompany && (
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm min-w-0 flex-1 overflow-hidden">
-                    <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <code className="text-xs truncate block">
-                      /auth?invite={selectedCompany.invite_code.slice(0, 8)}...
-                    </code>
+                <div className="space-y-3 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm min-w-0 flex-1 overflow-hidden">
+                      <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <code className="text-xs truncate block">
+                        /auth?invite={selectedCompany.invite_code.slice(0, 8)}...
+                      </code>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => openInviteSettingsDialog(selectedCompany)}
+                      title="Invite Settings"
+                    >
+                      <Settings2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => shareInviteLink(selectedCompany.invite_code, selectedCompany.name)}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 flex-shrink-0"
+                      onClick={() => copyInviteLink(selectedCompany.invite_code)}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    onClick={() => shareInviteLink(selectedCompany.invite_code, selectedCompany.name)}
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    onClick={() => copyInviteLink(selectedCompany.invite_code)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
+                  
+                  {/* Invite Usage Stats */}
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge variant="outline" className="gap-1">
+                      {selectedCompany.invite_max_uses === null ? (
+                        <>
+                          <Infinity className="w-3 h-3" />
+                          Unlimited uses
+                        </>
+                      ) : (
+                        <>
+                          {selectedCompany.invite_uses_count}/{selectedCompany.invite_max_uses} used
+                        </>
+                      )}
+                    </Badge>
+                    {selectedCompany.invite_expires_at && (
+                      <Badge variant="outline" className="gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Expires {format(new Date(selectedCompany.invite_expires_at), 'MMM d, yyyy')}
+                      </Badge>
+                    )}
+                    {!selectedCompany.invite_expires_at && (
+                      <Badge variant="outline" className="gap-1">
+                        No expiry
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               )}
             </CardHeader>
@@ -611,7 +750,17 @@ export default function CompanyManagement() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => resetInviteUsage(selectedCompany)}
+                      title="Reset usage count"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Reset Usage
+                    </Button>
                     <Dialog open={showAssignOwnerDialog} onOpenChange={setShowAssignOwnerDialog}>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
@@ -691,6 +840,97 @@ export default function CompanyManagement() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Invite Settings Dialog */}
+        <Dialog open={showInviteSettingsDialog} onOpenChange={setShowInviteSettingsDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Invite Link Settings</DialogTitle>
+              <DialogDescription>
+                Configure usage limits and expiry for {inviteSettingsCompany?.name}'s invite link.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              {/* Max Uses */}
+              <div className="space-y-3">
+                <Label>Maximum Uses</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={inviteMaxUses === 'unlimited' ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setInviteMaxUses('unlimited')}
+                  >
+                    <Infinity className="w-4 h-4" />
+                    Unlimited
+                  </Button>
+                  <Button
+                    variant={inviteMaxUses === 'limited' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setInviteMaxUses('limited')}
+                  >
+                    Limited
+                  </Button>
+                </div>
+                {inviteMaxUses === 'limited' && (
+                  <Input
+                    type="number"
+                    placeholder="Enter max uses (e.g. 10)"
+                    value={inviteMaxUsesCustom}
+                    onChange={(e) => setInviteMaxUsesCustom(e.target.value)}
+                    min={1}
+                  />
+                )}
+                {inviteSettingsCompany && (
+                  <p className="text-xs text-muted-foreground">
+                    Current usage: {inviteSettingsCompany.invite_uses_count} signups
+                  </p>
+                )}
+              </div>
+
+              {/* Expiry */}
+              <div className="space-y-3">
+                <Label>Expiry Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {inviteExpiresAt ? format(inviteExpiresAt, 'PPP') : 'No expiry (never expires)'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={inviteExpiresAt}
+                      onSelect={setInviteExpiresAt}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {inviteExpiresAt && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInviteExpiresAt(undefined)}
+                    className="text-xs"
+                  >
+                    Clear expiry date
+                  </Button>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowInviteSettingsDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveInviteSettings} disabled={isSavingInviteSettings}>
+                {isSavingInviteSettings && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Settings
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
       
       <MobileBottomNav />

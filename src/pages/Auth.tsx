@@ -371,9 +371,14 @@ export default function Auth() {
           updateData.phone_verified = true;
         }
         
-        // If company invite code present, assign company
-        if (companyInfo) {
+        // If company invite code present, assign company and increment usage
+        if (companyInfo && inviteCode) {
           updateData.company_id = companyInfo.id;
+          
+          // Increment invite usage count
+          await supabase.functions.invoke('get-company-by-invite', {
+            body: { inviteCode, incrementUsage: true },
+          });
         }
         
         if (Object.keys(updateData).length > 0) {
@@ -643,14 +648,19 @@ export default function Auth() {
         return;
       }
 
-      // If company invite code is present, update the profile with company_id
-      if (companyInfo) {
+      // If company invite code is present, update the profile with company_id and increment usage
+      if (companyInfo && inviteCode) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase
             .from('profiles')
             .update({ company_id: companyInfo.id })
             .eq('user_id', user.id);
+          
+          // Increment invite usage count
+          await supabase.functions.invoke('get-company-by-invite', {
+            body: { inviteCode, incrementUsage: true },
+          });
         }
       }
       
