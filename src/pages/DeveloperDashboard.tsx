@@ -36,7 +36,8 @@ import {
   MessageSquare,
   PlayCircle,
   Loader2,
-  XCircle
+  XCircle,
+  Smartphone
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -60,6 +61,7 @@ export default function DeveloperDashboard() {
   const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
   const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
+  const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // EmailJS configuration state
@@ -168,6 +170,9 @@ export default function DeveloperDashboard() {
             break;
           case 'oauth_phone_verification_enabled':
             setOauthPhoneVerificationEnabled((setting.value as { enabled: boolean })?.enabled ?? true);
+            break;
+          case 'app_only_mode_enabled':
+            setAppOnlyModeEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
             break;
         }
       });
@@ -611,6 +616,10 @@ export default function DeveloperDashboard() {
     updateSetting('oauth_phone_verification_enabled', enabled, setOauthPhoneVerificationEnabled, 
       `OAuth + Phone Verification is now ${enabled ? 'enabled' : 'disabled'}`);
 
+  const toggleAppOnlyMode = (enabled: boolean) => 
+    updateSetting('app_only_mode_enabled', enabled, setAppOnlyModeEnabled, 
+      enabled ? 'App-only mode enabled. Users must install PWA after registration.' : 'App-only mode disabled. Website access is allowed.');
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -833,6 +842,22 @@ export default function DeveloperDashboard() {
                   <div>
                     <p className="font-medium">Admin Dashboard</p>
                     <p className="text-xs text-muted-foreground">View admin panel</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+                </div>
+              </Card>
+
+              <Card 
+                className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-orange-500/20 hover:border-orange-500/40"
+                onClick={() => navigate('/developer/companies')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Company Management</p>
+                    <p className="text-xs text-muted-foreground">Add companies & assign owners</p>
                   </div>
                   <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
                 </div>
@@ -1351,6 +1376,37 @@ export default function DeveloperDashboard() {
                         id="marketing-page"
                         checked={marketingPageEnabled}
                         onCheckedChange={toggleMarketingPage}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* App-Only Mode Toggle */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Smartphone className="w-5 h-5" />
+                      PWA / App-Only Mode
+                    </CardTitle>
+                    <CardDescription>
+                      Force users to install the app (PWA) after registration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="app-only-mode" className="font-medium">
+                          Require App Installation
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          When enabled, users will be redirected to the Install page after registration and must add the app to their home screen.
+                        </p>
+                      </div>
+                      <Switch
+                        id="app-only-mode"
+                        checked={appOnlyModeEnabled}
+                        onCheckedChange={toggleAppOnlyMode}
                         disabled={settingsLoading}
                       />
                     </div>

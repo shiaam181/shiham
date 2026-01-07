@@ -36,6 +36,7 @@ import NotificationBell from '@/components/NotificationBell';
 import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
+import LocationDisplay from '@/components/LocationDisplay';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
@@ -511,9 +512,13 @@ export default function EmployeeDashboard() {
             </div>
 
             {systemSettings.gpsTrackingEnabled && location && location.lat !== 0 && (
-              <div className="flex items-center gap-2 text-white/80 text-sm mb-4">
-                <MapPin className="w-4 h-4" />
-                <span>Location verified: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
+              <div className="text-white/80 text-sm mb-4">
+                <LocationDisplay 
+                  latitude={location.lat} 
+                  longitude={location.lng} 
+                  showCoordinates={false}
+                  className="text-white/80"
+                />
               </div>
             )}
           </div>

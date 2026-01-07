@@ -15,9 +15,10 @@ interface Profile {
   face_embedding: number[] | null;
   is_active: boolean;
   phone_verified: boolean;
+  company_id: string | null;
 }
 
-type UserRole = 'admin' | 'employee' | 'developer';
+type UserRole = 'admin' | 'employee' | 'developer' | 'owner';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +27,7 @@ interface AuthContextType {
   role: UserRole | null;
   isAdmin: boolean;
   isDeveloper: boolean;
+  isOwner: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
@@ -44,8 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAdmin = role === 'admin' || role === 'developer';
+  const isAdmin = role === 'admin' || role === 'developer' || role === 'owner';
   const isDeveloper = role === 'developer';
+  const isOwner = role === 'owner';
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -65,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile: Profile = {
           ...profileData,
           face_embedding: profileData.face_embedding as number[] | null,
+          company_id: profileData.company_id as string | null,
         };
         setProfile(profile);
       } else {
@@ -195,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         isAdmin,
         isDeveloper,
+        isOwner,
         isLoading,
         signIn,
         signUp,

@@ -18,6 +18,7 @@ export interface SystemSettings {
   resendApiKey: string;
   googleSigninEnabled: boolean;
   oauthPhoneVerificationEnabled: boolean;
+  appOnlyModeEnabled: boolean;
 }
 
 const defaultSettings: SystemSettings = {
@@ -37,6 +38,7 @@ const defaultSettings: SystemSettings = {
   resendApiKey: '',
   googleSigninEnabled: true,
   oauthPhoneVerificationEnabled: true,
+  appOnlyModeEnabled: false,
 };
 
 export function useSystemSettings() {
@@ -99,6 +101,9 @@ export function useSystemSettings() {
             break;
           case 'oauth_phone_verification_enabled':
             newSettings.oauthPhoneVerificationEnabled = value?.enabled ?? true;
+            break;
+          case 'app_only_mode_enabled':
+            newSettings.appOnlyModeEnabled = value?.enabled ?? false;
             break;
         }
       });
