@@ -637,42 +637,24 @@ export default function EmployeeDashboard() {
           <LeaveRequestForm leaveRequests={leaveRequests} onRefresh={fetchLeaveRequests} />
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Face Verification Setup - only show if needed */}
+        {systemSettings.faceVerificationEnabled && (!profile?.face_embedding || profile.face_embedding.length === 0) && (
           <Card 
-            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow"
+            className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
             onClick={() => navigate('/profile')}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Settings className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                <Camera className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="font-medium">Profile Settings</p>
-                <p className="text-xs text-muted-foreground">Update photo & details</p>
+                <p className="font-medium text-warning">Setup Face Verification</p>
+                <p className="text-xs text-warning/80">Required for attendance</p>
               </div>
-              <ChevronRight className="w-5 h-5 ml-auto text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 ml-auto text-warning" />
             </div>
           </Card>
-          
-          {systemSettings.faceVerificationEnabled && (!profile?.face_embedding || profile.face_embedding.length === 0) && (
-            <Card 
-              className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
-              onClick={() => navigate('/profile')}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                  <Camera className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="font-medium text-warning">Setup Face Verification</p>
-                  <p className="text-xs text-warning/80">Required for attendance</p>
-                </div>
-                <ChevronRight className="w-5 h-5 ml-auto text-warning" />
-              </div>
-            </Card>
-          )}
-        </div>
+        )}
       </main>
 
       {/* Mobile Bottom Navigation */}
