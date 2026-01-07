@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2 } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil } from 'lucide-react';
 import TopHeader from '@/components/TopHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -66,6 +66,10 @@ export default function CompanyManagement() {
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAssignOwnerDialog, setShowAssignOwnerDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editCompanyName, setEditCompanyName] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [newCompanyName, setNewCompanyName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -177,6 +181,57 @@ export default function CompanyManagement() {
     });
   };
 
+  const openEditDialog = (company: Company) => {
+    setEditingCompany(company);
+    setEditCompanyName(company.name);
+    setShowEditDialog(true);
+  };
+
+  const updateCompany = async () => {
+    if (!editingCompany || !editCompanyName.trim()) return;
+
+    setIsUpdating(true);
+    try {
+      const newSlug = editCompanyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          name: editCompanyName,
+          slug: newSlug
+        })
+        .eq('id', editingCompany.id);
+
+      if (error) throw error;
+
+      setCompanies(companies.map(c => 
+        c.id === editingCompany.id 
+          ? { ...c, name: editCompanyName, slug: newSlug }
+          : c
+      ));
+      
+      if (selectedCompany?.id === editingCompany.id) {
+        setSelectedCompany({ ...selectedCompany, name: editCompanyName, slug: newSlug });
+      }
+
+      setShowEditDialog(false);
+      setEditingCompany(null);
+      
+      toast({
+        title: 'Company Updated',
+        description: `Company name and invite link updated successfully.`
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update company',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const assignOwner = async () => {
     if (!selectedCompany || !selectedUserId) return;
 
@@ -284,7 +339,46 @@ export default function CompanyManagement() {
           </Dialog>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Edit Company Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Company</DialogTitle>
+              <DialogDescription>
+                Update company name. The invite link will be updated automatically.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Company Name</Label>
+                <Input
+                  placeholder="Enter company name"
+                  value={editCompanyName}
+                  onChange={(e) => setEditCompanyName(e.target.value)}
+                />
+              </div>
+              {editCompanyName && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs">New Slug</Label>
+                  <p className="text-sm font-mono bg-muted px-3 py-2 rounded">
+                    /{editCompanyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+                  </p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={updateCompany} disabled={isUpdating || !editCompanyName.trim()}>
+                {isUpdating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
           {/* Companies List */}
           <Card>
             <CardHeader>
@@ -310,12 +404,23 @@ export default function CompanyManagement() {
                       }`}
                       onClick={() => handleSelectCompany(company)}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{company.name}</p>
-                          <p className="text-xs text-muted-foreground">/{company.slug}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{company.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">/{company.slug}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(company);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -327,7 +432,7 @@ export default function CompanyManagement() {
                           >
                             <Copy className="w-4 h-4" />
                           </Button>
-                          <Badge variant={company.is_active ? 'default' : 'secondary'}>
+                          <Badge variant={company.is_active ? 'default' : 'secondary'} className="hidden sm:flex">
                             {company.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
