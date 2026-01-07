@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_updates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_critical: boolean | null
+          title: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_critical?: boolean | null
+          title: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_critical?: boolean | null
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           admin_notes: string | null
@@ -119,6 +149,39 @@ export type Database = {
           table_name?: string | null
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string | null
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string | null
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -331,6 +394,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_id: string | null
           created_at: string
           department: string | null
           email: string
@@ -348,6 +412,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
           department?: string | null
           email: string
@@ -365,6 +430,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
           department?: string | null
           email?: string
@@ -381,6 +447,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_shift_id_fkey"
             columns: ["shift_id"]
@@ -462,6 +535,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_seen_updates: {
+        Row: {
+          id: string
+          seen_at: string
+          update_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          seen_at?: string
+          update_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          seen_at?: string
+          update_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_seen_updates_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "app_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       week_offs: {
         Row: {
           created_at: string
@@ -500,9 +602,10 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_developer: { Args: never; Returns: boolean }
+      is_owner: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "employee" | "developer"
+      app_role: "admin" | "employee" | "developer" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -630,7 +733,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "employee", "developer"],
+      app_role: ["admin", "employee", "developer", "owner"],
     },
   },
 } as const
