@@ -245,7 +245,7 @@ export default function FaceSetup() {
       });
 
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/install');
       }, 2000);
     } catch (error: any) {
       console.error('Save error:', error);
@@ -480,11 +480,11 @@ export default function FaceSetup() {
               <div>
                 <h2 className="font-display font-bold text-2xl text-success mb-2">All Set!</h2>
                 <p className="text-muted-foreground">
-                  Your face has been registered successfully. Face verification now works offline on your device.
+                  Your face has been registered successfully. Let's set up the app on your device.
                 </p>
               </div>
 
-              <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+              <p className="text-sm text-muted-foreground">Redirecting to app install...</p>
             </div>
           )}
 
