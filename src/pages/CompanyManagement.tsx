@@ -172,8 +172,22 @@ export default function CompanyManagement() {
     }
   };
 
+  // Get the production URL (use custom domain or .lovable.app, not .lovableproject.com)
+  const getProductionUrl = () => {
+    const origin = window.location.origin;
+    // If we're on the preview domain, convert to production domain
+    if (origin.includes('lovableproject.com')) {
+      // Extract the project ID and use the production URL
+      const projectId = origin.match(/([a-f0-9-]+)\.lovableproject\.com/)?.[1];
+      if (projectId) {
+        return `https://${projectId}.lovable.app`;
+      }
+    }
+    return origin;
+  };
+
   const copyInviteLink = (inviteCode: string) => {
-    const link = `${window.location.origin}/auth?invite=${inviteCode}`;
+    const link = `${getProductionUrl()}/auth?invite=${inviteCode}`;
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
@@ -182,7 +196,7 @@ export default function CompanyManagement() {
   };
 
   const shareInviteLink = async (inviteCode: string, companyName: string) => {
-    const link = `${window.location.origin}/auth?invite=${inviteCode}`;
+    const link = `${getProductionUrl()}/auth?invite=${inviteCode}`;
     
     if (navigator.share) {
       try {
