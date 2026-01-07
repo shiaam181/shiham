@@ -17,10 +17,67 @@ import {
   AlertCircle,
   RefreshCw,
   Shield,
-  LogOut
+  LogOut,
+  Download,
+  Smartphone
 } from 'lucide-react';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+
+// Install App Card Component
+function InstallAppCard() {
+  const navigate = useNavigate();
+  const { isInstalled, isInstallable, promptInstall, showIOSInstructions } = usePWAInstall();
+  
+  if (isInstalled) {
+    return (
+      <Card className="border-success/30 bg-success/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-success">
+            <CheckCircle2 className="w-5 h-5" />
+            App Installed
+          </CardTitle>
+          <CardDescription>AttendanceHub is installed on your device</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const handleInstall = async () => {
+    if (isInstallable) {
+      await promptInstall();
+    } else {
+      navigate('/install');
+    }
+  };
+
+  return (
+    <Card className="border-primary/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Smartphone className="w-5 h-5 text-primary" />
+          Install App
+        </CardTitle>
+        <CardDescription>
+          {showIOSInstructions 
+            ? 'Add to your home screen for the best experience'
+            : 'Install AttendanceHub for offline access and notifications'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button 
+          onClick={handleInstall}
+          className="w-full"
+          variant="outline"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          {showIOSInstructions ? 'View Install Instructions' : 'Install App'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
@@ -445,6 +502,9 @@ export default function ProfileSettings() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Install App */}
+        <InstallAppCard />
 
         {/* Account Actions */}
         <Card className="border-destructive/30">
