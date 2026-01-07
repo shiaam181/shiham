@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2 } from 'lucide-react';
 import TopHeader from '@/components/TopHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -179,6 +179,26 @@ export default function CompanyManagement() {
       title: 'Copied!',
       description: 'Invite link copied to clipboard'
     });
+  };
+
+  const shareInviteLink = async (inviteCode: string, companyName: string) => {
+    const link = `${window.location.origin}/auth?invite=${inviteCode}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${companyName} on AttendanceHub`,
+          text: `You've been invited to join ${companyName}. Click the link to register.`,
+          url: link
+        });
+      } catch (error) {
+        // User cancelled or share failed, fallback to copy
+        copyInviteLink(inviteCode);
+      }
+    } else {
+      // Fallback to copy if share not supported
+      copyInviteLink(inviteCode);
+    }
   };
 
   const openEditDialog = (company: Company) => {
@@ -461,8 +481,16 @@ export default function CompanyManagement() {
                   </div>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="flex-shrink-0"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                    onClick={() => shareInviteLink(selectedCompany.invite_code, selectedCompany.name)}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
                     onClick={() => copyInviteLink(selectedCompany.invite_code)}
                   >
                     <Copy className="w-4 h-4" />
