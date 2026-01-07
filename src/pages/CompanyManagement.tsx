@@ -645,6 +645,7 @@ export default function CompanyManagement() {
                               e.stopPropagation();
                               openEditDialog(company);
                             }}
+                            title="Edit Company"
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -654,8 +655,33 @@ export default function CompanyManagement() {
                             className="h-8 w-8"
                             onClick={(e) => {
                               e.stopPropagation();
+                              openInviteSettingsDialog(company);
+                            }}
+                            title="Invite Settings"
+                          >
+                            <Settings2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              shareInviteLink(company.invite_code, company.name);
+                            }}
+                            title="Share Invite Link"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               copyInviteLink(company.invite_code);
                             }}
+                            title="Copy Invite Link"
                           >
                             <Copy className="w-4 h-4" />
                           </Button>
