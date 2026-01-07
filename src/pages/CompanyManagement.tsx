@@ -453,15 +453,16 @@ export default function CompanyManagement() {
               </CardTitle>
               {selectedCompany && (
                 <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm flex-1">
-                    <Link2 className="w-4 h-4 text-muted-foreground" />
-                    <code className="text-xs truncate">
-                      {window.location.origin}/auth?invite={selectedCompany.invite_code}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm min-w-0 flex-1 overflow-hidden">
+                    <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <code className="text-xs truncate block">
+                      /auth?invite={selectedCompany.invite_code.slice(0, 8)}...
                     </code>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="flex-shrink-0"
                     onClick={() => copyInviteLink(selectedCompany.invite_code)}
                   >
                     <Copy className="w-4 h-4" />
