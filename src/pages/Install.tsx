@@ -187,20 +187,52 @@ export default function Install() {
               <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
                 <Smartphone className="w-6 h-6 text-muted-foreground" />
               </div>
-              <CardTitle>Install from Browser Menu</CardTitle>
+              <CardTitle>Add to Home Screen</CardTitle>
               <CardDescription>
-                Use your browser's menu to install this app
+                Install this app from your browser
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/50 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Look for "Install app", "Add to Home Screen", or a similar option in your browser's menu (⋮ or ⋯)
-                </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Open Browser Menu</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Click the menu icon (⋮ or ⋯) in your browser
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Install App</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Look for "Install app" or "Add to Home Screen"
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                    3
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Confirm Installation</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Tap "Install" or "Add" to complete
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Button onClick={handleContinue} className="w-full">
-                Continue to App
-                <ArrowRight className="w-4 h-4 ml-2" />
+
+              <Button variant="outline" onClick={handleSkip} className="w-full mt-4">
+                Continue in Browser
               </Button>
             </CardContent>
           </Card>
