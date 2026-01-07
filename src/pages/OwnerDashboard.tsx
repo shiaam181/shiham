@@ -246,7 +246,7 @@ export default function OwnerDashboard() {
   if (!company) {
     return (
       <div className="min-h-screen bg-background pb-20 sm:pb-6">
-        <RoleBasedHeader currentView="admin" />
+        <RoleBasedHeader currentView="owner" />
         <main className="container mx-auto px-4 py-6">
           <Card className="text-center p-8">
             <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -263,7 +263,7 @@ export default function OwnerDashboard() {
 
   return (
     <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      <RoleBasedHeader currentView="admin" />
+      <RoleBasedHeader currentView="owner" />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Company Info */}

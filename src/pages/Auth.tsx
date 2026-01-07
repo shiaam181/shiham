@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff, Phone } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff, Phone, Building2 } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -30,9 +30,17 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+interface CompanyInfo {
+  id: string;
+  name: string;
+}
+
 export default function Auth() {
+  const [searchParams] = useSearchParams();
+  const inviteCode = searchParams.get('invite');
+  
   const { settings } = useSystemSettings();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(!inviteCode); // Default to signup if invite code present
   const [loginMethod, setLoginMethod] = useState<'password' | 'email_otp' | 'phone_otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -49,6 +57,10 @@ export default function Auth() {
   });
   const [countryCode, setCountryCode] = useState('+91');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Company invite state
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [loadingCompany, setLoadingCompany] = useState(!!inviteCode);
   
   // OTP States
   const [showOtpVerification, setShowOtpVerification] = useState(false);
@@ -71,6 +83,47 @@ export default function Auth() {
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
+
+  // Fetch company info if invite code is present
+  useEffect(() => {
+    const fetchCompanyByInviteCode = async () => {
+      if (!inviteCode) {
+        setLoadingCompany(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('invite_code', inviteCode)
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching company:', error);
+          toast({
+            title: 'Invalid Invite Link',
+            description: 'This invite link is invalid or expired.',
+            variant: 'destructive',
+          });
+        } else if (data) {
+          setCompanyInfo(data);
+        } else {
+          toast({
+            title: 'Invalid Invite Link',
+            description: 'This invite link is invalid or expired.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoadingCompany(false);
+      }
+    };
+    
+    fetchCompanyByInviteCode();
+  }, [inviteCode, toast]);
 
   // Determine which auth options are available
   const hasPasswordLogin = settings.passwordLoginEnabled;
@@ -301,25 +354,36 @@ export default function Auth() {
         return;
       }
 
-      // If phone was verified, mark it as verified in the profile
-      // This will happen after the profile is created by the trigger
-      if (otpMethod === 'phone' && pendingSignupData.phone) {
-        // Wait a bit for the profile to be created by trigger
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait a bit for the profile to be created by trigger
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const updateData: Record<string, unknown> = {};
         
-        // Update phone_verified status
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (currentUser) {
+        // If phone was verified, mark it as verified
+        if (otpMethod === 'phone' && pendingSignupData.phone) {
+          updateData.phone_verified = true;
+        }
+        
+        // If company invite code present, assign company
+        if (companyInfo) {
+          updateData.company_id = companyInfo.id;
+        }
+        
+        if (Object.keys(updateData).length > 0) {
           await supabase
             .from('profiles')
-            .update({ phone_verified: true })
+            .update(updateData)
             .eq('user_id', currentUser.id);
         }
       }
       
       toast({
         title: 'Account created!',
-        description: `${otpMethod === 'phone' ? 'Phone' : 'Email'} verified successfully. Please set up face verification to continue.`,
+        description: companyInfo 
+          ? `Welcome to ${companyInfo.name}! ${otpMethod === 'phone' ? 'Phone' : 'Email'} verified. Please set up face verification.`
+          : `${otpMethod === 'phone' ? 'Phone' : 'Email'} verified successfully. Please set up face verification to continue.`,
       });
       navigate('/face-setup');
     } catch (error) {
@@ -573,10 +637,23 @@ export default function Auth() {
         }
         return;
       }
+
+      // If company invite code is present, update the profile with company_id
+      if (companyInfo) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ company_id: companyInfo.id })
+            .eq('user_id', user.id);
+        }
+      }
       
       toast({
         title: 'Account created!',
-        description: 'Please set up face verification to continue.',
+        description: companyInfo 
+          ? `Welcome to ${companyInfo.name}! Please set up face verification to continue.`
+          : 'Please set up face verification to continue.',
       });
       navigate('/face-setup');
     } catch (error) {
@@ -966,16 +1043,32 @@ export default function Auth() {
                 )}
               </CardContent>
             </Card>
+          ) : loadingCompany ? (
+            <Card variant="elevated" className="border-0 shadow-xl">
+              <CardContent className="py-12 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </CardContent>
+            </Card>
           ) : (
           <Card variant="elevated" className="border-0 shadow-xl">
             <CardHeader className="space-y-1 pb-4">
+              {companyInfo && !isLogin && (
+                <div className="flex items-center gap-2 mb-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    Joining: {companyInfo.name}
+                  </span>
+                </div>
+              )}
               <CardTitle className="text-2xl font-display">
-                {isLogin ? 'Welcome back' : 'Create account'}
+                {isLogin ? 'Welcome back' : companyInfo ? `Join ${companyInfo.name}` : 'Create account'}
               </CardTitle>
               <CardDescription>
                 {isLogin 
                   ? 'Sign in to access your account' 
-                  : 'Enter your details to get started'}
+                  : companyInfo 
+                    ? `Register to join ${companyInfo.name}`
+                    : 'Enter your details to get started'}
               </CardDescription>
             </CardHeader>
             <CardContent>
