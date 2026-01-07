@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -25,11 +26,15 @@ export default function Install() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isInstallable, isInstalled, promptInstall, showIOSInstructions, isIOS } = usePWAInstall();
+  const [showManualSteps, setShowManualSteps] = useState(false);
 
   const handleInstall = async () => {
     const success = await promptInstall();
     if (success) {
       navigate('/dashboard');
+    } else {
+      // If install prompt failed or wasn't available, show manual steps
+      setShowManualSteps(true);
     }
   };
 
@@ -180,60 +185,69 @@ export default function Install() {
           </Card>
         )}
 
-        {/* Not installable fallback (Desktop browser without install support) */}
+        {/* Not installable - show download button with manual steps */}
         {!isInstallable && !isInstalled && !showIOSInstructions && (
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-                <Smartphone className="w-6 h-6 text-muted-foreground" />
+          <Card className="w-full max-w-md border-primary/30">
+            <CardHeader className="text-center pb-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <Download className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>Add to Home Screen</CardTitle>
+              <CardTitle>Download App</CardTitle>
               <CardDescription>
-                Install this app from your browser
+                Add AttendanceHub to your home screen
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Open Browser Menu</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Click the menu icon (⋮ or ⋯) in your browser
+              {!showManualSteps ? (
+                <Button onClick={handleInstall} size="lg" variant="hero" className="w-full">
+                  <Download className="w-5 h-5 mr-2" />
+                  Download App
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                      Follow these steps to install manually
                     </p>
                   </div>
+                  
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Open Browser Menu</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Click the menu icon (⋮ or ⋯) in your browser
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Install App</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Look for "Install app" or "Add to Home Screen"
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Confirm Installation</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Tap "Install" or "Add" to complete
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Install App</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Look for "Install app" or "Add to Home Screen"
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Confirm Installation</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Tap "Install" or "Add" to complete
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Button variant="outline" onClick={handleSkip} className="w-full mt-4">
-                Continue in Browser
-              </Button>
+              )}
             </CardContent>
           </Card>
         )}
