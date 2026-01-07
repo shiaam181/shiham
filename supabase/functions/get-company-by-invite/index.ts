@@ -9,6 +9,7 @@ const corsHeaders = {
 interface GetCompanyByInviteRequest {
   inviteCode?: string;
   invite?: string;
+  incrementUsage?: boolean; // Set to true when actually signing up
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -19,6 +20,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const body: GetCompanyByInviteRequest = await req.json().catch(() => ({}));
     const inviteCode = (body.inviteCode ?? body.invite ?? "").trim();
+    const incrementUsage = body.incrementUsage === true;
 
     if (!inviteCode) {
       return new Response(JSON.stringify({ error: "Invite code is required" }), {
@@ -27,7 +29,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Basic sanity check (most invite codes here are hex-like)
     if (inviteCode.length < 6 || inviteCode.length > 64) {
       return new Response(JSON.stringify({ error: "Invalid invite code" }), {
         status: 400,
@@ -41,11 +42,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data, error } = await supabase
       .from("companies")
-      .select("id, name, is_active")
+      .select("id, name, is_active, invite_max_uses, invite_uses_count, invite_expires_at")
       .eq("invite_code", inviteCode)
       .maybeSingle();
 
     if (error) {
+      console.error("Error fetching company:", error);
       return new Response(JSON.stringify({ error: "Failed to fetch company" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -59,11 +61,54 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Check if invite has expired
+    if (data.invite_expires_at) {
+      const expiryDate = new Date(data.invite_expires_at);
+      if (expiryDate < new Date()) {
+        return new Response(JSON.stringify({ error: "This invite link has expired" }), {
+          status: 410,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+    }
+
+    // Check if invite has reached max uses
+    const currentUses = data.invite_uses_count ?? 0;
+    const maxUses = data.invite_max_uses; // null = unlimited
+    if (maxUses !== null && currentUses >= maxUses) {
+      return new Response(JSON.stringify({ error: "This invite link has reached its usage limit" }), {
+        status: 410,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Increment usage if requested (during actual signup)
+    if (incrementUsage) {
+      const { error: updateError } = await supabase
+        .from("companies")
+        .update({ invite_uses_count: currentUses + 1 })
+        .eq("id", data.id);
+
+      if (updateError) {
+        console.error("Error incrementing invite usage:", updateError);
+      }
+    }
+
+    // Calculate remaining uses
+    const remainingUses = maxUses === null ? null : maxUses - currentUses;
+
     return new Response(
-      JSON.stringify({ company: { id: data.id, name: data.name } }),
+      JSON.stringify({
+        company: { id: data.id, name: data.name },
+        inviteInfo: {
+          remainingUses,
+          expiresAt: data.invite_expires_at,
+        },
+      }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
+    console.error("Error in get-company-by-invite:", error);
     return new Response(JSON.stringify({ error: error?.message || "An error occurred" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
