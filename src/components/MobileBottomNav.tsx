@@ -20,7 +20,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Home, label: 'Home', path: '/dashboard' },
   { icon: Calendar, label: 'Calendar', path: '/dashboard', adminOnly: false },
-  { icon: User, label: 'Profile', path: '/profile' },
 ];
 
 const adminNavItems: NavItem[] = [

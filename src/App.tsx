@@ -26,9 +26,12 @@ import CompanySettings from "./pages/CompanySettings";
 import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import Install from "./pages/Install";
+import Updates from "./pages/Updates";
+import CompanyManagement from "./pages/CompanyManagement";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import UpdateNotification from "./components/UpdateNotification";
 
 const queryClient = new QueryClient();
 
@@ -210,13 +213,16 @@ function AppRoutes() {
         <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
         <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
+        <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <PWAInstallPrompt />
+      <UpdateNotification />
     </>
   );
 }

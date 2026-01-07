@@ -1,0 +1,172 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Sparkles, Check, AlertTriangle } from 'lucide-react';
+import { format } from 'date-fns';
+import TopHeader from '@/components/TopHeader';
+import MobileBottomNav from '@/components/MobileBottomNav';
+
+interface AppUpdate {
+  id: string;
+  version: string;
+  title: string;
+  description: string | null;
+  is_critical: boolean;
+  created_at: string;
+}
+
+export default function Updates() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [updates, setUpdates] = useState<AppUpdate[]>([]);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchUpdates();
+    }
+  }, [user]);
+
+  const fetchUpdates = async () => {
+    if (!user) return;
+
+    try {
+      // Get all updates
+      const { data: updatesData, error: updatesError } = await supabase
+        .from('app_updates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (updatesError) throw updatesError;
+
+      // Get seen updates for this user
+      const { data: seenUpdates, error: seenError } = await supabase
+        .from('user_seen_updates')
+        .select('update_id')
+        .eq('user_id', user.id);
+
+      if (seenError) throw seenError;
+
+      setUpdates(updatesData || []);
+      setSeenIds(new Set((seenUpdates || []).map(s => s.update_id)));
+
+      // Mark all as seen
+      const unseenIds = (updatesData || [])
+        .filter(u => !(seenUpdates || []).find(s => s.update_id === u.id))
+        .map(u => u.id);
+
+      if (unseenIds.length > 0 && user) {
+        await Promise.all(
+          unseenIds.map(updateId =>
+            supabase.from('user_seen_updates').insert({
+              user_id: user.id,
+              update_id: updateId
+            })
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching updates:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Loading updates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20 sm:pb-6">
+      <TopHeader currentView="employee" />
+      
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-display font-bold">App Updates</h1>
+            <p className="text-sm text-muted-foreground">See what's new in AttendanceHub</p>
+          </div>
+        </div>
+
+        {/* Updates List */}
+        <div className="space-y-4">
+          {updates.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-medium mb-2">No updates yet</h3>
+              <p className="text-sm text-muted-foreground">
+                When new features are released, they'll appear here.
+              </p>
+            </Card>
+          ) : (
+            updates.map((update) => {
+              const wasSeen = seenIds.has(update.id);
+              
+              return (
+                <Card 
+                  key={update.id} 
+                  className={`relative overflow-hidden ${!wasSeen ? 'ring-2 ring-primary/20' : ''}`}
+                >
+                  {update.is_critical && (
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-warning" />
+                  )}
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {update.is_critical ? (
+                          <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                            <AlertTriangle className="w-4 h-4 text-warning" />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                        <div>
+                          <CardTitle className="text-base">{update.title}</CardTitle>
+                          <p className="text-xs text-muted-foreground">
+                            Version {update.version} • {format(new Date(update.created_at), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                      {wasSeen && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Check className="w-3 h-3" />
+                          Seen
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  {update.description && (
+                    <CardContent className="pt-2">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {update.description}
+                      </p>
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })
+          )}
+        </div>
+      </main>
+      
+      <MobileBottomNav />
+    </div>
+  );
+}
