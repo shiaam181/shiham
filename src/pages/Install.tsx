@@ -96,97 +96,15 @@ export default function Install() {
                 </p>
               </div>
               <Button onClick={handleContinue} size="lg" className="w-full">
-                Continue to App
+                Open App
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Android/Desktop Install Button */}
-        {isInstallable && !isInstalled && (
-          <Card className="w-full max-w-md border-primary/30">
-            <CardHeader className="text-center pb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Chrome className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Install with One Tap</CardTitle>
-              <CardDescription>
-                Add to your home screen instantly
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button onClick={handleInstall} size="lg" variant="hero" className="w-full">
-                <Download className="w-5 h-5 mr-2" />
-                Install AttendanceHub
-              </Button>
-              <Button variant="outline" onClick={handleSkip} className="w-full">
-                Continue in Browser
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* iOS Instructions */}
-        {showIOSInstructions && !isInstalled && (
-          <Card className="w-full max-w-md border-primary/30">
-            <CardHeader className="text-center pb-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Apple className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Install on {isIOS ? 'iPhone/iPad' : 'Your Device'}</CardTitle>
-              <CardDescription>
-                Follow these simple steps
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Tap the Share button</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Find the <Share className="w-4 h-4 inline mx-1 text-primary" /> icon at the bottom of Safari
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Add to Home Screen</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Scroll down and tap <PlusSquare className="w-4 h-4 inline mx-1 text-primary" /> "Add to Home Screen"
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">Tap "Add"</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Confirm by tapping Add in the top right
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Button variant="outline" onClick={handleSkip} className="w-full mt-4">
-                Continue in Browser
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Not installable - show download button with manual steps */}
-        {!isInstallable && !isInstalled && !showIOSInstructions && (
+        {/* Download Card - Always show if not installed */}
+        {!isInstalled && (
           <Card className="w-full max-w-md border-primary/30">
             <CardHeader className="text-center pb-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -198,54 +116,106 @@ export default function Install() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!showManualSteps ? (
+              {/* Always show download button first */}
+              {!showManualSteps && (
                 <Button onClick={handleInstall} size="lg" variant="hero" className="w-full">
                   <Download className="w-5 h-5 mr-2" />
                   Download App
                 </Button>
-              ) : (
+              )}
+
+              {/* Show manual steps after button click */}
+              {showManualSteps && (
                 <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                    <p className="text-sm text-amber-600 dark:text-amber-400">
-                      Follow these steps to install manually
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/30 text-center">
+                    <p className="text-sm font-medium text-primary">
+                      Follow these steps to install
                     </p>
                   </div>
                   
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                      1
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Open Browser Menu</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Click the menu icon (⋮ or ⋯) in your browser
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                      2
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Install App</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Look for "Install app" or "Add to Home Screen"
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                      3
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">Confirm Installation</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Tap "Install" or "Add" to complete
-                      </p>
-                    </div>
-                  </div>
+                  {showIOSInstructions || isIOS ? (
+                    // iOS specific steps
+                    <>
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          1
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Tap Share button</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Find the <Share className="w-4 h-4 inline mx-1 text-primary" /> icon at the bottom
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          2
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Add to Home Screen</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Scroll and tap <PlusSquare className="w-4 h-4 inline mx-1 text-primary" /> "Add to Home Screen"
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          3
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Tap "Add"</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Confirm by tapping Add
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // Android/Desktop steps
+                    <>
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          1
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Open Browser Menu</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tap ⋮ (3 dots) at top right of Chrome
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          2
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Install App</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tap "Install app" or "Add to Home screen"
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border border-border/50">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                          3
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">Confirm</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tap "Install" to add the app
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <Button onClick={() => setShowManualSteps(false)} variant="outline" size="sm" className="w-full mt-2">
+                    Try Download Again
+                  </Button>
                 </div>
               )}
             </CardContent>
