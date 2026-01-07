@@ -91,37 +91,42 @@ export default function Auth() {
         setLoadingCompany(false);
         return;
       }
-      
+
       try {
-        const { data, error } = await supabase
-          .from('companies')
-          .select('id, name')
-          .eq('invite_code', inviteCode)
-          .maybeSingle();
-        
-        if (error) {
-          console.error('Error fetching company:', error);
+        const { data, error } = await supabase.functions.invoke('get-company-by-invite', {
+          body: { inviteCode },
+        });
+
+        if (error || (data && (data as any).error)) {
           toast({
             title: 'Invalid Invite Link',
-            description: 'This invite link is invalid or expired.',
+            description: (data as any)?.error || error?.message || 'This invite link is invalid or expired.',
             variant: 'destructive',
           });
-        } else if (data) {
-          setCompanyInfo(data);
+          setCompanyInfo(null);
+          return;
+        }
+
+        const company = (data as any)?.company as CompanyInfo | undefined;
+
+        if (company?.id && company?.name) {
+          setCompanyInfo(company);
         } else {
           toast({
             title: 'Invalid Invite Link',
             description: 'This invite link is invalid or expired.',
             variant: 'destructive',
           });
+          setCompanyInfo(null);
         }
       } catch (error) {
         console.error('Error:', error);
+        setCompanyInfo(null);
       } finally {
         setLoadingCompany(false);
       }
     };
-    
+
     fetchCompanyByInviteCode();
   }, [inviteCode, toast]);
 

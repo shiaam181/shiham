@@ -55,7 +55,7 @@ interface CompanyUser {
 }
 
 export default function CompanyManagement() {
-  const { user, isDeveloper } = useAuth();
+  const { isDeveloper } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,13 +74,91 @@ export default function CompanyManagement() {
   const [newCompanyName, setNewCompanyName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
+  const [publicAppUrl, setPublicAppUrl] = useState('');
+  const [isSavingPublicUrl, setIsSavingPublicUrl] = useState(false);
+
   useEffect(() => {
     if (!isDeveloper) {
       navigate('/dashboard');
       return;
     }
     fetchCompanies();
+    fetchPublicAppUrl();
   }, [isDeveloper, navigate]);
+
+  const fetchPublicAppUrl = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'public_app_url')
+        .maybeSingle();
+
+      if (error) return;
+      const url = (data?.value as any)?.url;
+      if (typeof url === 'string') setPublicAppUrl(url);
+    } catch {
+      // ignore
+    }
+  };
+
+  const normalizePublicUrl = (url: string) => url.trim().replace(/\/+$/, '');
+
+  const savePublicAppUrl = async () => {
+    const cleaned = normalizePublicUrl(publicAppUrl);
+
+    if (!cleaned) {
+      toast({
+        title: 'Missing URL',
+        description: 'Please enter your public app URL (e.g., https://yourdomain.com).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(cleaned)) {
+      toast({
+        title: 'Invalid URL',
+        description: 'URL must start with https:// (recommended) or http://',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSavingPublicUrl(true);
+    try {
+      const { data: existing } = await supabase
+        .from('system_settings')
+        .select('id')
+        .eq('key', 'public_app_url')
+        .maybeSingle();
+
+      const payload = {
+        key: 'public_app_url',
+        value: { url: cleaned },
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = existing?.id
+        ? await supabase.from('system_settings').update(payload).eq('id', existing.id)
+        : await supabase.from('system_settings').insert(payload);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Saved',
+        description: 'Invite links will now use your public domain.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to save URL',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingPublicUrl(false);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -118,7 +196,7 @@ export default function CompanyManagement() {
       if (rolesError) throw rolesError;
 
       const rolesMap = new Map((roles || []).map(r => [r.user_id, r.role]));
-      
+
       const usersWithRoles = (profiles || []).map(p => ({
         ...p,
         role: rolesMap.get(p.user_id) || 'employee'
@@ -141,7 +219,7 @@ export default function CompanyManagement() {
     setIsCreating(true);
     try {
       const slug = newCompanyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      
+
       const { data, error } = await supabase
         .from('companies')
         .insert({
@@ -156,7 +234,7 @@ export default function CompanyManagement() {
       setCompanies([data, ...companies]);
       setNewCompanyName('');
       setShowCreateDialog(false);
-      
+
       toast({
         title: 'Company Created',
         description: `${data.name} has been created successfully.`
@@ -172,22 +250,13 @@ export default function CompanyManagement() {
     }
   };
 
-  // Get the production URL (use custom domain or .lovable.app, not .lovableproject.com)
-  const getProductionUrl = () => {
-    const origin = window.location.origin;
-    // If we're on the preview domain, convert to production domain
-    if (origin.includes('lovableproject.com')) {
-      // Extract the project ID and use the production URL
-      const projectId = origin.match(/([a-f0-9-]+)\.lovableproject\.com/)?.[1];
-      if (projectId) {
-        return `https://${projectId}.lovable.app`;
-      }
-    }
-    return origin;
+  const getInviteBaseUrl = () => {
+    const cleaned = normalizePublicUrl(publicAppUrl);
+    return cleaned || window.location.origin;
   };
 
   const copyInviteLink = (inviteCode: string) => {
-    const link = `${getProductionUrl()}/auth?invite=${inviteCode}`;
+    const link = `${getInviteBaseUrl()}/auth?invite=${inviteCode}`;
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
@@ -196,21 +265,19 @@ export default function CompanyManagement() {
   };
 
   const shareInviteLink = async (inviteCode: string, companyName: string) => {
-    const link = `${getProductionUrl()}/auth?invite=${inviteCode}`;
-    
+    const link = `${getInviteBaseUrl()}/auth?invite=${inviteCode}`;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Join ${companyName} on AttendanceHub`,
+          title: `Join ${companyName}`,
           text: `You've been invited to join ${companyName}. Click the link to register.`,
           url: link
         });
-      } catch (error) {
-        // User cancelled or share failed, fallback to copy
+      } catch {
         copyInviteLink(inviteCode);
       }
     } else {
-      // Fallback to copy if share not supported
       copyInviteLink(inviteCode);
     }
   };
@@ -372,6 +439,31 @@ export default function CompanyManagement() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Public URL (used in invite links) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Public App URL</CardTitle>
+            <CardDescription>
+              This is the domain customers should see in invite links (prevents preview/Lovable URLs).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="publicAppUrl">Public URL</Label>
+              <Input
+                id="publicAppUrl"
+                placeholder="https://yourdomain.com"
+                value={publicAppUrl}
+                onChange={(e) => setPublicAppUrl(e.target.value)}
+              />
+            </div>
+            <Button onClick={savePublicAppUrl} disabled={isSavingPublicUrl} className="sm:mb-0">
+              {isSavingPublicUrl && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Edit Company Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
