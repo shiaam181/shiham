@@ -28,6 +28,7 @@ import Notifications from "./pages/Notifications";
 import Install from "./pages/Install";
 import Updates from "./pages/Updates";
 import CompanyManagement from "./pages/CompanyManagement";
+import OwnerDashboard from "./pages/OwnerDashboard";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -53,6 +54,16 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check if app-only mode is enabled and user needs to install PWA
+  // Skip for developers and if already on install page
+  if (settings.appOnlyModeEnabled && !isDeveloper) {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as any).standalone === true;
+    if (!isPWA) {
+      return <Navigate to="/install" replace />;
+    }
   }
 
   // Check phone verification for OAuth users (if OAuth + phone verification is enabled)
@@ -214,6 +225,7 @@ function AppRoutes() {
         <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
         <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
+        <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
