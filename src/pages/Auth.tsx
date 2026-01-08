@@ -93,25 +93,50 @@ export default function Auth() {
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke('get-company-by-invite', {
+        const response = await supabase.functions.invoke('get-company-by-invite', {
           body: { inviteCode },
         });
 
-        if (error || (data && (data as any).error)) {
+        console.log('Invite response:', response);
+
+        const { data, error } = response;
+
+        // Check for function invocation error
+        if (error) {
+          console.error('Function error:', error);
           toast({
             title: 'Invalid Invite Link',
-            description: (data as any)?.error || error?.message || 'This invite link is invalid or expired.',
+            description: error.message || 'This invite link is invalid or expired.',
             variant: 'destructive',
           });
           setCompanyInfo(null);
           return;
         }
 
-        const company = (data as any)?.company as CompanyInfo | undefined;
+        // Check for application-level error in response data
+        if (data?.error) {
+          console.error('Data error:', data.error);
+          toast({
+            title: 'Invalid Invite Link',
+            description: data.error || 'This invite link is invalid or expired.',
+            variant: 'destructive',
+          });
+          setCompanyInfo(null);
+          return;
+        }
+
+        // Extract company from response
+        const company = data?.company as CompanyInfo | undefined;
+        console.log('Company info:', company);
 
         if (company?.id && company?.name) {
           setCompanyInfo(company);
+          toast({
+            title: 'Company Found',
+            description: `You're signing up to join ${company.name}`,
+          });
         } else {
+          console.error('Invalid company data:', data);
           toast({
             title: 'Invalid Invite Link',
             description: 'This invite link is invalid or expired.',
@@ -119,8 +144,13 @@ export default function Auth() {
           });
           setCompanyInfo(null);
         }
-      } catch (error) {
-        console.error('Error:', error);
+      } catch (err) {
+        console.error('Catch error:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to verify invite link. Please try again.',
+          variant: 'destructive',
+        });
         setCompanyInfo(null);
       } finally {
         setLoadingCompany(false);
