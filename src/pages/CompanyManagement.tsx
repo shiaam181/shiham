@@ -18,6 +18,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -44,11 +54,11 @@ interface Company {
   name: string;
   slug: string;
   logo_url: string | null;
-  invite_code: string;
+  invite_code: string | null;
   is_active: boolean;
   created_at: string;
   invite_max_uses: number | null;
-  invite_uses_count: number;
+  invite_uses_count: number | null;
   invite_expires_at: string | null;
 }
 
