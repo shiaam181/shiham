@@ -101,6 +101,12 @@ export default function CompanyManagement() {
   const [inviteExpiresAt, setInviteExpiresAt] = useState<Date | undefined>(undefined);
   const [isSavingInviteSettings, setIsSavingInviteSettings] = useState(false);
 
+  // Delete company state (double confirmation)
+  const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false);
+  const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     if (!isDeveloper) {
       navigate('/dashboard');
@@ -491,6 +497,68 @@ export default function CompanyManagement() {
     }
   };
 
+  // Delete company handlers
+  const openDeleteConfirm = (company: Company, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCompanyToDelete(company);
+    setShowDeleteConfirm1(true);
+  };
+
+  const proceedToSecondConfirm = () => {
+    setShowDeleteConfirm1(false);
+    setShowDeleteConfirm2(true);
+  };
+
+  const deleteCompany = async () => {
+    if (!companyToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // First, unassign users from this company
+      await supabase
+        .from('profiles')
+        .update({ company_id: null })
+        .eq('company_id', companyToDelete.id);
+
+      // Delete the company
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', companyToDelete.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setCompanies(companies.filter(c => c.id !== companyToDelete.id));
+      if (selectedCompany?.id === companyToDelete.id) {
+        setSelectedCompany(null);
+        setCompanyUsers([]);
+      }
+
+      setShowDeleteConfirm2(false);
+      setCompanyToDelete(null);
+
+      toast({
+        title: 'Company Deleted',
+        description: `${companyToDelete.name} has been permanently deleted.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete company',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm1(false);
+    setShowDeleteConfirm2(false);
+    setCompanyToDelete(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -694,6 +762,15 @@ export default function CompanyManagement() {
                             title="Copy Invite Link"
                           >
                             <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => openDeleteConfirm(company, e)}
+                            title="Delete Company"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                           <Badge variant={company.is_active ? 'default' : 'secondary'} className="hidden sm:flex">
                             {company.is_active ? 'Active' : 'Inactive'}
@@ -967,6 +1044,52 @@ export default function CompanyManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation - Step 1 */}
+        <AlertDialog open={showDeleteConfirm1} onOpenChange={setShowDeleteConfirm1}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Company?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>{companyToDelete?.name}</strong>? 
+                This will unassign all users from this company.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={proceedToSecondConfirm}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Yes, Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Confirmation - Step 2 (Final) */}
+        <AlertDialog open={showDeleteConfirm2} onOpenChange={setShowDeleteConfirm2}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive">Final Confirmation</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action is <strong>permanent and cannot be undone</strong>. 
+                All data associated with <strong>{companyToDelete?.name}</strong> will be lost forever.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={deleteCompany}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
       
       <MobileBottomNav />
