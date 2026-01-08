@@ -101,6 +101,17 @@ export default function Auth() {
 
         const { data, error } = response;
 
+        // Supabase Functions can occasionally return raw JSON as a string depending on runtime/headers.
+        // Normalize here so invite links work reliably across preview + published builds.
+        let normalizedData: any = data;
+        if (typeof normalizedData === 'string') {
+          try {
+            normalizedData = JSON.parse(normalizedData);
+          } catch {
+            // keep as-is
+          }
+        }
+
         // Check for function invocation error
         if (error) {
           console.error('Function error:', error);
@@ -114,11 +125,11 @@ export default function Auth() {
         }
 
         // Check for application-level error in response data
-        if (data?.error) {
-          console.error('Data error:', data.error);
+        if (normalizedData?.error) {
+          console.error('Data error:', normalizedData.error);
           toast({
             title: 'Invalid Invite Link',
-            description: data.error || 'This invite link is invalid or expired.',
+            description: normalizedData.error || 'This invite link is invalid or expired.',
             variant: 'destructive',
           });
           setCompanyInfo(null);
@@ -126,17 +137,13 @@ export default function Auth() {
         }
 
         // Extract company from response
-        const company = data?.company as CompanyInfo | undefined;
+        const company = normalizedData?.company as CompanyInfo | undefined;
         console.log('Company info:', company);
 
         if (company?.id && company?.name) {
           setCompanyInfo(company);
-          toast({
-            title: 'Company Found',
-            description: `You're signing up to join ${company.name}`,
-          });
         } else {
-          console.error('Invalid company data:', data);
+          console.error('Invalid company data:', normalizedData);
           toast({
             title: 'Invalid Invite Link',
             description: 'This invite link is invalid or expired.',
