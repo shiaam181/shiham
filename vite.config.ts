@@ -49,8 +49,14 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
         runtimeCaching: [
+          // Always hit the network for backend functions (invite validation, OTPs, etc.)
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/v1\//i,
+            handler: 'NetworkOnly',
+          },
+          // Cache other backend resources more gently
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\//i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'supabase-cache',
