@@ -8,6 +8,7 @@ import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
+import Invite from "./pages/Invite";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
 import ResetPassword from "./pages/ResetPassword";
@@ -208,10 +209,10 @@ function AppRoutes() {
     <>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/invite/:code" element={<Invite />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/install" element={<Install />} />
-        <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
         <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />

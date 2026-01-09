@@ -243,18 +243,51 @@ export default function CompanyManagement() {
     fetchCompanyUsers(company.id);
   };
 
+  const slugifyCompanyName = (name: string) =>
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'company';
+
+  const randomHex = (bytes = 2) => {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const getUniqueCompanySlug = async (baseSlug: string, excludeCompanyId?: string) => {
+    // Try base slug first, otherwise append a short suffix.
+    // This prevents "companies_slug_key" errors when a company is deleted/recreated.
+    const trySlugs = [baseSlug, `${baseSlug}-${randomHex(2)}`, `${baseSlug}-${randomHex(3)}`];
+
+    for (const candidate of trySlugs) {
+      let q = supabase.from('companies').select('id').eq('slug', candidate).limit(1);
+      if (excludeCompanyId) q = q.neq('id', excludeCompanyId);
+
+      const { data, error } = await q;
+      if (!error && (!data || data.length === 0)) return candidate;
+    }
+
+    return `${baseSlug}-${randomHex(4)}`;
+  };
+
   const createCompany = async () => {
-    if (!newCompanyName.trim()) return;
+    const trimmedName = newCompanyName.trim();
+    if (!trimmedName) return;
 
     setIsCreating(true);
     try {
-      const slug = newCompanyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const baseSlug = slugifyCompanyName(trimmedName);
+      const slug = await getUniqueCompanySlug(baseSlug);
 
       const { data, error } = await supabase
         .from('companies')
         .insert({
-          name: newCompanyName,
-          slug: slug
+          name: trimmedName,
+          slug,
         })
         .select()
         .single();
@@ -267,13 +300,13 @@ export default function CompanyManagement() {
 
       toast({
         title: 'Company Created',
-        description: `${data.name} has been created successfully.`
+        description: `${data.name} has been created successfully.`,
       });
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to create company',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsCreating(false);
@@ -287,7 +320,7 @@ export default function CompanyManagement() {
 
   const getInviteLink = (inviteCode?: string | null) => {
     if (!inviteCode) return '';
-    return `${getInviteBaseUrl()}/auth?invite=${encodeURIComponent(inviteCode)}`;
+    return `${getInviteBaseUrl()}/invite/${encodeURIComponent(inviteCode)}`;
   };
 
   const copyInviteLink = (inviteCode?: string | null) => {
@@ -425,44 +458,46 @@ export default function CompanyManagement() {
   };
 
   const updateCompany = async () => {
-    if (!editingCompany || !editCompanyName.trim()) return;
+    const trimmed = editCompanyName.trim();
+    if (!editingCompany || !trimmed) return;
 
     setIsUpdating(true);
     try {
-      const newSlug = editCompanyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      
+      const baseSlug = slugifyCompanyName(trimmed);
+      const newSlug = await getUniqueCompanySlug(baseSlug, editingCompany.id);
+
       const { error } = await supabase
         .from('companies')
         .update({
-          name: editCompanyName,
-          slug: newSlug
+          name: trimmed,
+          slug: newSlug,
         })
         .eq('id', editingCompany.id);
 
       if (error) throw error;
 
-      setCompanies(companies.map(c => 
-        c.id === editingCompany.id 
-          ? { ...c, name: editCompanyName, slug: newSlug }
-          : c
-      ));
-      
+      setCompanies(
+        companies.map((c) =>
+          c.id === editingCompany.id ? { ...c, name: trimmed, slug: newSlug } : c
+        )
+      );
+
       if (selectedCompany?.id === editingCompany.id) {
-        setSelectedCompany({ ...selectedCompany, name: editCompanyName, slug: newSlug });
+        setSelectedCompany({ ...selectedCompany, name: trimmed, slug: newSlug });
       }
 
       setShowEditDialog(false);
       setEditingCompany(null);
-      
+
       toast({
         title: 'Company Updated',
-        description: `Company name and invite link updated successfully.`
+        description: 'Company name and invite link updated successfully.',
       });
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to update company',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     } finally {
       setIsUpdating(false);
