@@ -18,7 +18,7 @@ export default function Index() {
     const checkAndRedirect = async () => {
       // If invite code is present, go directly to register page with invite
       if (inviteCode) {
-        navigate(`/auth?invite=${inviteCode}`);
+        navigate(`/auth?invite=${encodeURIComponent(inviteCode.trim())}`);
         return;
       }
 

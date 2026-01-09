@@ -285,24 +285,43 @@ export default function CompanyManagement() {
     return cleaned || window.location.origin;
   };
 
-  const copyInviteLink = (inviteCode: string) => {
-    const link = `${getInviteBaseUrl()}/auth?invite=${inviteCode}`;
+  const getInviteLink = (inviteCode?: string | null) => {
+    if (!inviteCode) return '';
+    return `${getInviteBaseUrl()}/auth?invite=${encodeURIComponent(inviteCode)}`;
+  };
+
+  const copyInviteLink = (inviteCode?: string | null) => {
+    const link = getInviteLink(inviteCode);
+    if (!link) {
+      toast({
+        title: 'Invite link not available',
+        description: 'This company does not have an invite link yet.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
-      description: 'Invite link copied to clipboard'
+      description: 'Invite link copied to clipboard',
     });
   };
 
-  const shareInviteLink = async (inviteCode: string, companyName: string) => {
-    const link = `${getInviteBaseUrl()}/auth?invite=${inviteCode}`;
+  const shareInviteLink = async (inviteCode: string | null, companyName: string) => {
+    const link = getInviteLink(inviteCode);
+
+    if (!link) {
+      copyInviteLink(inviteCode);
+      return;
+    }
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Join ${companyName}`,
           text: `You've been invited to join ${companyName}. Click the link to register.`,
-          url: link
+          url: link,
         });
       } catch {
         copyInviteLink(inviteCode);
@@ -793,13 +812,16 @@ export default function CompanyManagement() {
               </CardTitle>
               {selectedCompany && (
                 <div className="space-y-3 mt-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm min-w-0 flex-1 overflow-hidden">
-                      <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <code className="text-xs truncate block">
-                        /auth?invite={selectedCompany.invite_code.slice(0, 8)}...
-                      </code>
-                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <Input
+                          readOnly
+                          value={getInviteLink(selectedCompany.invite_code)}
+                          className="h-9 font-mono text-xs"
+                          onFocus={(e) => e.currentTarget.select()}
+                        />
+                      </div>
                     <Button
                       variant="outline"
                       size="icon"
