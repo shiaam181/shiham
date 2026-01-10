@@ -6,13 +6,15 @@ export default function Invite() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const trimmed = (code || "").trim();
-    if (!trimmed) {
+    const raw = (code || "").trim();
+    const extracted = raw.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || "";
+
+    if (!extracted) {
       navigate("/auth", { replace: true });
       return;
     }
 
-    navigate(`/auth?invite=${encodeURIComponent(trimmed)}`, { replace: true });
+    navigate(`/auth?invite=${encodeURIComponent(extracted)}`, { replace: true });
   }, [code, navigate]);
 
   return (

@@ -134,7 +134,7 @@ export default function OwnerDashboard() {
 
   const copyInviteLink = () => {
     if (!company) return;
-    const link = `${window.location.origin}/auth?invite=${company.invite_code}`;
+    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
@@ -292,7 +292,7 @@ export default function OwnerDashboard() {
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm flex-1 overflow-hidden">
                     <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
                     <code className="text-xs truncate">
-                      {window.location.origin}/auth?invite={company.invite_code}
+                      {window.location.origin}/invite/{company.invite_code}
                     </code>
                   </div>
                   <Button onClick={copyInviteLink} variant="outline" size="sm">

@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => ({
         runtimeCaching: [
           // Always hit the network for backend functions (invite validation, OTPs, etc.)
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/v1\//i,
+            urlPattern: ({ url }) => url.pathname.includes('/functions/v1/'),
             handler: 'NetworkOnly',
           },
           // Cache other backend resources more gently

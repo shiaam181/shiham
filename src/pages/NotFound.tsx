@@ -1,12 +1,23 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Recover from links where "?" was percent-encoded into the path (e.g. /auth%3Finvite%3DXXXX)
+    if (location.pathname.startsWith("/auth") && location.pathname.includes("?invite=")) {
+      const tail = location.pathname.split("?invite=")[1] || "";
+      const code = tail.match(/[A-Za-z0-9_-]{6,64}/)?.[0];
+      if (code) {
+        navigate(`/invite/${encodeURIComponent(code)}`, { replace: true });
+        return;
+      }
+    }
+
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">

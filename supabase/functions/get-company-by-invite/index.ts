@@ -19,7 +19,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const body: GetCompanyByInviteRequest = await req.json().catch(() => ({}));
-    const inviteCode = (body.inviteCode ?? body.invite ?? "").trim();
+
+    // Some apps/chat clients can mangle links (trailing punctuation, etc.).
+    // Extract a safe invite token so valid invites don't get rejected.
+    const rawInvite = String(body.inviteCode ?? body.invite ?? "").trim();
+    const inviteCode = rawInvite.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || "";
+
     const incrementUsage = body.incrementUsage === true;
 
     if (!inviteCode) {
@@ -29,6 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Extra guardrail: keep the token size bounded.
     if (inviteCode.length < 6 || inviteCode.length > 64) {
       return new Response(JSON.stringify({ error: "Invalid invite code" }), {
         status: 400,
@@ -40,10 +46,15 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const candidateCodes = Array.from(
+      new Set([inviteCode, inviteCode.toLowerCase(), inviteCode.toUpperCase()])
+    );
+
     const { data, error } = await supabase
       .from("companies")
       .select("id, name, is_active, invite_max_uses, invite_uses_count, invite_expires_at")
-      .eq("invite_code", inviteCode)
+      .in("invite_code", candidateCodes)
+      .limit(1)
       .maybeSingle();
 
     if (error) {
