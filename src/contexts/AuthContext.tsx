@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = role === 'admin' || role === 'developer' || role === 'owner';
   const isDeveloper = role === 'developer';
-  const isOwner = role === 'owner';
+  const isOwner = role === 'owner' || role === 'developer';
 
   const fetchProfile = async (userId: string) => {
     try {
