@@ -37,7 +37,8 @@ interface CompanyInfo {
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const inviteCode = (searchParams.get('invite') || '').trim() || null;
+  const rawInvite = (searchParams.get('invite') || '').trim();
+  const inviteCode = (rawInvite.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || '').trim() || null;
   
   const { settings } = useSystemSettings();
   const [isLogin, setIsLogin] = useState(!inviteCode); // Default to signup if invite code present
