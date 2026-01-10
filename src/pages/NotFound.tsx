@@ -6,9 +6,20 @@ const NotFound = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Recover from links where "?" was percent-encoded into the path (e.g. /auth%3Finvite%3DXXXX)
-    if (location.pathname.startsWith("/auth") && location.pathname.includes("?invite=")) {
-      const tail = location.pathname.split("?invite=")[1] || "";
+    // Recover from links where "?" was encoded into the path (some chat apps do this)
+    // Examples:
+    // - /auth%3Finvite%3DXXXX
+    // - /auth?invite=XXXX (if the "?" arrives in the pathname)
+    const decodedPath = (() => {
+      try {
+        return decodeURIComponent(location.pathname);
+      } catch {
+        return location.pathname;
+      }
+    })();
+
+    if (decodedPath.startsWith("/auth") && decodedPath.includes("?invite=")) {
+      const tail = decodedPath.split("?invite=")[1] || "";
       const code = tail.match(/[A-Za-z0-9_-]{6,64}/)?.[0];
       if (code) {
         navigate(`/invite/${encodeURIComponent(code)}`, { replace: true });

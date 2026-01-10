@@ -16,9 +16,11 @@ export default function Index() {
 
   useEffect(() => {
     const checkAndRedirect = async () => {
-      // If invite code is present, go directly to register page with invite
+      // If invite code is present, go to dedicated invite route (more reliable than query strings)
       if (inviteCode) {
-        navigate(`/auth?invite=${encodeURIComponent(inviteCode.trim())}`);
+        const raw = inviteCode.trim();
+        const extracted = raw.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || '';
+        navigate(extracted ? `/invite/${encodeURIComponent(extracted)}` : '/auth');
         return;
       }
 
