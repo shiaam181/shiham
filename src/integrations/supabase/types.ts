@@ -154,6 +154,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          brand_color: string | null
           created_at: string
           id: string
           invite_code: string | null
@@ -164,9 +165,11 @@ export type Database = {
           logo_url: string | null
           name: string
           slug: string
+          tagline: string | null
           updated_at: string
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string
           id?: string
           invite_code?: string | null
@@ -177,9 +180,11 @@ export type Database = {
           logo_url?: string | null
           name: string
           slug: string
+          tagline?: string | null
           updated_at?: string
         }
         Update: {
+          brand_color?: string | null
           created_at?: string
           id?: string
           invite_code?: string | null
@@ -190,6 +195,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           slug?: string
+          tagline?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -270,6 +276,53 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      invite_usage_history: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          invite_code: string
+          ip_address: string | null
+          joined_at: string
+          user_agent: string | null
+          user_email: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          invite_code: string
+          ip_address?: string | null
+          joined_at?: string
+          user_agent?: string | null
+          user_email: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          invite_code?: string
+          ip_address?: string | null
+          joined_at?: string
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_usage_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leave_requests: {
         Row: {

@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data, error } = await supabase
       .from("companies")
-      .select("id, name, is_active, invite_max_uses, invite_uses_count, invite_expires_at")
+      .select("id, name, is_active, invite_max_uses, invite_uses_count, invite_expires_at, logo_url, brand_color, tagline")
       .in("invite_code", candidateCodes)
       .limit(1)
       .maybeSingle();
@@ -110,7 +110,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        company: { id: data.id, name: data.name },
+        company: { 
+          id: data.id, 
+          name: data.name,
+          logoUrl: data.logo_url,
+          brandColor: data.brand_color,
+          tagline: data.tagline,
+        },
         inviteInfo: {
           remainingUses,
           expiresAt: data.invite_expires_at,

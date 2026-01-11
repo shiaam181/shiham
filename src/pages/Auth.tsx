@@ -417,6 +417,17 @@ export default function Auth() {
           await supabase.functions.invoke('get-company-by-invite', {
             body: { inviteCode, incrementUsage: true },
           });
+          
+          // Track invite usage for history
+          await supabase.functions.invoke('track-invite-usage', {
+            body: {
+              companyId: companyInfo.id,
+              inviteCode,
+              userId: currentUser.id,
+              userEmail: pendingSignupData.email,
+              userName: pendingSignupData.fullName,
+            },
+          });
         }
         
         if (Object.keys(updateData).length > 0) {
@@ -698,6 +709,17 @@ export default function Auth() {
           // Increment invite usage count
           await supabase.functions.invoke('get-company-by-invite', {
             body: { inviteCode, incrementUsage: true },
+          });
+          
+          // Track invite usage for history
+          await supabase.functions.invoke('track-invite-usage', {
+            body: {
+              companyId: companyInfo.id,
+              inviteCode,
+              userId: user.id,
+              userEmail: formData.email,
+              userName: formData.fullName,
+            },
           });
         }
       }

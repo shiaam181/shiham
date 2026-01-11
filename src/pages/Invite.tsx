@@ -10,6 +10,9 @@ import { InviteDebugPanel } from "@/components/InviteDebugPanel";
 interface CompanyInfo {
   id: string;
   name: string;
+  logoUrl?: string;
+  brandColor?: string;
+  tagline?: string;
 }
 
 interface InviteInfo {
@@ -119,7 +122,13 @@ export default function Invite() {
         if (data?.company?.id && data?.company?.name) {
           setState({ 
             status: "valid", 
-            company: data.company,
+            company: {
+              id: data.company.id,
+              name: data.company.name,
+              logoUrl: data.company.logoUrl,
+              brandColor: data.company.brandColor,
+              tagline: data.company.tagline,
+            },
             inviteInfo: data.inviteInfo 
           });
         } else {
@@ -206,32 +215,88 @@ export default function Invite() {
     );
   }
 
-  // Valid invite - show welcome page
+  // Valid invite - show welcome page with company branding
+  const brandColor = state.company.brandColor || '#0284c7';
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-4">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Building2 className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle>You're Invited!</CardTitle>
-            <CardDescription>
-              Join {state.company.name} on our attendance platform
+        <Card className="overflow-hidden">
+          {/* Branded header */}
+          <div 
+            className="h-3 w-full" 
+            style={{ backgroundColor: brandColor }}
+          />
+          
+          <CardHeader className="text-center pt-6">
+            {/* Company logo or branded icon */}
+            {state.company.logoUrl ? (
+              <div className="mx-auto w-20 h-20 rounded-xl overflow-hidden mb-4 border shadow-sm">
+                <img 
+                  src={state.company.logoUrl} 
+                  alt={`${state.company.name} logo`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to icon if logo fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = `
+                      <div class="w-full h-full flex items-center justify-center" style="background-color: ${brandColor}10">
+                        <svg class="w-10 h-10" style="color: ${brandColor}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                    `;
+                  }}
+                />
+              </div>
+            ) : (
+              <div 
+                className="mx-auto w-20 h-20 rounded-xl flex items-center justify-center mb-4"
+                style={{ backgroundColor: `${brandColor}15` }}
+              >
+                <Building2 className="w-10 h-10" style={{ color: brandColor }} />
+              </div>
+            )}
+            
+            <CardTitle className="text-2xl">You're Invited!</CardTitle>
+            <CardDescription className="text-base">
+              Join <span className="font-semibold" style={{ color: brandColor }}>{state.company.name}</span>
+              {state.company.tagline && (
+                <span className="block text-sm mt-1">{state.company.tagline}</span>
+              )}
             </CardDescription>
           </CardHeader>
+          
           <CardContent className="space-y-6">
-            {/* Company info */}
-            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary" />
-              </div>
+            {/* Company info card */}
+            <div 
+              className="flex items-center gap-3 p-4 rounded-lg border"
+              style={{ backgroundColor: `${brandColor}08`, borderColor: `${brandColor}20` }}
+            >
+              {state.company.logoUrl ? (
+                <img 
+                  src={state.company.logoUrl} 
+                  alt="" 
+                  className="w-12 h-12 rounded-lg object-cover border"
+                />
+              ) : (
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${brandColor}15` }}
+                >
+                  <Building2 className="w-6 h-6" style={{ color: brandColor }} />
+                </div>
+              )}
               <div className="flex-1">
-                <p className="font-medium">{state.company.name}</p>
+                <p className="font-semibold">{state.company.name}</p>
                 <p className="text-sm text-muted-foreground">Company</p>
               </div>
-              <Badge variant="secondary">
-                <Users className="w-3 h-3 mr-1" />
+              <Badge 
+                variant="secondary"
+                className="gap-1"
+                style={{ backgroundColor: `${brandColor}15`, color: brandColor }}
+              >
+                <Users className="w-3 h-3" />
                 Invited
               </Badge>
             </div>
@@ -248,8 +313,13 @@ export default function Invite() {
               </div>
             )}
 
-            {/* CTA */}
-            <Button onClick={proceedToSignup} className="w-full" size="lg">
+            {/* CTA Button with brand color */}
+            <Button 
+              onClick={proceedToSignup} 
+              className="w-full text-white" 
+              size="lg"
+              style={{ backgroundColor: brandColor }}
+            >
               Continue to Sign Up
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -258,7 +328,8 @@ export default function Invite() {
               Already have an account?{" "}
               <button 
                 onClick={() => navigate("/auth")} 
-                className="text-primary underline hover:no-underline"
+                className="underline hover:no-underline"
+                style={{ color: brandColor }}
               >
                 Sign in instead
               </button>
