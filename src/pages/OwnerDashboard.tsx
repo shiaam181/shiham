@@ -36,7 +36,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Building2, Copy, Users, Link2, Crown, Loader2, MoreHorizontal, Shield, User } from 'lucide-react';
+import { Building2, Copy, Users, Link2, Crown, Loader2, MoreHorizontal, Shield, User, QrCode, Share2 } from 'lucide-react';
+import { InviteDebugPanel } from '@/components/InviteDebugPanel';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -70,6 +71,9 @@ export default function OwnerDashboard() {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<CompanyEmployee | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('employee');
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isOwner) {
@@ -140,6 +144,34 @@ export default function OwnerDashboard() {
       title: 'Copied!',
       description: 'Invite link copied to clipboard. Share it with your employees.'
     });
+  };
+
+  const generateQRCode = () => {
+    if (!company) return;
+    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(link)}`;
+    setQrDataUrl(qrUrl);
+    setShowQRCode(true);
+  };
+
+  const shareInviteLink = async () => {
+    if (!company) return;
+    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${company.name}`,
+          text: `You've been invited to join ${company.name} on our attendance platform.`,
+          url: link,
+        });
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+        copyInviteLink();
+      }
+    } else {
+      copyInviteLink();
+    }
   };
 
   const openRoleDialog = (employee: CompanyEmployee) => {
@@ -296,14 +328,48 @@ export default function OwnerDashboard() {
                     </code>
                   </div>
                   <Button onClick={copyInviteLink} variant="outline" size="sm">
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button onClick={shareInviteLink} variant="outline" size="sm">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                  <Button onClick={generateQRCode} variant="outline" size="sm">
+                    <QrCode className="w-4 h-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   Share this link with employees to let them register under your company.
                 </p>
               </div>
+
+              {/* QR Code Display */}
+              {showQRCode && qrDataUrl && (
+                <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-lg border">
+                  <img src={qrDataUrl} alt="Invite QR Code" className="w-48 h-48" />
+                  <p className="text-sm text-muted-foreground">Scan to join {company.name}</p>
+                  <Button variant="ghost" size="sm" onClick={() => setShowQRCode(false)}>
+                    Hide QR Code
+                  </Button>
+                </div>
+              )}
+
+              {/* Debug Panel Toggle */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+                className="text-xs text-muted-foreground"
+              >
+                {showDebugPanel ? 'Hide' : 'Show'} Debug Panel
+              </Button>
+
+              {showDebugPanel && (
+                <InviteDebugPanel 
+                  inviteCode={company.invite_code} 
+                  showQRCode={false}
+                  onClose={() => setShowDebugPanel(false)}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
