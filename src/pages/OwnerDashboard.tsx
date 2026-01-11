@@ -36,8 +36,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Building2, Copy, Users, Link2, Crown, Loader2, MoreHorizontal, Shield, User, QrCode, Share2 } from 'lucide-react';
+import { Building2, Copy, Users, Link2, Crown, Loader2, MoreHorizontal, Shield, User, QrCode, Share2, History } from 'lucide-react';
 import { InviteDebugPanel } from '@/components/InviteDebugPanel';
+import { InviteUsageHistory } from '@/components/InviteUsageHistory';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -454,6 +455,9 @@ export default function OwnerDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Invite Usage History */}
+        <InviteUsageHistory companyId={company.id} />
       </main>
 
       {/* Role Change Dialog */}
