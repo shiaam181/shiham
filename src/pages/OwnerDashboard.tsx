@@ -139,7 +139,7 @@ export default function OwnerDashboard() {
 
   const copyInviteLink = () => {
     if (!company) return;
-    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
+    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
@@ -149,7 +149,7 @@ export default function OwnerDashboard() {
 
   const generateQRCode = () => {
     if (!company) return;
-    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
+    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(link)}`;
     setQrDataUrl(qrUrl);
     setShowQRCode(true);
@@ -157,7 +157,7 @@ export default function OwnerDashboard() {
 
   const shareInviteLink = async () => {
     if (!company) return;
-    const link = `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
+    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
     
     if (navigator.share) {
       try {

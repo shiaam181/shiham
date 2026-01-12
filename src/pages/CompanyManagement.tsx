@@ -320,7 +320,7 @@ export default function CompanyManagement() {
 
   const getInviteLink = (inviteCode?: string | null) => {
     if (!inviteCode) return '';
-    return `${getInviteBaseUrl()}/invite/${encodeURIComponent(inviteCode)}`;
+    return `${getInviteBaseUrl()}/#/invite/${encodeURIComponent(inviteCode)}`;
   };
 
   const copyInviteLink = (inviteCode?: string | null) => {
