@@ -42,6 +42,7 @@ export default function Auth() {
   
   const { settings } = useSystemSettings();
   const [isLogin, setIsLogin] = useState(!inviteCode); // Default to signup if invite code present
+  const [modeOverride, setModeOverride] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'password' | 'email_otp' | 'phone_otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -84,6 +85,12 @@ export default function Auth() {
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
+
+  // If the user opened an invite link, always default to Sign Up.
+  // With HashRouter, the query string can populate after first render; this keeps UX consistent.
+  useEffect(() => {
+    if (inviteCode && !modeOverride) setIsLogin(false);
+  }, [inviteCode, modeOverride]);
 
   // Fetch company info if invite code is present
   useEffect(() => {
@@ -1434,6 +1441,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => {
+                      setModeOverride(true);
                       setIsLogin(!isLogin);
                       setErrors({});
                       setFormData({ fullName: '', email: '', password: '', confirmPassword: '', phone: '' });

@@ -320,7 +320,8 @@ export default function CompanyManagement() {
 
   const getInviteLink = (inviteCode?: string | null) => {
     if (!inviteCode) return '';
-    return `${getInviteBaseUrl()}/#/invite/${encodeURIComponent(inviteCode)}`;
+    // HashRouter-safe link that lands directly on the Sign Up screen.
+    return `${getInviteBaseUrl()}/#/auth?invite=${encodeURIComponent(inviteCode)}`;
   };
 
   const copyInviteLink = (inviteCode?: string | null) => {
