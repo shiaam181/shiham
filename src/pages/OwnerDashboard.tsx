@@ -137,9 +137,17 @@ export default function OwnerDashboard() {
     }
   };
 
+  const getEmployeeInviteLink = () => {
+    if (!company) return '';
+    // HashRouter-safe link that always loads on any static host.
+    // Goes directly to Sign Up and shows the company name.
+    return `${window.location.origin}/#/auth?invite=${encodeURIComponent(company.invite_code)}`;
+  };
+
   const copyInviteLink = () => {
-    if (!company) return;
-    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
+    const link = getEmployeeInviteLink();
+    if (!link) return;
+
     navigator.clipboard.writeText(link);
     toast({
       title: 'Copied!',
@@ -148,8 +156,9 @@ export default function OwnerDashboard() {
   };
 
   const generateQRCode = () => {
-    if (!company) return;
-    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
+    const link = getEmployeeInviteLink();
+    if (!link) return;
+
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(link)}`;
     setQrDataUrl(qrUrl);
     setShowQRCode(true);
@@ -157,8 +166,8 @@ export default function OwnerDashboard() {
 
   const shareInviteLink = async () => {
     if (!company) return;
-    const link = `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
-    
+    const link = getEmployeeInviteLink();
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -325,7 +334,7 @@ export default function OwnerDashboard() {
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm flex-1 overflow-hidden">
                     <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
                     <code className="text-xs truncate">
-                      {window.location.origin}/invite/{company.invite_code}
+                      {getEmployeeInviteLink()}
                     </code>
                   </div>
                   <Button onClick={copyInviteLink} variant="outline" size="sm">
