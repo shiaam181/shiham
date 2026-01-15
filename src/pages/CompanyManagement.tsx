@@ -315,13 +315,21 @@ export default function CompanyManagement() {
 
   const getInviteBaseUrl = () => {
     const cleaned = normalizePublicUrl(publicAppUrl);
-    return cleaned || window.location.origin;
+    // If a full URL was pasted (with path/query/hash), keep only the origin so links are always clean.
+    if (cleaned) {
+      try {
+        return new URL(cleaned).origin;
+      } catch {
+        // fall through
+      }
+    }
+    return window.location.origin;
   };
 
   const getInviteLink = (inviteCode?: string | null) => {
     if (!inviteCode) return '';
-    // HashRouter-safe link that shows the invite landing page first
-    return `${getInviteBaseUrl()}/#/invite/${encodeURIComponent(inviteCode)}`;
+    // Clean share link (product-style): /invite/<code>
+    return `${getInviteBaseUrl()}/invite/${encodeURIComponent(inviteCode)}`;
   };
 
   const copyInviteLink = (inviteCode?: string | null) => {
