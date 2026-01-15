@@ -139,9 +139,8 @@ export default function OwnerDashboard() {
 
   const getEmployeeInviteLink = () => {
     if (!company) return '';
-    // HashRouter-safe link that always loads on any static host.
-    // Goes directly to Sign Up and shows the company name.
-    return `${window.location.origin}/#/auth?invite=${encodeURIComponent(company.invite_code)}`;
+    // HashRouter-safe link that shows the invite landing page first
+    return `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
   };
 
   const copyInviteLink = () => {

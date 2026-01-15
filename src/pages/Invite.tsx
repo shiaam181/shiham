@@ -152,6 +152,7 @@ export default function Invite() {
 
   const proceedToSignup = () => {
     if (!inviteCode) return;
+    // Use hash router compatible path
     navigate(`/auth?invite=${encodeURIComponent(inviteCode)}`, { replace: true });
   };
 
