@@ -39,6 +39,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const rawInvite = (searchParams.get('invite') || '').trim();
   const inviteCode = (rawInvite.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || '').trim() || null;
+  const inviteSrc = (searchParams.get('src') || '').toLowerCase();
   
   const { settings } = useSystemSettings();
   const [isLogin, setIsLogin] = useState(!inviteCode); // Default to signup if invite code present
@@ -85,6 +86,15 @@ export default function Auth() {
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
+
+  // If the user opened a legacy invite link directly on /auth?invite=...
+  // redirect them to the dedicated invite landing page first (product-style deep link).
+  // We skip this redirect when coming from the invite landing page itself (src=invite).
+  useEffect(() => {
+    if (inviteCode && inviteSrc !== 'invite') {
+      navigate(`/invite/${encodeURIComponent(inviteCode)}`, { replace: true });
+    }
+  }, [inviteCode, inviteSrc, navigate]);
 
   // If the user opened an invite link, always default to Sign Up.
   // With HashRouter, the query string can populate after first render; this keeps UX consistent.

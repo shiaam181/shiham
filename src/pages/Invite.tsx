@@ -152,8 +152,8 @@ export default function Invite() {
 
   const proceedToSignup = () => {
     if (!inviteCode) return;
-    // Use hash router compatible path
-    navigate(`/auth?invite=${encodeURIComponent(inviteCode)}`, { replace: true });
+    // Move to Auth, but mark as coming from the invite landing page so Auth won't auto-redirect back.
+    navigate(`/auth?invite=${encodeURIComponent(inviteCode)}&src=invite`, { replace: true });
   };
 
   // Loading state
