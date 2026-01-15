@@ -139,8 +139,8 @@ export default function OwnerDashboard() {
 
   const getEmployeeInviteLink = () => {
     if (!company) return '';
-    // HashRouter-safe link that shows the invite landing page first
-    return `${window.location.origin}/#/invite/${encodeURIComponent(company.invite_code)}`;
+    // Clean share link (product-style): /invite/<code>
+    return `${window.location.origin}/invite/${encodeURIComponent(company.invite_code)}`;
   };
 
   const copyInviteLink = () => {

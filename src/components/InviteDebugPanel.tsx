@@ -141,7 +141,7 @@ export function InviteDebugPanel({ inviteCode, showQRCode = true, onClose }: Inv
   const generateQR = async () => {
     if (!inviteCode) return;
 
-    const link = `${window.location.origin}/#/invite/${encodeURIComponent(inviteCode)}`;
+    const link = `${window.location.origin}/invite/${encodeURIComponent(inviteCode)}`;
 
     // Use QR code API
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
@@ -150,7 +150,7 @@ export function InviteDebugPanel({ inviteCode, showQRCode = true, onClose }: Inv
 
   const copyLink = () => {
     if (!inviteCode) return;
-    const link = `${window.location.origin}/#/invite/${encodeURIComponent(inviteCode)}`;
+    const link = `${window.location.origin}/invite/${encodeURIComponent(inviteCode)}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Copied!",
