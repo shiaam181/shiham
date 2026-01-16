@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.email-login]
 verify_jwt = false
+
+[functions.get-company-by-invite]
+verify_jwt = false
+
+[functions.track-invite-usage]
+verify_jwt = false
+
+[functions.approve-employee]
+verify_jwt = false

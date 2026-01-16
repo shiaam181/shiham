@@ -30,6 +30,7 @@ import Install from "./pages/Install";
 import Updates from "./pages/Updates";
 import CompanyManagement from "./pages/CompanyManagement";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -38,6 +39,7 @@ import UpdateNotification from "./components/UpdateNotification";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) => {
+  const location = useLocation();
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
   const { settings, isLoading: settingsLoading } = useSystemSettings();
@@ -57,10 +59,18 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
     return <Navigate to="/auth" replace />;
   }
 
+  // Block pending employees until owner approves
+  if (!isDeveloper && profile && profile.is_active === false) {
+    // Allow the pending page itself to render
+    if (location.pathname !== "/pending-approval") {
+      return <Navigate to="/pending-approval" replace />;
+    }
+  }
+
   // Check if app-only mode is enabled and user needs to install PWA
   // Skip for developers and if already on install page
   if (settings.appOnlyModeEnabled && !isDeveloper) {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
                   (window.navigator as any).standalone === true;
     if (!isPWA) {
       return <Navigate to="/install" replace />;
@@ -213,6 +223,7 @@ function AppRoutes() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/install" element={<Install />} />
+        <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
