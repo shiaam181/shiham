@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.approve-employee]
 verify_jwt = false
+
+[functions.generate-challenge]
+verify_jwt = true
+
+[functions.register-face]
+verify_jwt = true
+
+[functions.verify-attendance]
+verify_jwt = true
