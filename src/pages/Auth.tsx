@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff, Phone, Building2 } from 'lucide-react';
+import { Clock, Shield, MapPin, Camera, Users, ArrowRight, ArrowLeft, Mail, CheckCircle, Eye, EyeOff, Phone } from 'lucide-react';
 import { z } from 'zod';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { CountryCodeSelect } from '@/components/CountryCodeSelect';
+import { CompanySearchSelect } from '@/components/CompanySearchSelect';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -30,19 +31,18 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
-interface CompanyInfo {
+interface SelectedCompany {
   id: string;
   name: string;
+  logo_url?: string | null;
 }
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const rawInvite = (searchParams.get('invite') || '').trim();
-  const inviteCode = (rawInvite.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || '').trim() || null;
-  const inviteSrc = (searchParams.get('src') || '').toLowerCase();
+  const selectCompanyMode = searchParams.get('mode') === 'select-company';
   
   const { settings } = useSystemSettings();
-  const [isLogin, setIsLogin] = useState(!inviteCode); // Default to signup if invite code present
+  const [isLogin, setIsLogin] = useState(!selectCompanyMode);
   const [modeOverride, setModeOverride] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'password' | 'email_otp' | 'phone_otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,9 +61,8 @@ export default function Auth() {
   const [countryCode, setCountryCode] = useState('+91');
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Company invite state
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
-  const [loadingCompany, setLoadingCompany] = useState(!!inviteCode);
+  // Company selection state (replaces invite code)
+  const [selectedCompany, setSelectedCompany] = useState<SelectedCompany | null>(null);
   
   // OTP States
   const [showOtpVerification, setShowOtpVerification] = useState(false);
@@ -77,113 +76,60 @@ export default function Auth() {
     password: string;
     fullName: string;
     phone?: string;
+    companyId?: string;
   } | null>(null);
   const [pendingLoginEmail, setPendingLoginEmail] = useState<string | null>(null);
   const [pendingLoginPhone, setPendingLoginPhone] = useState<string | null>(null);
   
-  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
 
-  // If the user opened a legacy invite link directly on /auth?invite=...
-  // redirect them to the dedicated invite landing page first (product-style deep link).
-  // We skip this redirect when coming from the invite landing page itself (src=invite).
+  // If user comes in select-company mode (after decline), default to signup
   useEffect(() => {
-    if (inviteCode && inviteSrc !== 'invite') {
-      navigate(`/invite/${encodeURIComponent(inviteCode)}`, { replace: true });
+    if (selectCompanyMode && !modeOverride) {
+      setIsLogin(false);
     }
-  }, [inviteCode, inviteSrc, navigate]);
+  }, [selectCompanyMode, modeOverride]);
 
-  // If the user opened an invite link, always default to Sign Up.
-  // With HashRouter, the query string can populate after first render; this keeps UX consistent.
+  // If user is already logged in and in select-company mode, just update their company
   useEffect(() => {
-    if (inviteCode && !modeOverride) setIsLogin(false);
-  }, [inviteCode, modeOverride]);
+    if (selectCompanyMode && user && selectedCompany) {
+      // User is updating their company after decline
+      const updateCompany = async () => {
+        setIsLoading(true);
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ 
+              company_id: selectedCompany.id, 
+              registration_status: 'pending',
+              is_active: false 
+            })
+            .eq('user_id', user.id);
 
-  // Fetch company info if invite code is present
-  useEffect(() => {
-    const fetchCompanyByInviteCode = async () => {
-      if (!inviteCode) {
-        setLoadingCompany(false);
-        return;
-      }
+          if (error) throw error;
 
-      try {
-        const response = await supabase.functions.invoke('get-company-by-invite', {
-          body: { inviteCode },
-        });
-
-        console.log('Invite response:', response);
-
-        const { data, error } = response;
-
-        // Supabase Functions can occasionally return raw JSON as a string depending on runtime/headers.
-        // Normalize here so invite links work reliably across preview + published builds.
-        let normalizedData: any = data;
-        if (typeof normalizedData === 'string') {
-          try {
-            normalizedData = JSON.parse(normalizedData);
-          } catch {
-            // keep as-is
-          }
-        }
-
-        // Check for function invocation error
-        if (error) {
-          console.error('Function error:', error);
           toast({
-            title: 'Invalid Invite Link',
-            description: error.message || 'This invite link is invalid or expired.',
+            title: 'Request Submitted',
+            description: `Your request to join ${selectedCompany.name} has been submitted for approval.`,
+          });
+          navigate('/pending-approval', { replace: true });
+        } catch (err: any) {
+          toast({
+            title: 'Error',
+            description: err.message || 'Failed to update company',
             variant: 'destructive',
           });
-          setCompanyInfo(null);
-          return;
+        } finally {
+          setIsLoading(false);
         }
-
-        // Check for application-level error in response data
-        if (normalizedData?.error) {
-          console.error('Data error:', normalizedData.error);
-          toast({
-            title: 'Invalid Invite Link',
-            description: normalizedData.error || 'This invite link is invalid or expired.',
-            variant: 'destructive',
-          });
-          setCompanyInfo(null);
-          return;
-        }
-
-        // Extract company from response
-        const company = normalizedData?.company as CompanyInfo | undefined;
-        console.log('Company info:', company);
-
-        if (company?.id && company?.name) {
-          setCompanyInfo(company);
-        } else {
-          console.error('Invalid company data:', normalizedData);
-          toast({
-            title: 'Invalid Invite Link',
-            description: 'This invite link is invalid or expired.',
-            variant: 'destructive',
-          });
-          setCompanyInfo(null);
-        }
-      } catch (err) {
-        console.error('Catch error:', err);
-        toast({
-          title: 'Error',
-          description: 'Failed to verify invite link. Please try again.',
-          variant: 'destructive',
-        });
-        setCompanyInfo(null);
-      } finally {
-        setLoadingCompany(false);
-      }
-    };
-
-    fetchCompanyByInviteCode();
-  }, [inviteCode, toast]);
+      };
+      updateCompany();
+    }
+  }, [selectedCompany, selectCompanyMode, user]);
 
   // Determine which auth options are available
   const hasPasswordLogin = settings.passwordLoginEnabled;
@@ -200,6 +146,12 @@ export default function Auth() {
   };
 
   const sendSignupOtp = async (method: 'email' | 'phone') => {
+    // Validate company is selected
+    if (!selectedCompany) {
+      setErrors({ company: 'Please select your company' });
+      return;
+    }
+
     try {
       const validated = signupSchema.parse(formData);
       
@@ -207,7 +159,6 @@ export default function Auth() {
       setOtpMethod(method);
       
       if (method === 'email') {
-        // Call email OTP edge function
         const { data, error } = await supabase.functions.invoke('send-email-otp', {
           body: { email: validated.email, type: 'verification' },
         });
@@ -225,6 +176,7 @@ export default function Auth() {
           email: validated.email,
           password: validated.password,
           fullName: validated.fullName,
+          companyId: selectedCompany.id,
         });
         setOtpType('signup');
         setShowOtpVerification(true);
@@ -233,7 +185,6 @@ export default function Auth() {
           description: `A 6-digit code has been sent to ${validated.email}`,
         });
       } else {
-        // Phone OTP - validate phone
         const phoneNumber = formData.phone.trim();
         if (!phoneNumber) {
           setErrors({ phone: 'Phone number is required for phone verification' });
@@ -260,6 +211,7 @@ export default function Auth() {
           password: validated.password,
           fullName: validated.fullName,
           phone: fullPhone,
+          companyId: selectedCompany.id,
         });
         setOtpType('signup');
         setShowOtpVerification(true);
@@ -369,7 +321,6 @@ export default function Auth() {
 
     setIsVerifyingOtp(true);
     try {
-      // Verify the OTP using appropriate edge function
       const verifyFunction = otpMethod === 'phone' ? 'verify-otp' : 'verify-email-otp';
       const verifyBody = otpMethod === 'phone' 
         ? { phone: pendingSignupData.phone, otp: otpValue }
@@ -389,7 +340,7 @@ export default function Auth() {
         return;
       }
 
-      // Now create the actual account with email/password
+      // Create the account
       const { error: signUpError } = await signUp(
         pendingSignupData.email,
         pendingSignupData.password,
@@ -414,54 +365,28 @@ export default function Auth() {
         return;
       }
 
-      // Wait a bit for the profile to be created by trigger
+      // Wait for profile to be created
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser) {
-        const updateData: Record<string, unknown> = {};
-        
-        // If phone was verified, mark it as verified
-        if (otpMethod === 'phone' && pendingSignupData.phone) {
-          updateData.phone_verified = true;
-        }
-        
-        // If company invite code present, assign company and increment usage
-        if (companyInfo && inviteCode) {
-          updateData.company_id = companyInfo.id;
-          
-          // Increment invite usage count
-          await supabase.functions.invoke('get-company-by-invite', {
-            body: { inviteCode, incrementUsage: true },
-          });
-          
-          // Track invite usage for history
-          await supabase.functions.invoke('track-invite-usage', {
-            body: {
-              companyId: companyInfo.id,
-              inviteCode,
-              userId: currentUser.id,
-              userEmail: pendingSignupData.email,
-              userName: pendingSignupData.fullName,
-            },
-          });
-        }
-        
-        if (Object.keys(updateData).length > 0) {
-          await supabase
-            .from('profiles')
-            .update(updateData)
-            .eq('user_id', currentUser.id);
-        }
+        // Set company, mark as pending approval, and set is_active to false
+        await supabase
+          .from('profiles')
+          .update({ 
+            company_id: pendingSignupData.companyId,
+            is_active: false,
+            registration_status: 'pending',
+            phone_verified: otpMethod === 'phone' ? true : false,
+          })
+          .eq('user_id', currentUser.id);
       }
       
       toast({
-        title: 'Account created!',
-        description: companyInfo 
-          ? `Welcome to ${companyInfo.name}! ${otpMethod === 'phone' ? 'Phone' : 'Email'} verified. Please set up face verification.`
-          : `${otpMethod === 'phone' ? 'Phone' : 'Email'} verified successfully. Please set up face verification to continue.`,
+        title: 'Registration Submitted!',
+        description: 'Your registration is pending approval from the company administrator.',
       });
-      navigate('/face-setup');
+      navigate('/pending-approval');
     } catch (error) {
       toast({
         title: 'Error',
@@ -486,7 +411,6 @@ export default function Auth() {
 
       setIsVerifyingOtp(true);
       try {
-        // Verify phone OTP + sign in (server generates a magic link token for the matched email)
         const { data, error } = await supabase.functions.invoke('phone-login', {
           body: { phone: pendingLoginPhone, otp: otpValue },
         });
@@ -497,32 +421,24 @@ export default function Auth() {
             description: data?.error || error?.message || 'Invalid OTP',
             variant: 'destructive',
           });
+          setIsVerifyingOtp(false);
           return;
         }
 
-        const email = data?.email as string | undefined;
-        const tokenHash = data?.token_hash as string | undefined;
-
-        if (!email || !tokenHash) {
-          toast({
-            title: 'Sign In Failed',
-            description: 'Login token missing. Please try again.',
-            variant: 'destructive',
+        if (data.token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.token,
+            refresh_token: data.refresh_token || data.token,
           });
-          return;
-        }
-
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: 'magiclink',
-        });
-        if (verifyError) {
-          toast({
-            title: 'Sign In Failed',
-            description: verifyError.message,
-            variant: 'destructive',
-          });
-          return;
+          
+          if (sessionError) {
+            toast({
+              title: 'Session Error',
+              description: sessionError.message,
+              variant: 'destructive',
+            });
+            return;
+          }
         }
 
         toast({
@@ -543,79 +459,66 @@ export default function Auth() {
       } finally {
         setIsVerifyingOtp(false);
       }
-
-      return;
-    }
-
-    // Email OTP login
-    if (!pendingLoginEmail || otpValue.length !== 6) {
-      toast({
-        title: 'Invalid OTP',
-        description: 'Please enter the 6-digit code sent to your email.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-    try {
-      // Verify email OTP and get login token (same pattern as phone-login)
-      const { data, error } = await supabase.functions.invoke('email-login', {
-        body: { email: pendingLoginEmail, otp: otpValue },
-      });
-
-      if (error || (data && data.error)) {
+    } else {
+      if (!pendingLoginEmail || otpValue.length !== 6) {
         toast({
-          title: 'Verification Failed',
-          description: data?.error || error?.message || 'Invalid OTP',
+          title: 'Invalid OTP',
+          description: 'Please enter the 6-digit code sent to your email.',
           variant: 'destructive',
         });
         return;
       }
 
-      const tokenHash = data?.token_hash as string | undefined;
+      setIsVerifyingOtp(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('email-login', {
+          body: { email: pendingLoginEmail, otp: otpValue },
+        });
 
-      if (!tokenHash) {
+        if (error || (data && data.error)) {
+          toast({
+            title: 'Verification Failed',
+            description: data?.error || error?.message || 'Invalid OTP',
+            variant: 'destructive',
+          });
+          setIsVerifyingOtp(false);
+          return;
+        }
+
+        if (data.session?.access_token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token || data.session.access_token,
+          });
+          
+          if (sessionError) {
+            toast({
+              title: 'Session Error',
+              description: sessionError.message,
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
+
         toast({
-          title: 'Sign In Failed',
-          description: 'Login token missing. Please try again.',
+          title: 'Signed in',
+          description: 'Email verified successfully.',
+        });
+
+        setShowOtpVerification(false);
+        setOtpValue('');
+        setPendingLoginEmail(null);
+        navigate('/');
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
           variant: 'destructive',
         });
-        return;
+      } finally {
+        setIsVerifyingOtp(false);
       }
-
-      // Use the token to sign in directly (no magic link email sent)
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: 'magiclink',
-      });
-
-      if (verifyError) {
-        toast({
-          title: 'Sign In Failed',
-          description: verifyError.message,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      toast({
-        title: 'Signed in',
-        description: 'Email verified successfully.',
-      });
-
-      setShowOtpVerification(false);
-      setOtpValue('');
-      setPendingLoginEmail(null);
-      navigate('/');
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsVerifyingOtp(false);
     }
   };
 
@@ -623,7 +526,6 @@ export default function Auth() {
     setIsSendingOtp(true);
     try {
       if (otpMethod === 'phone') {
-        // Resend phone OTP
         let phone: string;
         if (otpType === 'signup' && pendingSignupData?.phone) {
           phone = pendingSignupData.phone;
@@ -651,7 +553,6 @@ export default function Auth() {
           description: `A new verification code has been sent to ${phone}`,
         });
       } else {
-        // Resend email OTP
         let email: string;
         
         if (otpType === 'signup' && pendingSignupData) {
@@ -687,6 +588,12 @@ export default function Auth() {
   };
 
   const handleDirectSignup = async () => {
+    // Validate company is selected
+    if (!selectedCompany) {
+      setErrors({ company: 'Please select your company' });
+      return;
+    }
+
     try {
       const validated = signupSchema.parse(formData);
       setIsLoading(true);
@@ -714,40 +621,27 @@ export default function Auth() {
         return;
       }
 
-      // If company invite code is present, update the profile with company_id and increment usage
-      if (companyInfo && inviteCode) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ company_id: companyInfo.id })
-            .eq('user_id', user.id);
-          
-          // Increment invite usage count
-          await supabase.functions.invoke('get-company-by-invite', {
-            body: { inviteCode, incrementUsage: true },
-          });
-          
-          // Track invite usage for history
-          await supabase.functions.invoke('track-invite-usage', {
-            body: {
-              companyId: companyInfo.id,
-              inviteCode,
-              userId: user.id,
-              userEmail: formData.email,
-              userName: formData.fullName,
-            },
-          });
-        }
+      // Wait for profile creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Set company, mark as pending, set is_active to false
+        await supabase
+          .from('profiles')
+          .update({ 
+            company_id: selectedCompany.id,
+            is_active: false,
+            registration_status: 'pending',
+          })
+          .eq('user_id', user.id);
       }
       
       toast({
-        title: 'Account created!',
-        description: companyInfo 
-          ? `Welcome to ${companyInfo.name}! Please set up face verification to continue.`
-          : 'Please set up face verification to continue.',
+        title: 'Registration Submitted!',
+        description: 'Your registration is pending approval from the company administrator.',
       });
-      navigate('/face-setup');
+      navigate('/pending-approval');
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -767,14 +661,17 @@ export default function Auth() {
     e.preventDefault();
     
     if (!isLogin) {
-      // For signup, always use phone OTP if enabled (mandatory phone verification)
-      // Otherwise fallback to email OTP, then direct signup
+      // Validate company selection
+      if (!selectedCompany) {
+        setErrors({ company: 'Please select your company' });
+        return;
+      }
+
       if (hasPhoneOtp) {
         await sendSignupOtp('phone');
       } else if (hasEmailOtp) {
         await sendSignupOtp('email');
       } else {
-        // No OTP enabled - direct signup
         await handleDirectSignup();
       }
       return;
@@ -956,7 +853,7 @@ export default function Auth() {
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    {otpType === 'signup' ? 'Verify & Create Account' : 'Verify & Sign In'}
+                    {otpType === 'signup' ? 'Verify & Submit Registration' : 'Verify & Sign In'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
@@ -1135,32 +1032,18 @@ export default function Auth() {
                 )}
               </CardContent>
             </Card>
-          ) : loadingCompany ? (
-            <Card variant="elevated" className="border-0 shadow-xl">
-              <CardContent className="py-12 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </CardContent>
-            </Card>
           ) : (
           <Card variant="elevated" className="border-0 shadow-xl">
             <CardHeader className="space-y-1 pb-4">
-              {companyInfo && !isLogin && (
-                <div className="flex items-center gap-2 mb-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                  <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    Joining: {companyInfo.name}
-                  </span>
-                </div>
-              )}
               <CardTitle className="text-2xl font-display">
-                {isLogin ? 'Welcome back' : companyInfo ? `Join ${companyInfo.name}` : 'Create account'}
+                {isLogin ? 'Welcome back' : selectCompanyMode ? 'Select Company' : 'Create account'}
               </CardTitle>
               <CardDescription>
                 {isLogin 
                   ? 'Sign in to access your account' 
-                  : companyInfo 
-                    ? `Register to join ${companyInfo.name}`
-                    : 'Enter your details to get started'}
+                  : selectCompanyMode
+                    ? 'Choose a company to register with'
+                    : 'Search and select your company to get started'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1190,6 +1073,16 @@ export default function Auth() {
               )}
               
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Company Search - Only for signup */}
+                {!isLogin && (
+                  <CompanySearchSelect
+                    value={selectedCompany}
+                    onChange={setSelectedCompany}
+                    error={errors.company}
+                    disabled={isLoading}
+                  />
+                )}
+
                 {!isLogin && (
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Full Name</Label>
@@ -1249,7 +1142,7 @@ export default function Auth() {
                   </div>
                 )}
 
-                {/* Phone input for signup when phone OTP is enabled - REQUIRED */}
+                {/* Phone input for signup when phone OTP is enabled */}
                 {!isLogin && hasPhoneOtp && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
@@ -1274,7 +1167,7 @@ export default function Auth() {
                   </div>
                 )}
                 
-                {/* Password fields - only show for password login or signup */}
+                {/* Password fields */}
                 {(isLogin && loginMethod === 'password') && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1392,14 +1285,14 @@ export default function Auth() {
                     <>
                       {isLogin 
                         ? (loginMethod !== 'password' ? 'Send Verification Code' : 'Sign In')
-                        : (hasAnyOtp ? 'Continue with Verification' : 'Sign Up')}
+                        : (hasAnyOtp ? 'Continue with Verification' : 'Submit Registration')}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
                 </Button>
               </form>
 
-              {hasGoogleSignin && (
+              {hasGoogleSignin && isLogin && (
                 <>
                   <div className="relative my-6">
                     <Separator />
@@ -1455,6 +1348,7 @@ export default function Auth() {
                       setIsLogin(!isLogin);
                       setErrors({});
                       setFormData({ fullName: '', email: '', password: '', confirmPassword: '', phone: '' });
+                      setSelectedCompany(null);
                       setLoginMethod('password');
                       setShowPassword(false);
                       setShowConfirmPassword(false);
