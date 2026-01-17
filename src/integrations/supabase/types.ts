@@ -47,6 +47,7 @@ export type Database = {
       attendance: {
         Row: {
           admin_notes: string | null
+          challenge_token: string | null
           check_in_face_verified: boolean | null
           check_in_latitude: number | null
           check_in_longitude: number | null
@@ -59,6 +60,8 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          face_confidence: number | null
+          gps_timestamp: string | null
           id: string
           modified_by: string | null
           notes: string | null
@@ -66,9 +69,11 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          verification_method: string | null
         }
         Insert: {
           admin_notes?: string | null
+          challenge_token?: string | null
           check_in_face_verified?: boolean | null
           check_in_latitude?: number | null
           check_in_longitude?: number | null
@@ -81,6 +86,8 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date?: string
+          face_confidence?: number | null
+          gps_timestamp?: string | null
           id?: string
           modified_by?: string | null
           notes?: string | null
@@ -88,9 +95,11 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          verification_method?: string | null
         }
         Update: {
           admin_notes?: string | null
+          challenge_token?: string | null
           check_in_face_verified?: boolean | null
           check_in_latitude?: number | null
           check_in_longitude?: number | null
@@ -103,12 +112,42 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date?: string
+          face_confidence?: number | null
+          gps_timestamp?: string | null
           id?: string
           modified_by?: string | null
           notes?: string | null
           overtime_minutes?: number | null
           status?: string
           updated_at?: string
+          user_id?: string
+          verification_method?: string | null
+        }
+        Relationships: []
+      }
+      attendance_challenges: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -249,6 +288,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      face_reference_images: {
+        Row: {
+          created_at: string
+          embedding: Json | null
+          id: string
+          image_path: string
+          is_active: boolean | null
+          quality_score: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: Json | null
+          id?: string
+          image_path: string
+          is_active?: boolean | null
+          quality_score?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: Json | null
+          id?: string
+          image_path?: string
+          is_active?: boolean | null
+          quality_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       holidays: {
         Row: {
@@ -658,6 +727,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_challenges: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
