@@ -302,12 +302,12 @@ export default function OwnerDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {employees.length === 0 ? (
+{employees.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No employees registered yet.</p>
+                <p className="text-muted-foreground">No approved employees yet.</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Share the invite link above to add employees.
+                  Employees can register by searching for your company name during sign up.
                 </p>
               </div>
             ) : (

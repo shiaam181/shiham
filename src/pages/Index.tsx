@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,23 +7,11 @@ import { Button } from '@/components/ui/button';
 export default function Index() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [checkingSettings, setCheckingSettings] = useState(true);
   const [showMarketing, setShowMarketing] = useState(false);
 
-  // Check for invite code in URL
-  const inviteCode = searchParams.get('invite');
-
   useEffect(() => {
     const checkAndRedirect = async () => {
-      // If invite code is present, go to dedicated invite route (more reliable than query strings)
-      if (inviteCode) {
-        const raw = inviteCode.trim();
-        const extracted = raw.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || '';
-        navigate(extracted ? `/invite/${encodeURIComponent(extracted)}` : '/auth');
-        return;
-      }
-
       // If user is logged in, go to dashboard
       if (!isLoading && user) {
         navigate('/dashboard');
@@ -50,7 +38,7 @@ export default function Index() {
     };
 
     checkAndRedirect();
-  }, [user, isLoading, navigate, inviteCode]);
+  }, [user, isLoading, navigate]);
 
   // Show loading while checking
   if (isLoading || checkingSettings) {

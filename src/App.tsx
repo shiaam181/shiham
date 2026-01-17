@@ -8,7 +8,7 @@ import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
-import Invite from "./pages/Invite";
+// Invite flow removed - employees now search for company during signup
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
 import ResetPassword from "./pages/ResetPassword";
