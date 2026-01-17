@@ -468,6 +468,7 @@ export type Database = {
           phone: string | null
           phone_verified: boolean
           position: string | null
+          registration_status: string | null
           shift_id: string | null
           updated_at: string
           user_id: string
@@ -486,6 +487,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean
           position?: string | null
+          registration_status?: string | null
           shift_id?: string | null
           updated_at?: string
           user_id: string
@@ -504,6 +506,7 @@ export type Database = {
           phone?: string | null
           phone_verified?: boolean
           position?: string | null
+          registration_status?: string | null
           shift_id?: string | null
           updated_at?: string
           user_id?: string
