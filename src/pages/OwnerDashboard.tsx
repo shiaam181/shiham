@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Building2, Users, Crown, Loader2, MoreHorizontal, Shield, User } from 'lucide-react';
+import { Building2, Users, Crown, Loader2, MoreHorizontal, Shield, User, ChevronDown } from 'lucide-react';
 import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -60,10 +60,14 @@ interface Company {
 }
 
 export default function OwnerDashboard() {
-  const { user, profile, isOwner, isLoading: authLoading } = useAuth();
+  const { user, profile, isOwner, isDeveloper, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // For developers: list of all companies to choose from
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  
   const [company, setCompany] = useState<Company | null>(null);
   const [employees, setEmployees] = useState<CompanyEmployee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,18 +75,54 @@ export default function OwnerDashboard() {
   const [selectedEmployee, setSelectedEmployee] = useState<CompanyEmployee | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('employee');
 
+  // Fetch all companies for developers
   useEffect(() => {
-    if (!authLoading && !isOwner) {
+    const fetchAllCompanies = async () => {
+      if (!isDeveloper) return;
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, slug, invite_code, is_active')
+        .order('name');
+      
+      if (!error && data) {
+        setAllCompanies(data);
+        // Auto-select first company if none selected
+        if (data.length > 0 && !selectedCompanyId) {
+          setSelectedCompanyId(data[0].id);
+        }
+      }
+    };
+
+    if (!authLoading && isDeveloper) {
+      fetchAllCompanies();
+    }
+  }, [authLoading, isDeveloper]);
+
+  useEffect(() => {
+    if (!authLoading && !isOwner && !isDeveloper) {
       navigate('/dashboard');
       return;
     }
-    if (profile?.company_id) {
-      fetchCompany(profile.company_id);
-      fetchEmployees(profile.company_id);
+
+    // Determine which company to load
+    let companyIdToLoad: string | null = null;
+
+    if (isDeveloper) {
+      // Developer can select any company
+      companyIdToLoad = selectedCompanyId;
+    } else if (profile?.company_id) {
+      // Owner sees their assigned company
+      companyIdToLoad = profile.company_id;
+    }
+
+    if (companyIdToLoad) {
+      fetchCompany(companyIdToLoad);
+      fetchEmployees(companyIdToLoad);
     } else {
       setIsLoading(false);
     }
-  }, [authLoading, isOwner, profile?.company_id, navigate]);
+  }, [authLoading, isOwner, isDeveloper, profile?.company_id, selectedCompanyId, navigate]);
 
   const fetchCompany = async (companyId: string) => {
     try {
@@ -133,8 +173,9 @@ export default function OwnerDashboard() {
   };
 
   const refreshEmployees = () => {
-    if (profile?.company_id) {
-      fetchEmployees(profile.company_id);
+    const companyId = isDeveloper ? selectedCompanyId : profile?.company_id;
+    if (companyId) {
+      fetchEmployees(companyId);
     }
   };
 
@@ -155,11 +196,11 @@ export default function OwnerDashboard() {
   const updateEmployeeRole = async () => {
     if (!selectedEmployee) return;
 
-    // Validate that selectedRole is a valid role
-    const validRoles = ['employee', 'admin'] as const;
-    type ValidRole = typeof validRoles[number];
+    // All valid app roles
+    const allValidRoles = ['employee', 'admin', 'owner', 'developer'] as const;
     
-    if (!validRoles.includes(selectedRole as ValidRole)) {
+    // Check if selected role is valid
+    if (!allValidRoles.includes(selectedRole as typeof allValidRoles[number])) {
       toast({
         title: 'Invalid Role',
         description: 'Please select a valid role.',
@@ -179,12 +220,12 @@ export default function OwnerDashboard() {
       if (existingRole) {
         await supabase
           .from('user_roles')
-          .update({ role: selectedRole as 'admin' | 'employee' })
+          .update({ role: selectedRole as 'admin' | 'employee' | 'owner' | 'developer' })
           .eq('user_id', selectedEmployee.user_id);
       } else {
         await supabase
           .from('user_roles')
-          .insert({ user_id: selectedEmployee.user_id, role: selectedRole as 'admin' | 'employee' });
+          .insert({ user_id: selectedEmployee.user_id, role: selectedRole as 'admin' | 'employee' | 'owner' | 'developer' });
       }
 
       toast({
@@ -194,9 +235,7 @@ export default function OwnerDashboard() {
 
       setShowRoleDialog(false);
       setSelectedEmployee(null);
-      if (profile?.company_id) {
-        fetchEmployees(profile.company_id);
-      }
+      refreshEmployees();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -239,7 +278,30 @@ export default function OwnerDashboard() {
     );
   }
 
-  if (!company) {
+  // For developers with no companies yet
+  if (isDeveloper && allCompanies.length === 0) {
+    return (
+      <div className="min-h-screen bg-background pb-20 sm:pb-6">
+        <RoleBasedHeader currentView="owner" />
+        <main className="container mx-auto px-4 py-6">
+          <Card className="text-center p-8">
+            <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">No Companies Created</h2>
+            <p className="text-muted-foreground mb-4">
+              Create your first company from the Developer Dashboard.
+            </p>
+            <Button onClick={() => navigate('/developer/companies')}>
+              Go to Company Management
+            </Button>
+          </Card>
+        </main>
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
+  // For non-developers with no company assigned
+  if (!isDeveloper && !company) {
     return (
       <div className="min-h-screen bg-background pb-20 sm:pb-6">
         <RoleBasedHeader currentView="owner" />
@@ -262,115 +324,156 @@ export default function OwnerDashboard() {
       <RoleBasedHeader currentView="owner" />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Company Info */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">{company.name}</CardTitle>
-                  <CardDescription>/{company.slug}</CardDescription>
-                </div>
-              </div>
-              <Badge variant={company.is_active ? 'default' : 'secondary'}>
-                {company.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Employees can register by searching for your company name on the signup page. You'll need to approve each registration request.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Pending Employee Approvals */}
-        <PendingEmployeesList companyId={company.id} onUpdate={refreshEmployees} />
-
-        {/* Employee List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Company Employees ({employees.length})
-            </CardTitle>
-            <CardDescription>
-              Manage your company's employees and their roles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-{employees.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No approved employees yet.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Employees can register by searching for your company name during sign up.
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="hidden sm:table-cell">Department</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((emp) => (
-                    <TableRow key={emp.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{emp.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{emp.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <span className="text-sm text-muted-foreground">
-                          {emp.department || '-'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(emp.role || 'employee')} className="gap-1">
-                          {getRoleIcon(emp.role || 'employee')}
-                          {emp.role || 'employee'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant={emp.is_active ? 'outline' : 'secondary'}>
-                          {emp.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {emp.user_id !== user?.id && emp.role !== 'owner' && emp.role !== 'developer' && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openRoleDialog(emp)}>
-                                <Shield className="w-4 h-4 mr-2" />
-                                Change Role
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+        {/* Developer Company Selector */}
+        {isDeveloper && allCompanies.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Crown className="w-5 h-5 text-primary" />
+                Developer Access
+              </CardTitle>
+              <CardDescription>
+                As a developer, you can manage any company
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select 
+                value={selectedCompanyId || ''} 
+                onValueChange={(value) => setSelectedCompanyId(value)}
+              >
+                <SelectTrigger className="w-full max-w-md">
+                  <SelectValue placeholder="Select a company to manage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCompanies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        {c.name}
+                        {!c.is_active && (
+                          <Badge variant="secondary" className="ml-2 text-xs">Inactive</Badge>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        )}
 
+        {/* Company Info */}
+        {company && (
+          <>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">{company.name}</CardTitle>
+                      <CardDescription>/{company.slug}</CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant={company.is_active ? 'default' : 'secondary'}>
+                    {company.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Employees can register by searching for your company name on the signup page. You'll need to approve each registration request.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Pending Employee Approvals */}
+            <PendingEmployeesList companyId={company.id} onUpdate={refreshEmployees} />
+
+            {/* Employee List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Company Employees ({employees.length})
+                </CardTitle>
+                <CardDescription>
+                  Manage your company's employees and their roles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {employees.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No approved employees yet.</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Employees can register by searching for your company name during sign up.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden sm:table-cell">Department</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="hidden sm:table-cell">Status</TableHead>
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {employees.map((emp) => (
+                        <TableRow key={emp.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{emp.full_name}</p>
+                              <p className="text-xs text-muted-foreground">{emp.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <span className="text-sm text-muted-foreground">
+                              {emp.department || '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getRoleBadgeVariant(emp.role || 'employee')} className="gap-1">
+                              {getRoleIcon(emp.role || 'employee')}
+                              {emp.role || 'employee'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant={emp.is_active ? 'outline' : 'secondary'}>
+                              {emp.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {emp.user_id !== user?.id && (isDeveloper || (emp.role !== 'owner' && emp.role !== 'developer')) && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => openRoleDialog(emp)}>
+                                    <Shield className="w-4 h-4 mr-2" />
+                                    Change Role
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
 
       {/* Role Change Dialog */}
@@ -400,10 +503,20 @@ export default function OwnerDashboard() {
                     Admin
                   </div>
                 </SelectItem>
+                {isDeveloper && (
+                  <SelectItem value="owner">
+                    <div className="flex items-center gap-2">
+                      <Crown className="w-4 h-4" />
+                      Owner
+                    </div>
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-2">
-              Admin users can view reports, manage leaves, and edit employee information within your company.
+              {isDeveloper 
+                ? 'As a developer, you can assign any role including Owner.'
+                : 'Admin users can view reports, manage leaves, and edit employee information within your company.'}
             </p>
           </div>
           <DialogFooter>
