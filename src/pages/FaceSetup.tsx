@@ -13,9 +13,16 @@ import {
   Shield,
   Scan,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  X,
+  Plus
 } from 'lucide-react';
-import { extractFaceEmbedding, loadFaceModels } from '@/lib/faceRecognition';
+import { registerFace } from '@/lib/faceVerificationService';
+import { loadFaceModels } from '@/lib/faceRecognition';
+
+const MIN_IMAGES = 3;
+const MAX_IMAGES = 5;
 
 export default function FaceSetup() {
   const navigate = useNavigate();
@@ -29,15 +36,13 @@ export default function FaceSetup() {
   const streamRef = useRef<MediaStream | null>(null);
   
   const [showCamera, setShowCamera] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [capturedEmbedding, setCapturedEmbedding] = useState<number[] | null>(null);
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [step, setStep] = useState<'intro' | 'capture' | 'confirm' | 'complete'>('intro');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
-  const [faceDetected, setFaceDetected] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   // Only redirect if already has face embedding AND not updating
   useEffect(() => {
@@ -58,20 +63,16 @@ export default function FaceSetup() {
     checkExistingEmbedding();
   }, [user, navigate, isUpdate]);
 
-  // Load face models on mount
+  // Load face models on mount (for local face detection during capture)
   useEffect(() => {
     loadFaceModels()
       .then(() => setModelsLoading(false))
       .catch((err) => {
         console.error('Failed to load face models:', err);
-        toast({
-          title: 'Error',
-          description: 'Failed to load face recognition. Please refresh the page.',
-          variant: 'destructive',
-        });
+        // Continue anyway - backend will handle validation
         setModelsLoading(false);
       });
-  }, [toast]);
+  }, []);
 
   const startCamera = async () => {
     setCameraError(null);
@@ -134,6 +135,14 @@ export default function FaceSetup() {
 
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
+    if (capturedImages.length >= MAX_IMAGES) {
+      toast({
+        title: 'Maximum Photos Reached',
+        description: `You can only capture up to ${MAX_IMAGES} photos.`,
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -141,107 +150,79 @@ export default function FaceSetup() {
     
     if (!ctx) return;
 
+    setIsCapturing(true);
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Draw without mirroring for face detection
+    // Draw the image (not mirrored - backend needs proper orientation)
     ctx.drawImage(video, 0, 0);
     
-    setIsExtracting(true);
-    setFaceDetected(false);
-    
-    try {
-      // Extract face embedding
-      const embedding = await extractFaceEmbedding(canvas);
-      
-      if (!embedding) {
-        toast({
-          title: 'No Face Detected',
-          description: 'Please position your face clearly in the camera.',
-          variant: 'destructive',
-        });
-        setIsExtracting(false);
-        return;
-      }
-      
-      // Create mirrored display image
-      const displayCanvas = document.createElement('canvas');
-      displayCanvas.width = canvas.width;
-      displayCanvas.height = canvas.height;
-      const displayCtx = displayCanvas.getContext('2d');
-      if (displayCtx) {
-        displayCtx.translate(canvas.width, 0);
-        displayCtx.scale(-1, 1);
-        displayCtx.drawImage(video, 0, 0);
-      }
-      
-      const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
-      setCapturedImage(dataUrl);
-      setCapturedEmbedding(embedding);
-      setFaceDetected(true);
-      stopCamera();
-      setStep('confirm');
-    } catch (error) {
-      console.error('Face extraction error:', error);
-      toast({
-        title: 'Face Detection Failed',
-        description: 'Could not detect face. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExtracting(false);
+    // Create display image (mirrored for user preview)
+    const displayCanvas = document.createElement('canvas');
+    displayCanvas.width = canvas.width;
+    displayCanvas.height = canvas.height;
+    const displayCtx = displayCanvas.getContext('2d');
+    if (displayCtx) {
+      displayCtx.translate(canvas.width, 0);
+      displayCtx.scale(-1, 1);
+      displayCtx.drawImage(video, 0, 0);
     }
+    
+    const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
+    // Store the non-mirrored image for backend processing
+    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    
+    setCapturedImages(prev => [...prev, rawDataUrl]);
+    
+    toast({
+      title: `Photo ${capturedImages.length + 1} Captured`,
+      description: `${MIN_IMAGES - capturedImages.length - 1} more ${MIN_IMAGES - capturedImages.length - 1 === 1 ? 'photo' : 'photos'} needed`,
+    });
+    
+    setIsCapturing(false);
   };
 
-  const retakePhoto = () => {
-    setCapturedImage(null);
-    setCapturedEmbedding(null);
-    setFaceDetected(false);
+  const removeImage = (index: number) => {
+    setCapturedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const retakePhotos = () => {
+    setCapturedImages([]);
     startCamera();
   };
 
-  const saveFaceEmbedding = async () => {
-    if (!capturedEmbedding || !capturedImage || !user) return;
+  const proceedToConfirm = () => {
+    if (capturedImages.length < MIN_IMAGES) {
+      toast({
+        title: 'More Photos Needed',
+        description: `Please capture at least ${MIN_IMAGES} photos.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    stopCamera();
+    setStep('confirm');
+  };
+
+  const saveFaceRegistration = async () => {
+    if (capturedImages.length < MIN_IMAGES || !user) return;
 
     setIsUploading(true);
     try {
-      // Upload the preview image to storage
-      const response = await fetch(capturedImage);
-      const blob = await response.blob();
-      const fileName = `${user.id}/face-preview.jpg`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('employee-photos')
-        .upload(fileName, blob, {
-          upsert: true,
-          contentType: 'image/jpeg',
-        });
-
-      if (uploadError) {
-        console.error('Photo upload error:', uploadError);
-        // Continue anyway - embedding is more important
+      // Call the backend registration API
+      const result = await registerFace(capturedImages);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Face registration failed');
       }
-
-      // Get the storage path (not public URL) to store in profile
-      const storagePath = fileName;
-
-      // Save embedding and photo path to profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          face_embedding: capturedEmbedding,
-          face_reference_url: storagePath // Store path for signed URL retrieval
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
 
       setStep('complete');
       await refreshProfile();
       
       toast({
         title: 'Face Setup Complete!',
-        description: 'Your face has been registered for verification.',
+        description: `${result.imagesStored} face images registered for verification.`,
       });
 
       setTimeout(() => {
@@ -250,8 +231,8 @@ export default function FaceSetup() {
     } catch (error: any) {
       console.error('Save error:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to save face data',
+        title: 'Registration Failed',
+        description: error.message || 'Failed to register face data. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -313,7 +294,7 @@ export default function FaceSetup() {
               <div>
                 <h2 className="font-display font-semibold text-xl mb-2">Welcome, {profile?.full_name?.split(' ')[0]}!</h2>
                 <p className="text-muted-foreground">
-                  We'll capture your face features for secure attendance verification. This works completely offline on your device.
+                  We'll capture {MIN_IMAGES}-{MAX_IMAGES} photos of your face for secure attendance verification.
                 </p>
               </div>
 
@@ -326,7 +307,7 @@ export default function FaceSetup() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    Look directly at the camera
+                    Capture from slightly different angles
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
@@ -339,6 +320,15 @@ export default function FaceSetup() {
                 </ul>
               </div>
 
+              <div className="bg-info-soft rounded-xl p-4 text-left">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-info shrink-0 mt-0.5" />
+                  <p className="text-sm text-info">
+                    You'll need to capture {MIN_IMAGES}-{MAX_IMAGES} photos to ensure accurate verification.
+                  </p>
+                </div>
+              </div>
+
               <Button onClick={startCamera} size="lg" className="w-full" variant="hero">
                 <Camera className="w-5 h-5 mr-2" />
                 Start Face Capture
@@ -347,9 +337,48 @@ export default function FaceSetup() {
             </div>
           )}
 
-          {/* Camera Step */}
+          {/* Camera Step - Multi-image capture */}
           {step === 'capture' && (
             <div className="space-y-4">
+              <div className="text-center mb-4">
+                <h2 className="font-display font-semibold text-lg">Capture Your Face</h2>
+                <p className="text-sm text-muted-foreground">
+                  {capturedImages.length} of {MIN_IMAGES} photos captured
+                  {capturedImages.length >= MIN_IMAGES && capturedImages.length < MAX_IMAGES && 
+                    ` (${MAX_IMAGES - capturedImages.length} more optional)`
+                  }
+                </p>
+              </div>
+
+              {/* Captured Images Preview */}
+              {capturedImages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {capturedImages.map((img, index) => (
+                    <div key={index} className="relative shrink-0">
+                      <img 
+                        src={img} 
+                        alt={`Captured ${index + 1}`} 
+                        className="w-16 h-16 rounded-lg object-cover border-2 border-primary"
+                      />
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs text-center rounded-b-lg">
+                        {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                  {capturedImages.length < MAX_IMAGES && (
+                    <div className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center shrink-0">
+                      <Plus className="w-6 h-6 text-muted-foreground/50" />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3]">
                 {cameraLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
@@ -369,10 +398,10 @@ export default function FaceSetup() {
                   </div>
                 )}
                 
-                {isExtracting && (
+                {isCapturing && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
-                    <RefreshCw className="w-10 h-10 text-white animate-spin mb-3" />
-                    <p className="text-white text-sm">Detecting face...</p>
+                    <Loader2 className="w-10 h-10 text-white animate-spin mb-3" />
+                    <p className="text-white text-sm">Capturing...</p>
                   </div>
                 )}
                 
@@ -392,19 +421,20 @@ export default function FaceSetup() {
                     </div>
                     <div className="absolute bottom-4 left-4 right-4 text-center">
                       <p className="text-white text-sm bg-black/50 backdrop-blur rounded-lg px-4 py-2">
-                        Position your face within the guide
+                        Position your face and capture {MIN_IMAGES - capturedImages.length > 0 ? MIN_IMAGES - capturedImages.length : 'more'} photo{MIN_IMAGES - capturedImages.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </>
                 )}
               </div>
               
-              <div className="flex justify-center gap-3">
+              <div className="flex flex-wrap justify-center gap-3">
                 <Button 
                   variant="outline" 
                   onClick={() => {
                     stopCamera();
                     setCameraError(null);
+                    setCapturedImages([]);
                     setStep('intro');
                   }}
                 >
@@ -413,51 +443,71 @@ export default function FaceSetup() {
                 <Button 
                   onClick={capturePhoto} 
                   variant="hero" 
-                  disabled={!showCamera || cameraLoading || !!cameraError || isExtracting}
+                  disabled={!showCamera || cameraLoading || !!cameraError || isCapturing || capturedImages.length >= MAX_IMAGES}
                 >
                   <Camera className="w-4 h-4 mr-2" />
-                  {isExtracting ? 'Processing...' : 'Capture Photo'}
+                  {isCapturing ? 'Capturing...' : `Capture Photo ${capturedImages.length + 1}`}
                 </Button>
+                {capturedImages.length >= MIN_IMAGES && (
+                  <Button 
+                    onClick={proceedToConfirm} 
+                    variant="success"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Continue
+                  </Button>
+                )}
               </div>
             </div>
           )}
 
           {/* Confirm Step */}
-          {step === 'confirm' && capturedImage && (
+          {step === 'confirm' && capturedImages.length >= MIN_IMAGES && (
             <div className="space-y-4">
               <div className="text-center mb-4">
-                <h2 className="font-display font-semibold text-lg">Review Your Photo</h2>
+                <h2 className="font-display font-semibold text-lg">Review Your Photos</h2>
                 <p className="text-sm text-muted-foreground">
-                  {faceDetected ? 'Face detected successfully!' : 'Make sure your face is clearly visible'}
+                  {capturedImages.length} photos captured successfully
                 </p>
               </div>
               
-              <div className="relative rounded-xl overflow-hidden aspect-[4/3]">
-                <img 
-                  src={capturedImage} 
-                  alt="Captured" 
-                  className="w-full h-full object-cover"
-                />
-                {faceDetected && (
-                  <div className="absolute top-4 right-4">
-                    <div className="bg-success/90 backdrop-blur rounded-lg px-3 py-2 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-white" />
-                      <span className="text-white text-sm font-medium">Face Detected</span>
+              <div className="grid grid-cols-3 gap-3">
+                {capturedImages.map((img, index) => (
+                  <div key={index} className="relative aspect-square rounded-xl overflow-hidden">
+                    <img 
+                      src={img} 
+                      alt={`Photo ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-success/90 backdrop-blur rounded-full px-2 py-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                        <span className="text-white text-xs font-medium">{index + 1}</span>
+                      </div>
                     </div>
                   </div>
-                )}
+                ))}
+              </div>
+              
+              <div className="bg-info-soft rounded-xl p-4">
+                <div className="flex items-start gap-2">
+                  <Shield className="w-5 h-5 text-info shrink-0 mt-0.5" />
+                  <p className="text-sm text-info">
+                    These photos will be securely stored and used to verify your identity during attendance.
+                  </p>
+                </div>
               </div>
               
               <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={retakePhoto}>
+                <Button variant="outline" onClick={retakePhotos}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Retake
                 </Button>
-                <Button onClick={saveFaceEmbedding} disabled={isUploading || !faceDetected} variant="success">
+                <Button onClick={saveFaceRegistration} disabled={isUploading} variant="success">
                   {isUploading ? (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Registering...
                     </>
                   ) : (
                     <>
