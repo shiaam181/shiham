@@ -31,42 +31,32 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization") || "";
-
-    // 1) Validate JWT (works even though verify_jwt=false)
-    const supabaseAuth = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Prefer getClaims when available, fall back to getUser.
-    const authAny = supabaseAuth.auth as any;
-    let requesterUserId: string | null = null;
-
-    if (typeof authAny.getClaims === "function") {
-      const { data, error } = await authAny.getClaims();
-      if (error) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-      requesterUserId = data?.claims?.sub ?? null;
-    } else {
-      const { data, error } = await supabaseAuth.auth.getUser();
-      if (error || !data?.user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-      requesterUserId = data.user.id;
-    }
-
-    if (!requesterUserId) {
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // 1) Validate JWT using client with auth header
+    const supabaseAuth = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const requesterUserId = user.id;
+    console.log(`Authenticated user: ${requesterUserId}`);
 
     if (requesterUserId === employeeUserId) {
       return new Response(JSON.stringify({ error: "You cannot approve yourself" }), {
@@ -82,7 +72,7 @@ serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", requesterUserId)
-      .in("role", ["owner", "developer"])
+      .in("role", ["owner", "developer", "admin"])
       .maybeSingle();
 
     if (requesterRoleError) {
@@ -159,7 +149,7 @@ serve(async (req) => {
 
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ is_active: true })
+      .update({ is_active: true, registration_status: "approved" })
       .eq("user_id", employeeUserId);
 
     if (updateError) {
@@ -169,6 +159,8 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    console.log(`Employee ${employeeUserId} approved by ${requesterUserId}`);
 
     return new Response(
       JSON.stringify({ ok: true, employeeUserId }),
