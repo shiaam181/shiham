@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +24,8 @@ import {
   Settings,
   FileText,
   Timer,
-  Code
+  Code,
+  Loader2
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
@@ -39,6 +40,12 @@ import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { 
+  generateChallengeToken, 
+  verifyAttendance, 
+  getCurrentPosition,
+  ChallengeToken 
+} from '@/lib/faceVerificationService';
 
 interface TodayAttendance {
   id: string;
@@ -79,8 +86,10 @@ export default function EmployeeDashboard() {
   const [showCamera, setShowCamera] = useState(false);
   const [captureType, setCaptureType] = useState<'check-in' | 'check-out'>('check-in');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number; timestamp: string; accuracy: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
 
   useEffect(() => {
@@ -88,26 +97,32 @@ export default function EmployeeDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    // Only request location if GPS tracking is enabled
-    if (systemSettings.gpsTrackingEnabled && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          setLocationError('Location access denied. Please enable GPS.');
-        }
-      );
-    } else if (!systemSettings.gpsTrackingEnabled) {
-      // Set a dummy location if GPS tracking is disabled
-      setLocation({ lat: 0, lng: 0 });
+  // Get fresh GPS position when needed
+  const refreshLocation = useCallback(async () => {
+    if (!systemSettings.gpsTrackingEnabled) {
+      setLocation({ lat: 0, lng: 0, timestamp: new Date().toISOString(), accuracy: 0 });
       setLocationError(null);
+      return;
+    }
+
+    try {
+      const pos = await getCurrentPosition();
+      setLocation({
+        lat: pos.latitude,
+        lng: pos.longitude,
+        timestamp: pos.timestamp,
+        accuracy: pos.accuracy,
+      });
+      setLocationError(null);
+    } catch (error: any) {
+      console.error('Location error:', error);
+      setLocationError(error.message || 'Location access denied. Please enable GPS.');
     }
   }, [systemSettings.gpsTrackingEnabled]);
+
+  useEffect(() => {
+    refreshLocation();
+  }, [refreshLocation]);
 
   const fetchTodayAttendance = useCallback(async () => {
     if (!user) return;
@@ -184,182 +199,70 @@ export default function EmployeeDashboard() {
     }
   }, [user, fetchTodayAttendance, fetchMonthlyStats, fetchLeaveRequests]);
 
-  const handleCheckIn = () => {
-    if (systemSettings.photoCaptureEnabled) {
-      setCaptureType('check-in');
-      setShowCamera(true);
-    } else {
-      // Direct check-in without camera
-      handleDirectCheckIn();
-    }
-  };
-
-  const handleCheckOut = () => {
-    if (systemSettings.photoCaptureEnabled) {
-      setCaptureType('check-out');
-      setShowCamera(true);
-    } else {
-      // Direct check-out without camera
-      handleDirectCheckOut();
-    }
-  };
-
-  const handleDirectCheckIn = async () => {
-    if (!user) return;
-
-    try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const now = new Date().toISOString();
-
-      const { error } = await supabase.from('attendance').insert({
-        user_id: user.id,
-        date: today,
-        check_in_time: now,
-        check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
-        check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-        check_in_photo_url: null,
-        check_in_face_verified: true,
-        status: 'present',
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Checked In!',
-        description: `You checked in at ${format(new Date(), 'hh:mm a')}`,
-      });
-
-      fetchTodayAttendance();
-      fetchMonthlyStats();
-    } catch (error: any) {
-      console.error('Check-in error:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to check in',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDirectCheckOut = async () => {
-    if (!user) return;
-
-    try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const now = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('attendance')
-        .update({
-          check_out_time: now,
-          check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
-          check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-          check_out_photo_url: null,
-          check_out_face_verified: true,
-        })
-        .eq('user_id', user.id)
-        .eq('date', today);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Checked Out!',
-        description: `You checked out at ${format(new Date(), 'hh:mm a')}`,
-      });
-
-      fetchTodayAttendance();
-      fetchMonthlyStats();
-    } catch (error: any) {
-      console.error('Check-out error:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to check out',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const uploadPhotoToStorage = async (photoDataUrl: string, userId: string, type: 'check-in' | 'check-out'): Promise<string | null> => {
-    try {
-      // Convert base64 to blob
-      const response = await fetch(photoDataUrl);
-      const blob = await response.blob();
-      
-      // Generate unique filename with UUID for security
-      const timestamp = Date.now();
-      const date = format(new Date(), 'yyyy-MM-dd');
-      const fileName = `${userId}/${date}/${type}-${timestamp}.jpg`;
-      
-      // Upload to storage
-      const { data, error } = await supabase.storage
-        .from('employee-photos')
-        .upload(fileName, blob, {
-          contentType: 'image/jpeg',
-          upsert: true,
+  // Initiate check-in/check-out with production verification
+  const initiateAttendance = async (type: 'check-in' | 'check-out') => {
+    // Refresh GPS first
+    if (systemSettings.gpsTrackingEnabled) {
+      try {
+        await refreshLocation();
+      } catch (error: any) {
+        toast({
+          title: 'GPS Required',
+          description: error.message || 'Please enable GPS to mark attendance.',
+          variant: 'destructive',
         });
-      
-      if (error) {
-        console.error('Photo upload error:', error);
-        return null;
+        return;
       }
-      
-      // Return the storage path (not public URL - bucket is now private)
-      return fileName;
-    } catch (error) {
-      console.error('Failed to upload photo:', error);
-      return null;
+    }
+
+    // Generate challenge token for anti-replay protection
+    if (systemSettings.faceVerificationEnabled) {
+      try {
+        const token = await generateChallengeToken();
+        setChallengeToken(token);
+      } catch (error: any) {
+        console.error('Challenge token error:', error);
+        toast({
+          title: 'Verification Error',
+          description: error.message || 'Failed to initialize verification. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    setCaptureType(type);
+    
+    if (systemSettings.photoCaptureEnabled) {
+      setShowCamera(true);
+    } else {
+      // Direct attendance without camera
+      await handleDirectAttendance(type);
     }
   };
 
-  const handleCameraCapture = async (photoDataUrl: string, faceVerified: boolean) => {
-    setShowCamera(false);
-    
-    if (!user) {
-      toast({
-        title: 'Error',
-        description: 'User not authenticated.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleCheckIn = () => initiateAttendance('check-in');
+  const handleCheckOut = () => initiateAttendance('check-out');
 
-    // STRICT: Block check-in/check-out if face verification is enabled but failed
-    if (systemSettings.faceVerificationEnabled && profile?.face_embedding && !faceVerified) {
-      toast({
-        title: 'Face Verification Failed',
-        description: 'Your face did not match the registered photo. Please try again.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Only require location if GPS tracking is enabled
-    if (systemSettings.gpsTrackingEnabled && !location) {
-      toast({
-        title: 'Error',
-        description: 'Please enable location access to mark attendance.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  // Handle direct attendance (no camera required)
+  const handleDirectAttendance = async (type: 'check-in' | 'check-out') => {
+    if (!user) return;
 
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
       const now = new Date().toISOString();
 
-      // Upload photo to storage and get URL
-      const photoUrl = await uploadPhotoToStorage(photoDataUrl, user.id, captureType);
-
-      if (captureType === 'check-in') {
+      if (type === 'check-in') {
         const { error } = await supabase.from('attendance').insert({
           user_id: user.id,
           date: today,
           check_in_time: now,
           check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
           check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-          check_in_photo_url: photoUrl,
-          check_in_face_verified: faceVerified,
+          check_in_photo_url: null,
+          check_in_face_verified: !systemSettings.faceVerificationEnabled,
           status: 'present',
+          gps_timestamp: location?.timestamp || null,
         });
 
         if (error) throw error;
@@ -375,8 +278,8 @@ export default function EmployeeDashboard() {
             check_out_time: now,
             check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
             check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
-            check_out_photo_url: photoUrl,
-            check_out_face_verified: faceVerified,
+            check_out_photo_url: null,
+            check_out_face_verified: !systemSettings.faceVerificationEnabled,
           })
           .eq('user_id', user.id)
           .eq('date', today);
@@ -398,6 +301,171 @@ export default function EmployeeDashboard() {
         description: error.message || 'Failed to mark attendance',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Production-grade camera capture handler with backend verification
+  const handleCameraCapture = async (photoDataUrl: string, localFaceVerified: boolean) => {
+    setShowCamera(false);
+    
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'User not authenticated.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // If face verification is enabled, use backend verification
+    if (systemSettings.faceVerificationEnabled && profile?.face_embedding) {
+      setIsVerifying(true);
+      
+      try {
+        // Get fresh location
+        let gpsData = location;
+        if (systemSettings.gpsTrackingEnabled) {
+          try {
+            const freshPos = await getCurrentPosition();
+            gpsData = {
+              lat: freshPos.latitude,
+              lng: freshPos.longitude,
+              timestamp: freshPos.timestamp,
+              accuracy: freshPos.accuracy,
+            };
+          } catch (gpsError: any) {
+            throw new Error(gpsError.message || 'GPS location required');
+          }
+        }
+
+        if (!gpsData && systemSettings.gpsTrackingEnabled) {
+          throw new Error('GPS location required');
+        }
+
+        if (!challengeToken) {
+          throw new Error('Verification session expired. Please try again.');
+        }
+
+        // Call backend verification API
+        const result = await verifyAttendance({
+          challengeToken: challengeToken.token,
+          capturedImage: photoDataUrl,
+          latitude: gpsData?.lat || 0,
+          longitude: gpsData?.lng || 0,
+          gpsTimestamp: gpsData?.timestamp || new Date().toISOString(),
+          action: captureType,
+        });
+
+        if (!result.success) {
+          throw new Error(result.error || 'Verification failed');
+        }
+
+        toast({
+          title: captureType === 'check-in' ? 'Checked In!' : 'Checked Out!',
+          description: `Face verified (${result.faceConfidence}% confidence)`,
+        });
+
+        fetchTodayAttendance();
+        fetchMonthlyStats();
+      } catch (error: any) {
+        console.error('Verification error:', error);
+        toast({
+          title: 'Verification Failed',
+          description: error.message || 'Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsVerifying(false);
+        setChallengeToken(null);
+      }
+      return;
+    }
+
+    // Fallback: Direct attendance (no face verification enabled)
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date().toISOString();
+
+      // Upload photo to storage
+      const photoUrl = await uploadPhotoToStorage(photoDataUrl, user.id, captureType);
+
+      if (captureType === 'check-in') {
+        const { error } = await supabase.from('attendance').insert({
+          user_id: user.id,
+          date: today,
+          check_in_time: now,
+          check_in_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+          check_in_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
+          check_in_photo_url: photoUrl,
+          check_in_face_verified: localFaceVerified,
+          status: 'present',
+          gps_timestamp: location?.timestamp || null,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Checked In!',
+          description: `You checked in at ${format(new Date(), 'hh:mm a')}`,
+        });
+      } else {
+        const { error } = await supabase
+          .from('attendance')
+          .update({
+            check_out_time: now,
+            check_out_latitude: systemSettings.gpsTrackingEnabled ? location?.lat : null,
+            check_out_longitude: systemSettings.gpsTrackingEnabled ? location?.lng : null,
+            check_out_photo_url: photoUrl,
+            check_out_face_verified: localFaceVerified,
+          })
+          .eq('user_id', user.id)
+          .eq('date', today);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Checked Out!',
+          description: `You checked out at ${format(new Date(), 'hh:mm a')}`,
+        });
+      }
+
+      fetchTodayAttendance();
+      fetchMonthlyStats();
+    } catch (error: any) {
+      console.error('Attendance error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to mark attendance',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const uploadPhotoToStorage = async (photoDataUrl: string, userId: string, type: 'check-in' | 'check-out'): Promise<string | null> => {
+    try {
+      const response = await fetch(photoDataUrl);
+      const blob = await response.blob();
+      
+      const timestamp = Date.now();
+      const date = format(new Date(), 'yyyy-MM-dd');
+      const fileName = `${userId}/${date}/${type}-${timestamp}.jpg`;
+      
+      const { data, error } = await supabase.storage
+        .from('employee-photos')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      
+      if (error) {
+        console.error('Photo upload error:', error);
+        return null;
+      }
+      
+      return fileName;
+    } catch (error) {
+      console.error('Failed to upload photo:', error);
+      return null;
     }
   };
 
@@ -425,6 +493,17 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Verification Overlay */}
+      {isVerifying && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <Card className="w-full max-w-md mx-4 p-8 text-center">
+            <Loader2 className="w-16 h-16 mx-auto animate-spin text-primary mb-4" />
+            <h3 className="font-display font-semibold text-xl mb-2">Verifying Attendance</h3>
+            <p className="text-muted-foreground">Please wait while we verify your face and location...</p>
+          </Card>
+        </div>
+      )}
+
       {/* Header */}
       <RoleBasedHeader currentView="employee" />
 
@@ -458,6 +537,14 @@ export default function EmployeeDashboard() {
             <CardContent className="py-3 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-warning" />
               <p className="text-sm text-warning">{locationError}</p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-auto"
+                onClick={refreshLocation}
+              >
+                Retry
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -530,7 +617,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckIn}
-                disabled={systemSettings.gpsTrackingEnabled && !location}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying}
               >
                 {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
                 Check In Now
@@ -541,7 +628,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={systemSettings.gpsTrackingEnabled && !location}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying}
               >
                 {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogOut className="w-5 h-5 mr-2" />}
                 Check Out Now
@@ -667,7 +754,10 @@ export default function EmployeeDashboard() {
       {showCamera && (
         <CameraCapture
           onCapture={handleCameraCapture}
-          onClose={() => setShowCamera(false)}
+          onClose={() => {
+            setShowCamera(false);
+            setChallengeToken(null);
+          }}
           type={captureType}
           referenceEmbedding={systemSettings.faceVerificationEnabled ? profile?.face_embedding : null}
         />
