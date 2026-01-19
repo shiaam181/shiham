@@ -59,7 +59,7 @@ export function PendingEmployeesList({ companyId, onUpdate }: PendingEmployeesLi
         .select("id, user_id, full_name, email, department, position, created_at, registration_status")
         .eq("company_id", companyId)
         .eq("is_active", false)
-        .in("registration_status", ["pending"])
+        .eq("registration_status", "pending")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -77,30 +77,31 @@ export function PendingEmployeesList({ companyId, onUpdate }: PendingEmployeesLi
 
   const handleApprove = async (employee: PendingEmployee) => {
     setProcessingId(employee.user_id);
+    setConfirmDialog({ open: false, action: "approve", employee: null });
+    
     try {
       // Call the approve-employee edge function
       const { data, error } = await supabase.functions.invoke("approve-employee", {
         body: { employeeUserId: employee.user_id },
       });
 
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || "Failed to approve");
+      if (error) {
+        throw new Error(error.message || "Failed to approve");
       }
-
-      // Update registration_status to approved
-      await supabase
-        .from("profiles")
-        .update({ registration_status: "approved" })
-        .eq("user_id", employee.user_id);
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Employee Approved",
         description: `${employee.full_name} can now access the app.`,
       });
 
-      fetchPendingEmployees();
+      await fetchPendingEmployees();
       onUpdate?.();
     } catch (error: any) {
+      console.error("Approve error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to approve employee",
@@ -108,12 +109,13 @@ export function PendingEmployeesList({ companyId, onUpdate }: PendingEmployeesLi
       });
     } finally {
       setProcessingId(null);
-      setConfirmDialog({ open: false, action: "approve", employee: null });
     }
   };
 
   const handleDecline = async (employee: PendingEmployee) => {
     setProcessingId(employee.user_id);
+    setConfirmDialog({ open: false, action: "decline", employee: null });
+    
     try {
       // Update status to declined
       const { error } = await supabase
@@ -128,9 +130,10 @@ export function PendingEmployeesList({ companyId, onUpdate }: PendingEmployeesLi
         description: `${employee.full_name}'s registration has been declined.`,
       });
 
-      fetchPendingEmployees();
+      await fetchPendingEmployees();
       onUpdate?.();
     } catch (error: any) {
+      console.error("Decline error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to decline employee",
@@ -138,7 +141,6 @@ export function PendingEmployeesList({ companyId, onUpdate }: PendingEmployeesLi
       });
     } finally {
       setProcessingId(null);
-      setConfirmDialog({ open: false, action: "decline", employee: null });
     }
   };
 
