@@ -35,18 +35,20 @@ serve(async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Validate the user
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    // Validate the JWT using getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
     
-    if (authError || !user) {
-      console.error("Auth error:", authError);
+    if (claimsError || !claimsData?.claims) {
+      console.error("Claims error:", claimsError);
       return new Response(
-        JSON.stringify({ error: "Unauthorized", code: 401, message: authError?.message || "Invalid token" }),
+        JSON.stringify({ error: "Unauthorized", code: 401, message: claimsError?.message || "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Authenticated user: ${user.id}`);
+    const userId = claimsData.claims.sub as string;
+    console.log(`Authenticated user: ${userId}`);
 
     // Use service role for database operations (bypass RLS)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -55,7 +57,7 @@ serve(async (req: Request): Promise<Response> => {
     const { data: existingChallenge } = await supabase
       .from("attendance_challenges")
       .select("id, token, expires_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("used_at", null)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
@@ -64,7 +66,7 @@ serve(async (req: Request): Promise<Response> => {
 
     // If valid unused challenge exists, return it
     if (existingChallenge) {
-      console.log(`Returning existing challenge for user ${user.id}`);
+      console.log(`Returning existing challenge for user ${userId}`);
       return new Response(
         JSON.stringify({
           token: existingChallenge.token,
@@ -88,7 +90,7 @@ serve(async (req: Request): Promise<Response> => {
     const { data: challenge, error: insertError } = await supabase
       .from("attendance_challenges")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         token: challengeToken,
         expires_at: expiresAt.toISOString(),
       })
@@ -103,7 +105,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Generated new challenge for user ${user.id}, expires at ${expiresAt.toISOString()}`);
+    console.log(`Generated new challenge for user ${userId}, expires at ${expiresAt.toISOString()}`);
 
     return new Response(
       JSON.stringify({

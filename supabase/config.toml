@@ -10,7 +10,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.verify-face]
-verify_jwt = true
+verify_jwt = false
 
 [functions.phone-login]
 verify_jwt = false
@@ -34,10 +34,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.generate-challenge]
-verify_jwt = true
+verify_jwt = false
 
 [functions.register-face]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-attendance]
-verify_jwt = true
+verify_jwt = false
