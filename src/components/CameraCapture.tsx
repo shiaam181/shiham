@@ -1,11 +1,11 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Camera, X, RotateCcw, Check, Loader2, ShieldCheck, ShieldX, Smile } from 'lucide-react';
+import { Camera, X, Loader2, ShieldCheck, ShieldX, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { extractFaceEmbedding, compareFaceEmbeddings, loadFaceModels } from '@/lib/faceRecognition';
-import { LivenessDetector, LivenessState, resetLivenessDetector } from '@/lib/livenessDetection';
+import * as faceapi from 'face-api.js';
 
 interface CameraCaptureProps {
   onCapture: (photoDataUrl: string, faceVerified: boolean) => void;
@@ -14,17 +14,15 @@ interface CameraCaptureProps {
   referenceEmbedding?: number[] | null;
 }
 
-// Helper to validate and normalize embedding (could be object from JSON)
+// Helper to validate and normalize embedding
 function normalizeEmbedding(embedding: unknown): number[] | null {
   if (!embedding) return null;
   
-  // If it's already a proper array
   if (Array.isArray(embedding) && embedding.length === 128) {
     const allNumbers = embedding.every(v => typeof v === 'number' && !isNaN(v));
     return allNumbers ? embedding : null;
   }
   
-  // If it's an object (from JSON storage), convert to array
   if (typeof embedding === 'object' && embedding !== null) {
     const arr: number[] = [];
     for (let i = 0; i < 128; i++) {
@@ -38,137 +36,62 @@ function normalizeEmbedding(embedding: unknown): number[] | null {
   return null;
 }
 
+const FACE_HOLD_FRAMES = 6; // Hold face steady for 6 frames
+const DETECTION_INTERVAL = 150; // Check every 150ms
+
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const livenessDetectorRef = useRef<LivenessDetector | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const captureTriggeredRef = useRef(false);
+  const faceFrameCountRef = useRef(0);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState(60);
-  const [livenessEnabled, setLivenessEnabled] = useState(true);
-  const [livenessState, setLivenessState] = useState<LivenessState>({
-    isLive: false,
-    smileDetected: false,
-    status: 'detecting',
-    message: 'Position your face in the frame',
-    progress: 0,
-  });
+  const [detectionProgress, setDetectionProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('Preparing camera...');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     match: boolean;
     confidence: number;
-    reason: string;
   } | null>(null);
 
-  // Normalize the reference embedding once (handles JSON object format from DB)
-  const validReferenceEmbedding = useMemo(() => {
-    return normalizeEmbedding(referenceEmbedding);
-  }, [referenceEmbedding]);
-
-  // Track if face verification is required
+  const validReferenceEmbedding = useMemo(() => normalizeEmbedding(referenceEmbedding), [referenceEmbedding]);
   const requiresFaceVerification = validReferenceEmbedding !== null;
 
-  // Load face models on mount
+  // Load face models
   useEffect(() => {
     loadFaceModels()
-      .then(() => setModelsLoading(false))
+      .then(() => {
+        setModelsLoading(false);
+        setStatusMessage('Position your face in the frame');
+      })
       .catch((err) => {
         console.error('Failed to load face models:', err);
-        setError('Failed to load face recognition. Please refresh the page.');
+        setError('Failed to load face recognition. Please refresh.');
         setModelsLoading(false);
       });
   }, []);
 
-  // Fetch settings (threshold and liveness enabled)
+  // Fetch threshold setting
   useEffect(() => {
-    const fetchSettings = async () => {
-      const [thresholdRes, livenessRes] = await Promise.all([
-        supabase.from('system_settings').select('value').eq('key', 'face_verification_threshold').maybeSingle(),
-        supabase.from('system_settings').select('value').eq('key', 'liveness_detection_enabled').maybeSingle(),
-      ]);
-      
-      if (thresholdRes.data?.value) {
-        const threshold = (thresholdRes.data.value as { threshold?: number })?.threshold ?? 60;
-        setConfidenceThreshold(threshold);
-      }
-      
-      if (livenessRes.data?.value) {
-        const enabled = (livenessRes.data.value as { enabled?: boolean })?.enabled ?? true;
-        setLivenessEnabled(enabled);
-      }
-    };
-    fetchSettings();
+    supabase.from('system_settings')
+      .select('value')
+      .eq('key', 'face_verification_threshold')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          const threshold = (data.value as { threshold?: number })?.threshold ?? 60;
+          setConfidenceThreshold(threshold);
+        }
+      });
   }, []);
 
-  // Initialize liveness detector
-  useEffect(() => {
-    if (livenessEnabled && requiresFaceVerification) {
-      livenessDetectorRef.current = new LivenessDetector();
-    }
-    return () => {
-      resetLivenessDetector();
-      livenessDetectorRef.current = null;
-    };
-  }, [livenessEnabled, requiresFaceVerification]);
-
-  // Auto face detection loop - captures automatically when face is stable
-  const runFaceDetection = useCallback(async () => {
-    if (!videoRef.current || !requiresFaceVerification) {
-      return;
-    }
-
-    if (capturedImage) return; // Stop if photo already captured
-
-    try {
-      const state = await livenessDetectorRef.current?.detectFromVideo(videoRef.current);
-      if (state) {
-        setLivenessState(state);
-        
-        // Auto-capture when face is verified (detected and stable)
-        if (state.status === 'verified' && !captureTriggeredRef.current) {
-          // Trigger auto-capture (only once)
-          captureTriggeredRef.current = true;
-          capturePhoto();
-          return;
-        }
-        
-        // Continue detection if not verified and not failed
-        if (state.status !== 'failed') {
-          animationFrameRef.current = requestAnimationFrame(() => {
-            setTimeout(runFaceDetection, 100); // Run at ~10fps
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Face detection error:', err);
-      // Continue trying
-      animationFrameRef.current = requestAnimationFrame(() => {
-        setTimeout(runFaceDetection, 200);
-      });
-    }
-  }, [capturedImage, requiresFaceVerification]);
-
-  useEffect(() => {
-    if (!modelsLoading && !isLoading && !capturedImage && requiresFaceVerification) {
-      // Start face detection after a short delay
-      const timeout = setTimeout(() => {
-        runFaceDetection();
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [modelsLoading, isLoading, capturedImage, requiresFaceVerification, runFaceDetection]);
-
+  // Start camera when models are ready
   useEffect(() => {
     if (!modelsLoading) {
       startCamera();
@@ -187,11 +110,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
       setError(null);
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        },
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
       });
       
@@ -202,11 +121,13 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play();
           setIsLoading(false);
+          // Start face detection loop
+          startFaceDetection();
         };
       }
     } catch (err) {
       console.error('Camera error:', err);
-      setError('Unable to access camera. Please grant camera permission.');
+      setError('Unable to access camera. Please grant permission.');
       setIsLoading(false);
     }
   };
@@ -218,19 +139,63 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
   };
 
-  const capturePhoto = async () => {
+  // Simple face detection loop - auto captures when face is stable
+  const startFaceDetection = useCallback(() => {
+    const detect = async () => {
+      if (!videoRef.current || captureTriggeredRef.current) return;
+
+      try {
+        // Simple face detection
+        const detection = await faceapi.detectSingleFace(
+          videoRef.current, 
+          new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+        );
+
+        if (detection) {
+          faceFrameCountRef.current++;
+          const progress = Math.min((faceFrameCountRef.current / FACE_HOLD_FRAMES) * 100, 100);
+          setDetectionProgress(progress);
+          setStatusMessage(`Hold steady... ${Math.round(progress)}%`);
+
+          // Auto capture when held for enough frames
+          if (faceFrameCountRef.current >= FACE_HOLD_FRAMES && !captureTriggeredRef.current) {
+            captureTriggeredRef.current = true;
+            setStatusMessage('Capturing...');
+            await captureAndVerify();
+            return;
+          }
+        } else {
+          // Reset if face lost
+          faceFrameCountRef.current = Math.max(0, faceFrameCountRef.current - 2);
+          setDetectionProgress(Math.max(0, (faceFrameCountRef.current / FACE_HOLD_FRAMES) * 100));
+          setStatusMessage('Position your face in the frame');
+        }
+
+        // Continue detection
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setTimeout(detect, DETECTION_INTERVAL);
+        });
+      } catch (err) {
+        console.error('Detection error:', err);
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setTimeout(detect, DETECTION_INTERVAL * 2);
+        });
+      }
+    };
+
+    detect();
+  }, []);
+
+  const captureAndVerify = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-
     if (!context) return;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
-    // Draw without mirroring for face detection (mirror only for display)
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Create mirrored version for display
@@ -245,88 +210,59 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
     
     const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
-    setCapturedImage(dataUrl);
     stopCamera();
-
-    // Cancel liveness detection
+    
+    // Cancel detection loop
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
-    // If we have a VALID reference embedding, verify face locally
-    if (requiresFaceVerification) {
-      await verifyFaceLocally(canvas);
-    }
-  };
-
-  const verifyFaceLocally = async (canvas: HTMLCanvasElement) => {
-    if (!validReferenceEmbedding) {
-      setVerificationResult({ match: false, confidence: 0, reason: 'No valid reference face registered' });
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const capturedEmbedding = await extractFaceEmbedding(canvas);
+    // Verify face if reference exists
+    if (requiresFaceVerification && validReferenceEmbedding) {
+      setIsVerifying(true);
+      setStatusMessage('Verifying face...');
       
-      if (!capturedEmbedding) {
-        setVerificationResult({
-          match: false,
-          confidence: 0,
-          reason: 'No face detected. Please ensure your face is visible.',
-        });
-        return;
+      try {
+        const capturedEmbedding = await extractFaceEmbedding(canvas);
+        
+        if (!capturedEmbedding) {
+          setVerificationResult({ match: false, confidence: 0 });
+          setVerificationComplete(true);
+          setIsVerifying(false);
+          setStatusMessage('No face detected');
+          // Auto close after delay
+          setTimeout(() => onCapture(dataUrl, false), 1500);
+          return;
+        }
+
+        const similarityThreshold = confidenceThreshold / 100;
+        const result = compareFaceEmbeddings(validReferenceEmbedding, capturedEmbedding, similarityThreshold);
+        
+        setVerificationResult({ match: result.match, confidence: result.confidence });
+        setVerificationComplete(true);
+        setIsVerifying(false);
+        setStatusMessage(result.match ? 'Face verified!' : 'Face not matched');
+        
+        // Auto-confirm after short delay
+        setTimeout(() => {
+          onCapture(dataUrl, result.match);
+        }, result.match ? 800 : 1500);
+        
+      } catch (error) {
+        console.error('Verification error:', error);
+        setVerificationResult({ match: false, confidence: 0 });
+        setVerificationComplete(true);
+        setIsVerifying(false);
+        setStatusMessage('Verification failed');
+        setTimeout(() => onCapture(dataUrl, false), 1500);
       }
-
-      const similarityThreshold = confidenceThreshold / 100;
-      const result = compareFaceEmbeddings(validReferenceEmbedding, capturedEmbedding, similarityThreshold);
-      console.log('Face verification result:', result);
-      setVerificationResult(result);
-    } catch (error) {
-      console.error('Face verification error:', error);
-      setVerificationResult({
-        match: false,
-        confidence: 0,
-        reason: 'Face verification failed. Please try again.',
-      });
-    } finally {
-      setIsVerifying(false);
+    } else {
+      // No verification needed, just capture
+      setStatusMessage('Photo captured!');
+      setVerificationComplete(true);
+      setTimeout(() => onCapture(dataUrl, true), 500);
     }
   };
-
-  const retakePhoto = () => {
-    setCapturedImage(null);
-    setVerificationResult(null);
-    captureTriggeredRef.current = false; // Reset auto-capture trigger
-    // Reset liveness detector
-    if (livenessDetectorRef.current) {
-      livenessDetectorRef.current.reset();
-    }
-    setLivenessState({
-      isLive: false,
-      smileDetected: false,
-      status: 'detecting',
-      message: 'Position your face in the frame',
-      progress: 0,
-    });
-    startCamera();
-  };
-
-  const confirmPhoto = () => {
-    if (capturedImage) {
-      const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-      const faceVerified = requiresFaceVerification ? meetsThreshold : true;
-      onCapture(capturedImage, faceVerified);
-    }
-  };
-
-  // STRICT: Face MUST meet threshold if valid reference exists - NO bypass allowed
-  const meetsThreshold = verificationResult ? verificationResult.confidence >= confidenceThreshold : false;
-  
-  // Liveness must pass (if enabled) AND face must match (if required)
-  const livenessOk = !livenessEnabled || !requiresFaceVerification || livenessState.status === 'verified';
-  const canCapture = !livenessEnabled || !requiresFaceVerification || livenessOk;
-  const canConfirm = (!requiresFaceVerification || meetsThreshold);
 
   if (modelsLoading) {
     return (
@@ -334,7 +270,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         <Card className="w-full max-w-md p-8 text-center">
           <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
           <h3 className="font-display font-semibold text-lg mb-2">Loading Face Recognition</h3>
-          <p className="text-sm text-muted-foreground">Preparing face detection models...</p>
+          <p className="text-sm text-muted-foreground">Preparing face detection...</p>
         </Card>
       </div>
     );
@@ -378,137 +314,72 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
             </div>
           )}
 
-          {!capturedImage ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-              style={{ transform: 'scaleX(-1)' }}
-            />
-          ) : (
-            <img
-              src={capturedImage}
-              alt="Captured"
-              className="w-full h-full object-cover"
-            />
-          )}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+            style={{ transform: 'scaleX(-1)' }}
+          />
 
           {/* Face Guide Overlay */}
-          {!capturedImage && !error && (
+          {!error && !verificationComplete && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className={`w-48 h-60 border-2 border-dashed rounded-full transition-colors ${
-                livenessState.status === 'verified' ? 'border-success' : 
-                livenessState.status === 'failed' ? 'border-destructive' : 'border-white/50'
+                detectionProgress >= 100 ? 'border-success' : 'border-white/50'
               }`} />
             </div>
           )}
 
-          {/* Liveness Detection Status */}
-          {!capturedImage && !error && livenessEnabled && requiresFaceVerification && (
+          {/* Status Overlay */}
+          {!error && (
             <div className="absolute top-4 left-4 right-4">
               <div className={`backdrop-blur rounded-lg p-3 ${
-                livenessState.status === 'verified' ? 'bg-success/80' :
-                livenessState.status === 'failed' ? 'bg-destructive/80' : 'bg-black/70'
+                verificationComplete 
+                  ? verificationResult?.match ? 'bg-success/90' : 'bg-destructive/90'
+                  : 'bg-black/70'
               }`}>
                 <div className="flex items-center gap-3 mb-2">
-                  {livenessState.status === 'verified' ? (
-                    <Check className="w-5 h-5 text-white" />
-                  ) : livenessState.status === 'face_detected' ? (
-                    <Smile className="w-5 h-5 text-white animate-pulse" />
-                  ) : (
+                  {verificationComplete ? (
+                    verificationResult?.match ? (
+                      <ShieldCheck className="w-5 h-5 text-white" />
+                    ) : (
+                      <ShieldX className="w-5 h-5 text-white" />
+                    )
+                  ) : isVerifying ? (
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <User className="w-5 h-5 text-white" />
                   )}
                   <span className="text-white text-sm font-medium flex-1">
-                    {livenessState.message}
+                    {statusMessage}
                   </span>
-                </div>
-                <Progress value={livenessState.progress} className="h-1.5" />
-              </div>
-            </div>
-          )}
-
-          {/* Verification Status (after capture) */}
-          {capturedImage && requiresFaceVerification && (
-            <div className="absolute bottom-4 left-4 right-4">
-              {isVerifying ? (
-                <div className="bg-black/70 backdrop-blur rounded-lg p-3 flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  <span className="text-white text-sm">Verifying face...</span>
-                </div>
-              ) : verificationResult && (
-                <div className={`backdrop-blur rounded-lg p-3 flex items-center gap-3 ${
-                  meetsThreshold ? 'bg-success/90' : 'bg-destructive/90'
-                }`}>
-                  {meetsThreshold ? (
-                    <ShieldCheck className="w-5 h-5 text-white" />
-                  ) : (
-                    <ShieldX className="w-5 h-5 text-white" />
+                  {verificationComplete && verificationResult && (
+                    <span className="text-white/80 text-xs">
+                      {verificationResult.confidence}%
+                    </span>
                   )}
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-medium">
-                      {meetsThreshold ? 'Face Verified ✓' : 'Face Not Matched ✗'}
-                    </p>
-                    <p className="text-white/80 text-xs">
-                      {verificationResult.confidence}% confidence (required: {confidenceThreshold}%)
-                    </p>
-                  </div>
                 </div>
-              )}
+                {!verificationComplete && (
+                  <Progress value={isVerifying ? 100 : detectionProgress} className="h-1.5" />
+                )}
+              </div>
             </div>
           )}
 
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        {/* Actions */}
-        <div className="p-4 flex gap-3">
-          {!capturedImage ? (
-            <Button
-              variant="hero"
-              size="lg"
-              className="flex-1"
-              onClick={capturePhoto}
-              disabled={isLoading || !!error || !canCapture}
-            >
-              <Camera className="w-5 h-5 mr-2" />
-              {!canCapture ? 'Smile to Verify 😊' : 'Capture Photo'}
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                size="lg"
-                className="flex-1"
-                onClick={retakePhoto}
-                disabled={isVerifying}
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
-                Retake
-              </Button>
-              <Button
-                variant={canConfirm ? "success" : "destructive"}
-                size="lg"
-                className="flex-1"
-                onClick={confirmPhoto}
-                disabled={isVerifying || !canConfirm}
-              >
-                <Check className="w-5 h-5 mr-2" />
-                {isVerifying ? 'Verifying...' : canConfirm ? 'Confirm' : 'Face Not Matched'}
-              </Button>
-            </>
-          )}
+        {/* Simple footer */}
+        <div className="p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            {verificationComplete 
+              ? (verificationResult?.match ? 'Attendance recorded!' : 'Please try again')
+              : 'Look at the camera - auto capture in progress'
+            }
+          </p>
         </div>
-
-        <p className="text-xs text-center text-muted-foreground pb-4 px-4">
-          {requiresFaceVerification && livenessEnabled
-            ? 'Blink to prove you\'re real, then capture photo for verification'
-            : requiresFaceVerification
-            ? 'Face verification is required - your face must match your registered photo'
-            : 'Position your face within the guide for best results'
-          }
-        </p>
       </Card>
     </div>
   );
