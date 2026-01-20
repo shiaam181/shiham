@@ -90,6 +90,9 @@ serve(async (req) => {
       });
     }
 
+    // Get requester's company (developers can manage any company)
+    const isDeveloper = requesterRole.role === 'developer';
+    
     const { data: requesterProfile, error: requesterProfileError } = await supabase
       .from("profiles")
       .select("company_id")
@@ -105,7 +108,9 @@ serve(async (req) => {
     }
 
     const requesterCompanyId = requesterProfile?.company_id;
-    if (!requesterCompanyId) {
+    
+    // Non-developers must have a company
+    if (!isDeveloper && !requesterCompanyId) {
       return new Response(JSON.stringify({ error: "Requester has no company" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -133,7 +138,8 @@ serve(async (req) => {
       });
     }
 
-    if (employeeProfile.company_id !== requesterCompanyId) {
+    // Developers can approve any employee, owners/admins only their company
+    if (!isDeveloper && employeeProfile.company_id !== requesterCompanyId) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { "Content-Type": "application/json", ...corsHeaders },
