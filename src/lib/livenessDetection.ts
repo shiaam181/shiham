@@ -3,54 +3,25 @@ import * as faceapi from 'face-api.js';
 export interface LivenessState {
   isLive: boolean;
   smileDetected: boolean;
-  status: 'waiting' | 'detecting' | 'smile_detected' | 'verified' | 'failed';
+  status: 'waiting' | 'detecting' | 'face_detected' | 'verified' | 'failed';
   message: string;
   progress: number; // 0-100
 }
 
-const SMILE_THRESHOLD = 0.7; // Minimum smile probability to detect
-const SMILE_HOLD_FRAMES = 5; // Number of consecutive frames with smile needed
-const MAX_DETECTION_TIME = 20000; // 20 seconds to complete
-
-// Load face expression model
-let expressionModelLoaded = false;
-let expressionModelLoading = false;
-
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-
-export async function loadExpressionModel(): Promise<void> {
-  if (expressionModelLoaded) return;
-  if (expressionModelLoading) {
-    while (expressionModelLoading) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return;
-  }
-
-  expressionModelLoading = true;
-  try {
-    await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-    expressionModelLoaded = true;
-    console.log('Face expression model loaded successfully');
-  } catch (error) {
-    console.error('Failed to load expression model:', error);
-    throw error;
-  } finally {
-    expressionModelLoading = false;
-  }
-}
+const FACE_HOLD_FRAMES = 8; // Number of consecutive frames with face needed for auto-capture
+const MAX_DETECTION_TIME = 30000; // 30 seconds to complete
 
 export class LivenessDetector {
-  private smileFrameCount = 0;
+  private faceFrameCount = 0;
   private startTime: number | null = null;
   private isVerified = false;
-  private smileDetected = false;
+  private faceDetected = false;
 
   reset() {
-    this.smileFrameCount = 0;
+    this.faceFrameCount = 0;
     this.startTime = null;
     this.isVerified = false;
-    this.smileDetected = false;
+    this.faceDetected = false;
   }
 
   async detectFromVideo(
@@ -65,9 +36,9 @@ export class LivenessDetector {
     if (elapsed > MAX_DETECTION_TIME) {
       return {
         isLive: false,
-        smileDetected: this.smileDetected,
+        smileDetected: false,
         status: 'failed',
-        message: 'Liveness check timed out. Please try again.',
+        message: 'Face detection timed out. Please try again.',
         progress: 100,
       };
     }
@@ -77,78 +48,61 @@ export class LivenessDetector {
         isLive: true,
         smileDetected: true,
         status: 'verified',
-        message: 'Liveness verified! You may capture now.',
+        message: 'Face detected! Capturing...',
         progress: 100,
       };
     }
 
     try {
-      // Ensure expression model is loaded
-      await loadExpressionModel();
-
-      // Detect face with expressions
+      // Simple face detection - no expression model needed
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-        .withFaceExpressions();
+        .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }));
 
       if (!detection) {
+        // Reset count if face is lost
+        this.faceFrameCount = Math.max(0, this.faceFrameCount - 2);
+        
         return {
           isLive: false,
-          smileDetected: this.smileDetected,
+          smileDetected: false,
           status: 'detecting',
           message: 'Position your face in the frame',
-          progress: 0,
+          progress: Math.max(0, (this.faceFrameCount / FACE_HOLD_FRAMES) * 100),
         };
       }
 
-      const expressions = detection.expressions;
-      const smileProbability = expressions.happy;
+      // Face detected - increment counter
+      this.faceFrameCount++;
+      this.faceDetected = true;
 
-      console.log(`Smile probability: ${(smileProbability * 100).toFixed(1)}%`);
+      console.log(`Face detected, hold frames: ${this.faceFrameCount}/${FACE_HOLD_FRAMES}`);
 
-      // Check if smiling
-      if (smileProbability >= SMILE_THRESHOLD) {
-        this.smileFrameCount++;
-        this.smileDetected = true;
-        
-        // Need sustained smile for verification
-        if (this.smileFrameCount >= SMILE_HOLD_FRAMES) {
-          this.isVerified = true;
-          return {
-            isLive: true,
-            smileDetected: true,
-            status: 'verified',
-            message: 'Liveness verified! You may capture now.',
-            progress: 100,
-          };
-        }
-
-        const progress = (this.smileFrameCount / SMILE_HOLD_FRAMES) * 100;
+      // Need sustained face presence for verification
+      if (this.faceFrameCount >= FACE_HOLD_FRAMES) {
+        this.isVerified = true;
         return {
-          isLive: false,
+          isLive: true,
           smileDetected: true,
-          status: 'smile_detected',
-          message: `Keep smiling... ${Math.round(progress)}%`,
-          progress,
-        };
-      } else {
-        // Reset count if smile drops
-        this.smileFrameCount = Math.max(0, this.smileFrameCount - 1);
-        
-        return {
-          isLive: false,
-          smileDetected: this.smileDetected,
-          status: 'waiting',
-          message: '😊 Please smile to verify you\'re real',
-          progress: (this.smileFrameCount / SMILE_HOLD_FRAMES) * 100,
+          status: 'verified',
+          message: 'Face detected! Capturing...',
+          progress: 100,
         };
       }
 
-    } catch (error) {
-      console.error('Liveness detection error:', error);
+      const progress = (this.faceFrameCount / FACE_HOLD_FRAMES) * 100;
       return {
         isLive: false,
-        smileDetected: this.smileDetected,
+        smileDetected: false,
+        status: 'face_detected',
+        message: `Hold steady... ${Math.round(progress)}%`,
+        progress,
+      };
+
+    } catch (error) {
+      console.error('Face detection error:', error);
+      return {
+        isLive: false,
+        smileDetected: false,
         status: 'detecting',
         message: 'Detecting face...',
         progress: 0,
@@ -160,8 +114,8 @@ export class LivenessDetector {
     return this.isVerified;
   }
 
-  getSmileDetected(): boolean {
-    return this.smileDetected;
+  getFaceDetected(): boolean {
+    return this.faceDetected;
   }
 }
 
