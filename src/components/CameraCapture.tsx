@@ -43,6 +43,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const livenessDetectorRef = useRef<LivenessDetector | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const captureTriggeredRef = useRef(false);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -116,34 +117,48 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     };
   }, [livenessEnabled, requiresFaceVerification]);
 
-  // Liveness detection loop
-  const runLivenessDetection = useCallback(async () => {
-    if (!videoRef.current || !livenessDetectorRef.current || !livenessEnabled || !requiresFaceVerification) {
+  // Auto face detection loop - captures automatically when face is stable
+  const runFaceDetection = useCallback(async () => {
+    if (!videoRef.current || !requiresFaceVerification) {
       return;
     }
 
     if (capturedImage) return; // Stop if photo already captured
 
     try {
-      const state = await livenessDetectorRef.current.detectFromVideo(videoRef.current);
-      setLivenessState(state);
-      
-      // Continue detection if not verified and not failed
-      if (state.status !== 'verified' && state.status !== 'failed') {
-        animationFrameRef.current = requestAnimationFrame(() => {
-          setTimeout(runLivenessDetection, 100); // Run at ~10fps for performance
-        });
+      const state = await livenessDetectorRef.current?.detectFromVideo(videoRef.current);
+      if (state) {
+        setLivenessState(state);
+        
+        // Auto-capture when face is verified (detected and stable)
+        if (state.status === 'verified' && !captureTriggeredRef.current) {
+          // Trigger auto-capture (only once)
+          captureTriggeredRef.current = true;
+          capturePhoto();
+          return;
+        }
+        
+        // Continue detection if not verified and not failed
+        if (state.status !== 'failed') {
+          animationFrameRef.current = requestAnimationFrame(() => {
+            setTimeout(runFaceDetection, 100); // Run at ~10fps
+          });
+        }
       }
     } catch (err) {
-      console.error('Liveness detection error:', err);
+      console.error('Face detection error:', err);
+      // Continue trying
+      animationFrameRef.current = requestAnimationFrame(() => {
+        setTimeout(runFaceDetection, 200);
+      });
     }
-  }, [capturedImage, livenessEnabled, requiresFaceVerification]);
+  }, [capturedImage, requiresFaceVerification]);
 
   useEffect(() => {
-    if (!modelsLoading && !isLoading && !capturedImage && livenessEnabled && requiresFaceVerification) {
-      // Start liveness detection after a short delay
+    if (!modelsLoading && !isLoading && !capturedImage && requiresFaceVerification) {
+      // Start face detection after a short delay
       const timeout = setTimeout(() => {
-        runLivenessDetection();
+        runFaceDetection();
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -152,7 +167,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [modelsLoading, isLoading, capturedImage, livenessEnabled, requiresFaceVerification, runLivenessDetection]);
+  }, [modelsLoading, isLoading, capturedImage, requiresFaceVerification, runFaceDetection]);
 
   useEffect(() => {
     if (!modelsLoading) {
@@ -282,6 +297,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const retakePhoto = () => {
     setCapturedImage(null);
     setVerificationResult(null);
+    captureTriggeredRef.current = false; // Reset auto-capture trigger
     // Reset liveness detector
     if (livenessDetectorRef.current) {
       livenessDetectorRef.current.reset();
@@ -398,8 +414,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
               }`}>
                 <div className="flex items-center gap-3 mb-2">
                   {livenessState.status === 'verified' ? (
-                    <Smile className="w-5 h-5 text-white" />
-                  ) : livenessState.status === 'smile_detected' ? (
+                    <Check className="w-5 h-5 text-white" />
+                  ) : livenessState.status === 'face_detected' ? (
                     <Smile className="w-5 h-5 text-white animate-pulse" />
                   ) : (
                     <Loader2 className="w-5 h-5 text-white animate-spin" />
