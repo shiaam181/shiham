@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/NotificationBell';
-import { LogOut, Settings, Code, Shield, User, ChevronDown } from 'lucide-react';
+import { LogOut, Settings, Code, Shield, User, ChevronDown, Building2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,17 +13,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 interface TopHeaderProps {
-  currentView: 'employee' | 'admin' | 'developer';
+  currentView: 'employee' | 'admin' | 'developer' | 'owner';
 }
 
 export default function TopHeader({ currentView }: TopHeaderProps) {
-  const { profile, role, isDeveloper, isAdmin, signOut } = useAuth();
+  const { profile, role, isDeveloper, isAdmin, isOwner, signOut } = useAuth();
   const navigate = useNavigate();
 
   const getTitle = () => {
     switch (currentView) {
       case 'developer':
         return 'Developer Panel';
+      case 'owner':
+        return 'Owner Dashboard';
       case 'admin':
         return 'Admin Dashboard';
       default:
@@ -53,7 +55,7 @@ export default function TopHeader({ currentView }: TopHeaderProps) {
           
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Role Switcher Dropdown */}
-            {(isDeveloper || isAdmin) && (
+            {(isDeveloper || isAdmin || isOwner) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -63,6 +65,8 @@ export default function TopHeader({ currentView }: TopHeaderProps) {
                   >
                     {currentView === 'developer' ? (
                       <Code className="w-4 h-4" />
+                    ) : currentView === 'owner' ? (
+                      <Building2 className="w-4 h-4" />
                     ) : currentView === 'admin' ? (
                       <Shield className="w-4 h-4" />
                     ) : (
@@ -82,6 +86,15 @@ export default function TopHeader({ currentView }: TopHeaderProps) {
                     >
                       <Code className="w-4 h-4 mr-2 text-purple-500" />
                       Developer Panel
+                    </DropdownMenuItem>
+                  )}
+                  {isOwner && (
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/owner')}
+                      className={currentView === 'owner' ? 'bg-muted' : ''}
+                    >
+                      <Building2 className="w-4 h-4 mr-2 text-emerald-500" />
+                      Owner Dashboard
                     </DropdownMenuItem>
                   )}
                   {(isAdmin || isDeveloper) && (
