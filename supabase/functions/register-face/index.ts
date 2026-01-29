@@ -167,24 +167,35 @@ async function detectFace(apiKey: string, apiSecret: string, imageBase64: string
       const face = data.faces[0];
       const faceToken = face.face_token;
       
-      // Calculate quality score from attributes
-      // Face++ blur.blurness.value is 0-50 typically (lower = sharper)
-      // facequality.value is 0-100 (higher = better) but may not be available on free tier
-      let quality = 70; // Default acceptable quality
-      
-      if (face.attributes?.facequality?.value !== undefined) {
-        // facequality is 0-100 scale
-        quality = face.attributes.facequality.value;
-      } else if (face.attributes?.blur?.blurness?.value !== undefined) {
-        // blur.blurness is typically 0-50, lower is better
-        // Convert to quality score: low blur = high quality
-        const blurValue = face.attributes.blur.blurness.value;
-        // If blur < 10, image is sharp (quality 70+)
-        // If blur > 30, image is too blurry (quality < 50)
-        quality = Math.max(0, Math.min(100, 100 - (blurValue * 2)));
+      // Calculate quality score from attributes.
+      // IMPORTANT: Face++ sometimes returns facequality.value as 0..1 (not 0..100).
+      // Also, blur.blurness.value appears to be ~0..100 in practice.
+      const blurValue = face.attributes?.blur?.blurness?.value;
+      const rawFaceQuality = face.attributes?.facequality?.value;
+
+      const candidates: number[] = [];
+
+      if (rawFaceQuality !== undefined && rawFaceQuality !== null) {
+        // Normalize to 0..100
+        const normalizedFaceQuality = rawFaceQuality <= 1 ? rawFaceQuality * 100 : rawFaceQuality;
+        candidates.push(Math.max(0, Math.min(100, normalizedFaceQuality)));
       }
-      
-      console.log(`Face detected: token=${faceToken}, blur=${face.attributes?.blur?.blurness?.value}, calculated_quality=${quality}`);
+
+      if (blurValue !== undefined && blurValue !== null) {
+        // Convert blur to a quality-like score: higher blur => lower quality.
+        // If blur is already 0..100, this maps nicely.
+        const blurQuality = 100 - blurValue;
+        candidates.push(Math.max(0, Math.min(100, blurQuality)));
+      }
+
+      // If Face++ didn't give us usable scores, default to a mid value.
+      const quality = candidates.length ? Math.max(...candidates) : 70;
+
+      console.log(
+        `Face detected: token=${faceToken}, blur=${blurValue}, raw_facequality=${rawFaceQuality}, candidates=${JSON.stringify(
+          candidates
+        )}, calculated_quality=${quality}`
+      );
 
       return { faceToken, quality };
     }, 3, 1000);
