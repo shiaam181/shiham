@@ -168,14 +168,23 @@ async function detectFace(apiKey: string, apiSecret: string, imageBase64: string
       const faceToken = face.face_token;
       
       // Calculate quality score from attributes
-      let quality = 70; // Base score
-      if (face.attributes?.facequality?.value) {
+      // Face++ blur.blurness.value is 0-50 typically (lower = sharper)
+      // facequality.value is 0-100 (higher = better) but may not be available on free tier
+      let quality = 70; // Default acceptable quality
+      
+      if (face.attributes?.facequality?.value !== undefined) {
+        // facequality is 0-100 scale
         quality = face.attributes.facequality.value;
       } else if (face.attributes?.blur?.blurness?.value !== undefined) {
-        // Lower blur = higher quality
-        const blurScore = 100 - (face.attributes.blur.blurness.value * 100);
-        quality = Math.max(0, Math.min(100, blurScore));
+        // blur.blurness is typically 0-50, lower is better
+        // Convert to quality score: low blur = high quality
+        const blurValue = face.attributes.blur.blurness.value;
+        // If blur < 10, image is sharp (quality 70+)
+        // If blur > 30, image is too blurry (quality < 50)
+        quality = Math.max(0, Math.min(100, 100 - (blurValue * 2)));
       }
+      
+      console.log(`Face detected: token=${faceToken}, blur=${face.attributes?.blur?.blurness?.value}, calculated_quality=${quality}`);
 
       return { faceToken, quality };
     }, 3, 1000);
@@ -356,7 +365,8 @@ serve(async (req: Request): Promise<Response> => {
         continue;
       }
 
-      if (detection.quality < 30) {
+      // Accept faces with quality > 20 (lenient for free tier which may not have accurate quality scores)
+      if (detection.quality < 20) {
         console.log(`Image ${i + 1} rejected: low quality (${detection.quality})`);
         continue;
       }
