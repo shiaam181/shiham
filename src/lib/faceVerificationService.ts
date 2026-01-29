@@ -1,17 +1,18 @@
 /**
  * Face Verification Service Abstraction Layer
  * 
- * This module provides a unified interface for face verification,
- * abstracting the underlying provider (currently Lovable AI Gateway).
+ * This module provides a unified interface for face verification.
+ * Current provider: Face++ (Megvii)
  * 
  * To swap providers:
- * 1. Implement the FaceProvider interface for your new provider
- * 2. Update the createFaceProvider factory function
- * 3. Set the appropriate ENV variables
+ * 1. Update the edge functions (register-face, verify-attendance)
+ * 2. Set the appropriate ENV variables in Supabase secrets
  * 
- * ENV Variables:
- * - FACE_PROVIDER: 'lovable' (default) | 'aws' | 'azure' | 'custom'
- * - For custom providers, set additional vars as needed
+ * Current ENV Variables Required:
+ * - FACEPP_API_KEY: Face++ API Key
+ * - FACEPP_API_SECRET: Face++ API Secret
+ * 
+ * Free tier: 500 API calls/month
  */
 
 import { supabase } from '@/integrations/supabase/client';
