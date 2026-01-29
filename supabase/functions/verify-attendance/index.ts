@@ -15,12 +15,116 @@ interface VerifyAttendanceRequest {
   action: 'check-in' | 'check-out';
 }
 
+const FACE_MATCH_THRESHOLD = 70; // Face++ confidence threshold (0-100)
+const GPS_FRESHNESS_MS = 30000; // GPS must be within 30 seconds
+const GPS_CLOCK_SKEW_MS = 5000; // Allow 5s clock skew
+
 /**
- * Production-grade attendance verification:
+ * Detect face in captured image and return face_token
+ */
+async function detectFace(apiKey: string, apiSecret: string, imageBase64: string): Promise<{
+  faceToken: string | null;
+  error?: string;
+}> {
+  const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+  
+  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      api_key: apiKey,
+      api_secret: apiSecret,
+      image_base64: base64Data,
+      return_attributes: "blur,headpose",
+    }),
+  });
+
+  const data = await response.json();
+  
+  if (data.error_message) {
+    console.error("Face++ detect error:", data.error_message);
+    return { faceToken: null, error: data.error_message };
+  }
+
+  if (!data.faces || data.faces.length === 0) {
+    return { faceToken: null, error: "No face detected in image" };
+  }
+
+  if (data.faces.length > 1) {
+    return { faceToken: null, error: "Multiple faces detected" };
+  }
+
+  // Check for excessive blur (potential photo of photo)
+  const face = data.faces[0];
+  if (face.attributes?.blur?.blurness?.value > 80) {
+    return { faceToken: null, error: "Image too blurry - use live camera" };
+  }
+
+  // Check for extreme head poses (potential static image)
+  if (face.attributes?.headpose) {
+    const { pitch_angle, roll_angle, yaw_angle } = face.attributes.headpose;
+    if (Math.abs(pitch_angle) > 30 || Math.abs(roll_angle) > 30 || Math.abs(yaw_angle) > 40) {
+      return { faceToken: null, error: "Please face the camera directly" };
+    }
+  }
+
+  return { faceToken: face.face_token };
+}
+
+/**
+ * Search face against user's FaceSet
+ */
+async function searchFace(
+  apiKey: string,
+  apiSecret: string,
+  faceToken: string,
+  faceSetToken: string
+): Promise<{
+  match: boolean;
+  confidence: number;
+  error?: string;
+}> {
+  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      api_key: apiKey,
+      api_secret: apiSecret,
+      face_token: faceToken,
+      faceset_token: faceSetToken,
+    }),
+  });
+
+  const data = await response.json();
+  
+  if (data.error_message) {
+    console.error("Face++ search error:", data.error_message);
+    return { match: false, confidence: 0, error: data.error_message };
+  }
+
+  if (!data.results || data.results.length === 0) {
+    return { match: false, confidence: 0, error: "No matching face found" };
+  }
+
+  // Get the best match
+  const bestMatch = data.results[0];
+  const confidence = bestMatch.confidence;
+  
+  console.log(`Face search result: confidence=${confidence}, threshold=${FACE_MATCH_THRESHOLD}`);
+  
+  return {
+    match: confidence >= FACE_MATCH_THRESHOLD,
+    confidence: confidence,
+  };
+}
+
+/**
+ * Production-grade attendance verification with Face++:
  * 1. Validates challenge token (anti-replay)
  * 2. Validates GPS coordinates and timestamp freshness
- * 3. Compares captured face against registered reference images
- * 4. Only marks attendance if ALL validations pass
+ * 3. Detects face in captured image
+ * 4. Searches against user's registered faces
+ * 5. Only marks attendance if ALL validations pass
  */
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -41,7 +145,16 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const faceppApiKey = Deno.env.get("FACEPP_API_KEY");
+    const faceppApiSecret = Deno.env.get("FACEPP_API_SECRET");
+
+    if (!faceppApiKey || !faceppApiSecret) {
+      console.error("Face++ credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "Face verification service not configured", code: "SERVICE_NOT_CONFIGURED" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Auth verification
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
@@ -58,7 +171,7 @@ serve(async (req: Request): Promise<Response> => {
     const body: VerifyAttendanceRequest = await req.json();
     const { challenge_token, captured_image, latitude, longitude, gps_timestamp, action } = body;
 
-    // Validate required fields
+    // === INPUT VALIDATION ===
     if (!challenge_token) {
       return new Response(
         JSON.stringify({ error: "Challenge token is required", code: "MISSING_CHALLENGE" }),
@@ -87,11 +200,11 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate GPS timestamp is fresh (within 30 seconds)
+    // Validate GPS timestamp is fresh
     const gpsTime = new Date(gps_timestamp).getTime();
     const now = Date.now();
     const gpsAge = now - gpsTime;
-    if (gpsAge > 30000 || gpsAge < -5000) { // Allow 5s clock skew
+    if (gpsAge > GPS_FRESHNESS_MS || gpsAge < -GPS_CLOCK_SKEW_MS) {
       return new Response(
         JSON.stringify({ error: "GPS data is stale. Please refresh location.", code: "STALE_GPS" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -110,7 +223,7 @@ serve(async (req: Request): Promise<Response> => {
     // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // === STEP 1: Validate challenge token ===
+    // === STEP 1: Validate challenge token (anti-replay) ===
     const { data: challenge, error: challengeError } = await supabase
       .from("attendance_challenges")
       .select("*")
@@ -126,7 +239,6 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if challenge is expired
     if (new Date(challenge.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ error: "Challenge token expired. Please request a new one.", code: "EXPIRED_CHALLENGE" }),
@@ -134,7 +246,6 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if challenge was already used
     if (challenge.used_at) {
       return new Response(
         JSON.stringify({ error: "Challenge token already used. Request a new one.", code: "USED_CHALLENGE" }),
@@ -150,169 +261,64 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Challenge ${challenge.id} validated and marked as used`);
 
-    // === STEP 2: Get user's registered face reference images ===
-    const { data: faceRefs, error: faceRefsError } = await supabase
-      .from("face_reference_images")
-      .select("image_path, quality_score")
+    // === STEP 2: Get user's FaceSet token ===
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("face_embedding")
       .eq("user_id", user.id)
-      .eq("is_active", true)
-      .order("quality_score", { ascending: false })
-      .limit(3);
+      .maybeSingle();
 
-    if (faceRefsError || !faceRefs || faceRefs.length === 0) {
-      console.error("No face references found:", faceRefsError);
+    if (profileError || !profile?.face_embedding) {
+      console.error("No face registered:", profileError);
       return new Response(
         JSON.stringify({ error: "Face not registered. Please complete face setup first.", code: "NO_FACE_REGISTERED" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get signed URLs for reference images
-    const referenceImages: string[] = [];
-    for (const ref of faceRefs) {
-      const { data: signedUrl } = await supabase.storage
-        .from("employee-photos")
-        .createSignedUrl(ref.image_path, 60);
-      
-      if (signedUrl?.signedUrl) {
-        referenceImages.push(signedUrl.signedUrl);
-      }
-    }
-
-    if (referenceImages.length === 0) {
+    const faceEmbedding = profile.face_embedding as { faceset_token?: string; provider?: string };
+    
+    if (faceEmbedding.provider !== 'facepp' || !faceEmbedding.faceset_token) {
       return new Response(
-        JSON.stringify({ error: "Failed to load face references", code: "FACE_LOAD_FAILED" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Face registration outdated. Please re-register your face.", code: "FACE_OUTDATED" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Loaded ${referenceImages.length} reference images for comparison`);
+    const faceSetToken = faceEmbedding.faceset_token;
+    console.log(`Using FaceSet: ${faceSetToken}`);
 
-    // === STEP 3: Face verification using AI ===
-    const faceVerificationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a strict face verification system for employee attendance. 
-Compare the CAPTURED image against ALL REFERENCE images.
-
-RULES:
-1. The captured face MUST match the reference images (same person)
-2. Check for signs of photo spoofing (screen reflections, paper edges, unusual lighting)
-3. Verify the image appears to be from a live camera (not a photo of a photo)
-4. Be strict - false positives are worse than false negatives
-
-Respond ONLY with JSON:
-{
-  "match": true/false,
-  "confidence": 0-100,
-  "is_live": true/false,
-  "spoof_detected": true/false,
-  "reason": "brief explanation"
-}`
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `Verify this captured selfie against ${referenceImages.length} reference images. The captured image is the FIRST one. The remaining are reference images. Determine if they are the SAME person and if the capture appears to be a live camera feed (not a photo of a photo).` },
-              { type: "image_url", image_url: { url: captured_image } },
-              ...referenceImages.map(url => ({ type: "image_url" as const, image_url: { url } }))
-            ]
-          }
-        ],
-      }),
-    });
-
-    if (!faceVerificationResponse.ok) {
-      const errorText = await faceVerificationResponse.text();
-      console.error("Face verification API error:", faceVerificationResponse.status, errorText);
-      
-      if (faceVerificationResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Service busy. Please try again in a moment.", code: "RATE_LIMITED" }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (faceVerificationResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Service unavailable. Please contact admin.", code: "SERVICE_UNAVAILABLE" }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ error: "Face verification service error", code: "VERIFICATION_ERROR" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const verificationData = await faceVerificationResponse.json();
-    const content = verificationData.choices?.[0]?.message?.content || '';
+    // === STEP 3: Detect face in captured image ===
+    const detection = await detectFace(faceppApiKey, faceppApiSecret, captured_image);
     
-    let verificationResult = {
-      match: false,
-      confidence: 0,
-      is_live: false,
-      spoof_detected: true,
-      reason: "Verification failed"
-    };
-
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        verificationResult = JSON.parse(jsonMatch[0]);
-      }
-    } catch (e) {
-      console.error("Failed to parse verification result:", e);
-    }
-
-    console.log(`Face verification result: match=${verificationResult.match}, confidence=${verificationResult.confidence}, is_live=${verificationResult.is_live}, spoof=${verificationResult.spoof_detected}`);
-
-    // === STEP 4: Validate verification result ===
-    // Require: match=true, confidence>=70, is_live=true, spoof_detected=false
-    const CONFIDENCE_THRESHOLD = 70;
-    
-    if (verificationResult.spoof_detected) {
+    if (!detection.faceToken) {
       return new Response(
         JSON.stringify({ 
-          error: "Spoof detected. Please use live camera only.",
-          code: "SPOOF_DETECTED",
-          details: verificationResult.reason
+          error: detection.error || "Face detection failed",
+          code: "FACE_DETECTION_FAILED"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!verificationResult.is_live) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Image does not appear to be from live camera.",
-          code: "NOT_LIVE",
-          details: verificationResult.reason
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    console.log(`Face detected: ${detection.faceToken}`);
 
-    if (!verificationResult.match || verificationResult.confidence < CONFIDENCE_THRESHOLD) {
+    // === STEP 4: Search face against registered faces ===
+    const searchResult = await searchFace(faceppApiKey, faceppApiSecret, detection.faceToken, faceSetToken);
+    
+    if (!searchResult.match) {
       return new Response(
         JSON.stringify({ 
           error: "Face does not match registered photos.",
           code: "FACE_MISMATCH",
-          confidence: verificationResult.confidence,
-          required: CONFIDENCE_THRESHOLD,
-          details: verificationResult.reason
+          confidence: searchResult.confidence,
+          required: FACE_MATCH_THRESHOLD,
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Face matched with confidence: ${searchResult.confidence}%`);
 
     // === STEP 5: Check for duplicate attendance ===
     const today = new Date().toISOString().split('T')[0];
@@ -373,8 +379,8 @@ Respond ONLY with JSON:
           check_in_face_verified: true,
           challenge_token: challenge_token,
           gps_timestamp: gps_timestamp,
-          face_confidence: verificationResult.confidence,
-          verification_method: 'backend',
+          face_confidence: searchResult.confidence,
+          verification_method: 'facepp',
           status: 'present',
         });
 
@@ -407,14 +413,14 @@ Respond ONLY with JSON:
       }
     }
 
-    console.log(`Attendance ${action} recorded successfully for user ${user.id}`);
+    console.log(`Attendance ${action} recorded successfully for user ${user.id} with Face++ confidence ${searchResult.confidence}%`);
 
     return new Response(
       JSON.stringify({
         success: true,
         action: action,
         timestamp: nowISO,
-        face_confidence: verificationResult.confidence,
+        face_confidence: searchResult.confidence,
         location: { latitude, longitude },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
