@@ -19,8 +19,41 @@ const FACE_MATCH_THRESHOLD = 70; // Face++ confidence threshold (0-100)
 const GPS_FRESHNESS_MS = 30000; // GPS must be within 30 seconds
 const GPS_CLOCK_SKEW_MS = 5000; // Allow 5s clock skew
 
+// Delay helper for rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * Detect face in captured image and return face_token
+ * Retry wrapper for Face++ API calls with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      const errorMsg = lastError.message || '';
+      
+      if (errorMsg.includes('CONCURRENCY_LIMIT_EXCEEDED') || errorMsg.includes('rate')) {
+        const waitTime = baseDelay * Math.pow(2, attempt);
+        console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}`);
+        await delay(waitTime);
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
+ * Detect face in captured image and return face_token (with retry)
  */
 async function detectFace(apiKey: string, apiSecret: string, imageBase64: string): Promise<{
   faceToken: string | null;
@@ -28,51 +61,62 @@ async function detectFace(apiKey: string, apiSecret: string, imageBase64: string
 }> {
   const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
   
-  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      image_base64: base64Data,
-      return_attributes: "blur,headpose",
-    }),
-  });
+  try {
+    return await retryWithBackoff(async () => {
+      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          api_secret: apiSecret,
+          image_base64: base64Data,
+          return_attributes: "blur,headpose",
+        }),
+      });
 
-  const data = await response.json();
-  
-  if (data.error_message) {
-    console.error("Face++ detect error:", data.error_message);
-    return { faceToken: null, error: data.error_message };
+      const data = await response.json();
+      
+      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+      }
+      
+      if (data.error_message) {
+        console.error("Face++ detect error:", data.error_message);
+        return { faceToken: null, error: data.error_message };
+      }
+
+      if (!data.faces || data.faces.length === 0) {
+        return { faceToken: null, error: "No face detected in image" };
+      }
+
+      if (data.faces.length > 1) {
+        return { faceToken: null, error: "Multiple faces detected" };
+      }
+
+      // Check for excessive blur (potential photo of photo)
+      const face = data.faces[0];
+      if (face.attributes?.blur?.blurness?.value > 80) {
+        return { faceToken: null, error: "Image too blurry - use live camera" };
+      }
+
+      // Check for extreme head poses (potential static image)
+      if (face.attributes?.headpose) {
+        const { pitch_angle, roll_angle, yaw_angle } = face.attributes.headpose;
+        if (Math.abs(pitch_angle) > 30 || Math.abs(roll_angle) > 30 || Math.abs(yaw_angle) > 40) {
+          return { faceToken: null, error: "Please face the camera directly" };
+        }
+      }
+
+      return { faceToken: face.face_token };
+    }, 3, 1000);
+  } catch (error) {
+    console.error("Face detection failed after retries:", error);
+    return { faceToken: null, error: "Service busy, please try again" };
   }
-
-  if (!data.faces || data.faces.length === 0) {
-    return { faceToken: null, error: "No face detected in image" };
-  }
-
-  if (data.faces.length > 1) {
-    return { faceToken: null, error: "Multiple faces detected" };
-  }
-
-  // Check for excessive blur (potential photo of photo)
-  const face = data.faces[0];
-  if (face.attributes?.blur?.blurness?.value > 80) {
-    return { faceToken: null, error: "Image too blurry - use live camera" };
-  }
-
-  // Check for extreme head poses (potential static image)
-  if (face.attributes?.headpose) {
-    const { pitch_angle, roll_angle, yaw_angle } = face.attributes.headpose;
-    if (Math.abs(pitch_angle) > 30 || Math.abs(roll_angle) > 30 || Math.abs(yaw_angle) > 40) {
-      return { faceToken: null, error: "Please face the camera directly" };
-    }
-  }
-
-  return { faceToken: face.face_token };
 }
 
 /**
- * Search face against user's FaceSet
+ * Search face against user's FaceSet (with retry)
  */
 async function searchFace(
   apiKey: string,
@@ -84,38 +128,49 @@ async function searchFace(
   confidence: number;
   error?: string;
 }> {
-  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      face_token: faceToken,
-      faceset_token: faceSetToken,
-    }),
-  });
+  try {
+    return await retryWithBackoff(async () => {
+      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          api_secret: apiSecret,
+          face_token: faceToken,
+          faceset_token: faceSetToken,
+        }),
+      });
 
-  const data = await response.json();
-  
-  if (data.error_message) {
-    console.error("Face++ search error:", data.error_message);
-    return { match: false, confidence: 0, error: data.error_message };
+      const data = await response.json();
+      
+      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+      }
+      
+      if (data.error_message) {
+        console.error("Face++ search error:", data.error_message);
+        return { match: false, confidence: 0, error: data.error_message };
+      }
+
+      if (!data.results || data.results.length === 0) {
+        return { match: false, confidence: 0, error: "No matching face found" };
+      }
+
+      // Get the best match
+      const bestMatch = data.results[0];
+      const confidence = bestMatch.confidence;
+      
+      console.log(`Face search result: confidence=${confidence}, threshold=${FACE_MATCH_THRESHOLD}`);
+      
+      return {
+        match: confidence >= FACE_MATCH_THRESHOLD,
+        confidence: confidence,
+      };
+    }, 3, 1500);
+  } catch (error) {
+    console.error("Face search failed after retries:", error);
+    return { match: false, confidence: 0, error: "Service busy, please try again" };
   }
-
-  if (!data.results || data.results.length === 0) {
-    return { match: false, confidence: 0, error: "No matching face found" };
-  }
-
-  // Get the best match
-  const bestMatch = data.results[0];
-  const confidence = bestMatch.confidence;
-  
-  console.log(`Face search result: confidence=${confidence}, threshold=${FACE_MATCH_THRESHOLD}`);
-  
-  return {
-    match: confidence >= FACE_MATCH_THRESHOLD,
-    confidence: confidence,
-  };
 }
 
 /**
