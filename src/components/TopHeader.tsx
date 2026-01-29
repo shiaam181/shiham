@@ -88,7 +88,7 @@ export default function TopHeader({ currentView }: TopHeaderProps) {
                       Developer Panel
                     </DropdownMenuItem>
                   )}
-                  {isOwner && (
+                  {isOwner && !isDeveloper && (
                     <DropdownMenuItem 
                       onClick={() => navigate('/owner')}
                       className={currentView === 'owner' ? 'bg-muted' : ''}
