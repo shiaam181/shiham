@@ -10,6 +10,40 @@ interface RegisterFaceRequest {
   images: string[]; // Array of base64 image data URLs (3-5 images)
 }
 
+// Delay helper for rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Retry wrapper for Face++ API calls with exponential backoff
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      const errorMsg = lastError.message || '';
+      
+      // Only retry on concurrency/rate limit errors
+      if (errorMsg.includes('CONCURRENCY_LIMIT_EXCEEDED') || errorMsg.includes('rate')) {
+        const waitTime = baseDelay * Math.pow(2, attempt);
+        console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}`);
+        await delay(waitTime);
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 /**
  * Face++ FaceSet Management
  * Creates a FaceSet for the user if not exists, then adds faces to it
@@ -17,48 +51,78 @@ interface RegisterFaceRequest {
 async function getOrCreateFaceSet(apiKey: string, apiSecret: string, userId: string): Promise<string> {
   const faceSetToken = `user_${userId.replace(/-/g, '_')}`;
   
-  // Try to get existing faceset
-  const getResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/getdetail", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      outer_id: faceSetToken,
-    }),
-  });
+  return await retryWithBackoff(async () => {
+    // Try to get existing faceset
+    const getResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/getdetail", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        api_key: apiKey,
+        api_secret: apiSecret,
+        outer_id: faceSetToken,
+      }),
+    });
 
-  const getData = await getResponse.json();
-  
-  if (getData.faceset_token) {
-    console.log(`Existing FaceSet found for user ${userId}`);
-    return getData.faceset_token;
-  }
+    const getData = await getResponse.json();
+    
+    if (getData.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+      throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+    }
+    
+    if (getData.faceset_token) {
+      console.log(`Existing FaceSet found for user ${userId}`);
+      return getData.faceset_token;
+    }
 
-  // Create new faceset
-  console.log(`Creating new FaceSet for user ${userId}`);
-  const createResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      outer_id: faceSetToken,
-      display_name: `Employee ${userId}`,
-    }),
-  });
+    // Wait a bit before creating to avoid rate limits
+    await delay(500);
 
-  const createData = await createResponse.json();
-  
-  if (createData.faceset_token) {
-    return createData.faceset_token;
-  }
-  
-  throw new Error(`Failed to create FaceSet: ${JSON.stringify(createData)}`);
+    // Create new faceset
+    console.log(`Creating new FaceSet for user ${userId}`);
+    const createResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        api_key: apiKey,
+        api_secret: apiSecret,
+        outer_id: faceSetToken,
+        display_name: `Employee ${userId}`,
+      }),
+    });
+
+    const createData = await createResponse.json();
+    
+    if (createData.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+      throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+    }
+    
+    if (createData.faceset_token) {
+      return createData.faceset_token;
+    }
+    
+    // If faceset already exists with outer_id, get it again
+    if (createData.error_message === 'FACESET_EXIST') {
+      const retryGet = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/getdetail", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          api_secret: apiSecret,
+          outer_id: faceSetToken,
+        }),
+      });
+      const retryData = await retryGet.json();
+      if (retryData.faceset_token) {
+        return retryData.faceset_token;
+      }
+    }
+    
+    throw new Error(`Failed to create FaceSet: ${JSON.stringify(createData)}`);
+  }, 3, 1500);
 }
 
 /**
- * Detect face in image and return face_token
+ * Detect face in image and return face_token (with retry)
  */
 async function detectFace(apiKey: string, apiSecret: string, imageBase64: string): Promise<{
   faceToken: string | null;
@@ -68,50 +132,61 @@ async function detectFace(apiKey: string, apiSecret: string, imageBase64: string
   // Remove data URL prefix
   const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
   
-  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      image_base64: base64Data,
-      return_attributes: "blur,eyestatus,facequality",
-    }),
-  });
+  try {
+    return await retryWithBackoff(async () => {
+      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          api_secret: apiSecret,
+          image_base64: base64Data,
+          return_attributes: "blur,eyestatus,facequality",
+        }),
+      });
 
-  const data = await response.json();
-  
-  if (data.error_message) {
-    console.error("Face++ detect error:", data.error_message);
-    return { faceToken: null, quality: 0, error: data.error_message };
+      const data = await response.json();
+      
+      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+      }
+      
+      if (data.error_message) {
+        console.error("Face++ detect error:", data.error_message);
+        return { faceToken: null, quality: 0, error: data.error_message };
+      }
+
+      if (!data.faces || data.faces.length === 0) {
+        return { faceToken: null, quality: 0, error: "No face detected" };
+      }
+
+      if (data.faces.length > 1) {
+        return { faceToken: null, quality: 0, error: "Multiple faces detected" };
+      }
+
+      const face = data.faces[0];
+      const faceToken = face.face_token;
+      
+      // Calculate quality score from attributes
+      let quality = 70; // Base score
+      if (face.attributes?.facequality?.value) {
+        quality = face.attributes.facequality.value;
+      } else if (face.attributes?.blur?.blurness?.value !== undefined) {
+        // Lower blur = higher quality
+        const blurScore = 100 - (face.attributes.blur.blurness.value * 100);
+        quality = Math.max(0, Math.min(100, blurScore));
+      }
+
+      return { faceToken, quality };
+    }, 3, 1000);
+  } catch (error) {
+    console.error("Face detection failed after retries:", error);
+    return { faceToken: null, quality: 0, error: "Service busy, please try again" };
   }
-
-  if (!data.faces || data.faces.length === 0) {
-    return { faceToken: null, quality: 0, error: "No face detected" };
-  }
-
-  if (data.faces.length > 1) {
-    return { faceToken: null, quality: 0, error: "Multiple faces detected" };
-  }
-
-  const face = data.faces[0];
-  const faceToken = face.face_token;
-  
-  // Calculate quality score from attributes
-  let quality = 70; // Base score
-  if (face.attributes?.facequality?.value) {
-    quality = face.attributes.facequality.value;
-  } else if (face.attributes?.blur?.blurness?.value !== undefined) {
-    // Lower blur = higher quality
-    const blurScore = 100 - (face.attributes.blur.blurness.value * 100);
-    quality = Math.max(0, Math.min(100, blurScore));
-  }
-
-  return { faceToken, quality };
 }
 
 /**
- * Add face to FaceSet
+ * Add face to FaceSet (with retry)
  */
 async function addFaceToFaceSet(
   apiKey: string, 
@@ -119,25 +194,36 @@ async function addFaceToFaceSet(
   faceSetToken: string, 
   faceToken: string
 ): Promise<boolean> {
-  const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/addface", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      faceset_token: faceSetToken,
-      face_tokens: faceToken,
-    }),
-  });
+  try {
+    return await retryWithBackoff(async () => {
+      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/addface", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          api_key: apiKey,
+          api_secret: apiSecret,
+          faceset_token: faceSetToken,
+          face_tokens: faceToken,
+        }),
+      });
 
-  const data = await response.json();
-  
-  if (data.error_message) {
-    console.error("Face++ addface error:", data.error_message);
+      const data = await response.json();
+      
+      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+      }
+      
+      if (data.error_message) {
+        console.error("Face++ addface error:", data.error_message);
+        return false;
+      }
+
+      return data.face_added === 1;
+    }, 3, 1000);
+  } catch (error) {
+    console.error("Add face failed after retries:", error);
     return false;
   }
-
-  return data.face_added === 1;
 }
 
 /**
@@ -226,26 +312,41 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Step 2: Clear existing faces from FaceSet
-    const removeResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/removeface", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        api_key: faceppApiKey,
-        api_secret: faceppApiSecret,
-        faceset_token: faceSetToken,
-        face_tokens: "RemoveAllFaceTokens",
-      }),
-    });
-    
-    const removeData = await removeResponse.json();
-    console.log(`Cleared existing faces: ${removeData.face_removed || 0}`);
+    // Step 2: Clear existing faces from FaceSet (with rate limit handling)
+    try {
+      await retryWithBackoff(async () => {
+        const removeResponse = await fetch("https://api-us.faceplusplus.com/facepp/v3/faceset/removeface", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            api_key: faceppApiKey,
+            api_secret: faceppApiSecret,
+            faceset_token: faceSetToken,
+            face_tokens: "RemoveAllFaceTokens",
+          }),
+        });
+        
+        const removeData = await removeResponse.json();
+        if (removeData.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
+          throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
+        }
+        console.log(`Cleared existing faces: ${removeData.face_removed || 0}`);
+        return removeData;
+      }, 3, 1000);
+    } catch (error) {
+      console.log("Could not clear existing faces, continuing...", error);
+    }
 
-    // Step 3: Detect and add faces from each image
+    // Step 3: Detect and add faces from each image (with delays between calls)
     const registeredFaces: { faceToken: string; quality: number; imagePath: string }[] = [];
     
     for (let i = 0; i < images.length; i++) {
       const image = images[i];
+      
+      // Add delay between images to prevent rate limiting
+      if (i > 0) {
+        await delay(800);
+      }
       
       // Detect face
       const detection = await detectFace(faceppApiKey, faceppApiSecret, image);
@@ -259,6 +360,9 @@ serve(async (req: Request): Promise<Response> => {
         console.log(`Image ${i + 1} rejected: low quality (${detection.quality})`);
         continue;
       }
+
+      // Small delay before addface
+      await delay(500);
 
       // Add face to FaceSet
       const added = await addFaceToFaceSet(faceppApiKey, faceppApiSecret, faceSetToken, detection.faceToken);
