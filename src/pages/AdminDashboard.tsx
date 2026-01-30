@@ -50,7 +50,7 @@ import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
-import MonthlyAttendanceManager from '@/components/MonthlyAttendanceManager';
+import EmployeeAttendanceList from '@/components/EmployeeAttendanceList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
@@ -416,9 +416,9 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Monthly Attendance Tab */}
+          {/* Monthly Attendance Tab - Employee List */}
           <TabsContent value="monthly">
-            <MonthlyAttendanceManager />
+            <EmployeeAttendanceList />
           </TabsContent>
         </Tabs>
 

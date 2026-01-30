@@ -31,6 +31,7 @@ import Updates from "./pages/Updates";
 import CompanyManagement from "./pages/CompanyManagement";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import PendingApproval from "./pages/PendingApproval";
+import EmployeeAttendance from "./pages/EmployeeAttendance";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -236,6 +237,7 @@ function AppRoutes() {
         <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
         <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
         <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
+        <Route path="/admin/attendance/:id" element={<AdminRoute><EmployeeAttendance /></AdminRoute>} />
         <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
