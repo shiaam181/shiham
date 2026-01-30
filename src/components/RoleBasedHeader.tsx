@@ -36,9 +36,9 @@ export default function RoleBasedHeader({
       case 'owner':
         return 'bg-gradient-to-r from-emerald-900 to-emerald-800 text-white';
       case 'admin':
-        return 'bg-sidebar text-sidebar-foreground';
+        return 'bg-card text-foreground';
       default:
-        return 'bg-sidebar text-sidebar-foreground';
+        return 'bg-card text-foreground';
     }
   };
 
@@ -110,7 +110,7 @@ export default function RoleBasedHeader({
     if (currentView === 'developer' || currentView === 'owner') {
       return 'text-white hover:bg-white/10';
     }
-    return 'text-sidebar-foreground hover:bg-sidebar-accent';
+    return 'text-foreground hover:bg-accent';
   };
 
   const title = getTitle();
@@ -121,12 +121,12 @@ export default function RoleBasedHeader({
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-white/20' : 'bg-sidebar-primary text-sidebar-primary-foreground'}`}>
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-white/20 text-white' : 'bg-primary text-primary-foreground'}`}>
               {getIcon()}
             </div>
             <div className="min-w-0">
               <h1 className="font-display font-bold text-sm sm:text-lg truncate">{title.main}</h1>
-              <p className={`text-[10px] sm:text-xs truncate ${isDark ? 'text-white/70' : 'text-sidebar-foreground/70'}`}>
+              <p className={`text-[10px] sm:text-xs truncate ${isDark ? 'text-white/70' : 'text-muted-foreground'}`}>
                 {title.sub}
               </p>
             </div>
@@ -201,7 +201,7 @@ export default function RoleBasedHeader({
               </div>
               <div>
                 <p className="text-sm font-medium">{profile?.full_name}</p>
-                <p className={`text-xs ${isDark ? 'text-white/70' : 'text-sidebar-foreground/70'}`}>
+                <p className={`text-xs ${isDark ? 'text-white/70' : 'text-muted-foreground'}`}>
                   {getRoleLabel()}
                 </p>
               </div>
