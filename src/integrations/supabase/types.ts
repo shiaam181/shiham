@@ -195,6 +195,7 @@ export type Database = {
         Row: {
           brand_color: string | null
           created_at: string
+          face_verification_disabled: boolean
           id: string
           invite_code: string | null
           invite_expires_at: string | null
@@ -210,6 +211,7 @@ export type Database = {
         Insert: {
           brand_color?: string | null
           created_at?: string
+          face_verification_disabled?: boolean
           id?: string
           invite_code?: string | null
           invite_expires_at?: string | null
@@ -225,6 +227,7 @@ export type Database = {
         Update: {
           brand_color?: string | null
           created_at?: string
+          face_verification_disabled?: boolean
           id?: string
           invite_code?: string | null
           invite_expires_at?: string | null
