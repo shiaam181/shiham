@@ -91,9 +91,6 @@ export default function CompanyManagement() {
   const [newCompanyName, setNewCompanyName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
 
-  const [publicAppUrl, setPublicAppUrl] = useState('');
-  const [isSavingPublicUrl, setIsSavingPublicUrl] = useState(false);
-
   // Invite settings dialog state
   const [showInviteSettingsDialog, setShowInviteSettingsDialog] = useState(false);
   const [inviteSettingsCompany, setInviteSettingsCompany] = useState<Company | null>(null);
@@ -114,82 +111,8 @@ export default function CompanyManagement() {
       return;
     }
     fetchCompanies();
-    fetchPublicAppUrl();
   }, [isDeveloper, navigate]);
 
-  const fetchPublicAppUrl = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'public_app_url')
-        .maybeSingle();
-
-      if (error) return;
-      const url = (data?.value as any)?.url;
-      if (typeof url === 'string') setPublicAppUrl(url);
-    } catch {
-      // ignore
-    }
-  };
-
-  const normalizePublicUrl = (url: string) => url.trim().replace(/\/+$/, '');
-
-  const savePublicAppUrl = async () => {
-    const cleaned = normalizePublicUrl(publicAppUrl);
-
-    if (!cleaned) {
-      toast({
-        title: 'Missing URL',
-        description: 'Please enter your public app URL (e.g., https://yourdomain.com).',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!/^https?:\/\//i.test(cleaned)) {
-      toast({
-        title: 'Invalid URL',
-        description: 'URL must start with https:// (recommended) or http://',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSavingPublicUrl(true);
-    try {
-      const { data: existing } = await supabase
-        .from('system_settings')
-        .select('id')
-        .eq('key', 'public_app_url')
-        .maybeSingle();
-
-      const payload = {
-        key: 'public_app_url',
-        value: { url: cleaned },
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = existing?.id
-        ? await supabase.from('system_settings').update(payload).eq('id', existing.id)
-        : await supabase.from('system_settings').insert(payload);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Saved',
-        description: 'Invite links will now use your public domain.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error?.message || 'Failed to save URL',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSavingPublicUrl(false);
-    }
-  };
 
   const fetchCompanies = async () => {
     try {
@@ -315,15 +238,6 @@ export default function CompanyManagement() {
   };
 
   const getInviteBaseUrl = () => {
-    const cleaned = normalizePublicUrl(publicAppUrl);
-    // If a full URL was pasted (with path/query/hash), keep only the origin so links are always clean.
-    if (cleaned) {
-      try {
-        return new URL(cleaned).origin;
-      } catch {
-        // fall through
-      }
-    }
     return window.location.origin;
   };
 
@@ -682,31 +596,6 @@ export default function CompanyManagement() {
             </DialogContent>
           </Dialog>
         </div>
-
-        {/* Public URL (used in invite links) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Public App URL</CardTitle>
-            <CardDescription>
-              This is the domain customers should see in invite links (prevents preview/Lovable URLs).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="publicAppUrl">Public URL</Label>
-              <Input
-                id="publicAppUrl"
-                placeholder="https://yourdomain.com"
-                value={publicAppUrl}
-                onChange={(e) => setPublicAppUrl(e.target.value)}
-              />
-            </div>
-            <Button onClick={savePublicAppUrl} disabled={isSavingPublicUrl} className="sm:mb-0">
-              {isSavingPublicUrl && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Edit Company Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
