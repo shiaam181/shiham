@@ -53,19 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Fetch profile + role in parallel to reduce flicker/route bouncing
+      const [profileRes, roleRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
+      ]);
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        return;
+      if (profileRes.error) {
+        console.error('Error fetching profile:', profileRes.error);
+      }
+      if (roleRes.error) {
+        console.error('Error fetching role:', roleRes.error);
       }
 
-      // face_embedding is stored as Json (Face++ metadata object or legacy array)
+      const profileData = profileRes.data;
       if (profileData) {
+        // face_embedding is stored as Json (Face++ metadata object or legacy array)
         const profile: Profile = {
           ...profileData,
           face_embedding: profileData.face_embedding as Json | null,
@@ -76,18 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
       }
 
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('Error fetching role:', roleError);
-        return;
-      }
-
-      setRole(roleData?.role as UserRole || 'employee');
+      setRole((roleRes.data?.role as UserRole) || 'employee');
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }
@@ -100,36 +92,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
+          // Keep the app in a stable loading state until profile+role are fetched.
+          // This prevents route guards from bouncing between screens.
+          setIsLoading(true);
           setTimeout(() => {
-            fetchProfile(currentSession.user.id);
+            fetchProfile(currentSession.user.id)
+              .finally(() => {
+                if (mounted) setIsLoading(false);
+              });
           }, 0);
         } else {
           setProfile(null);
           setRole(null);
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      
+
       if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
+        setIsLoading(true);
+        await fetchProfile(currentSession.user.id);
       }
-      
-      setIsLoading(false);
+
+      if (mounted) setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
