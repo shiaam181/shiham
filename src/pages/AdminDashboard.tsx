@@ -90,7 +90,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-  const { profile, isAdmin, signOut, isLoading: authLoading } = useAuth();
+  const { profile, isAdmin, isOwner, isDeveloper, role, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -111,11 +111,18 @@ export default function AdminDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch all employees
-      const { data: employeesData, error: employeesError } = await supabase
+      // Fetch employees - filter by company for owners
+      let employeesQuery = supabase
         .from('profiles')
         .select('*')
         .eq('is_active', true);
+
+      // If owner (not admin or developer), filter to their company only
+      if (role === 'owner' && profile?.company_id) {
+        employeesQuery = employeesQuery.eq('company_id', profile.company_id);
+      }
+
+      const { data: employeesData, error: employeesError } = await employeesQuery;
 
       if (employeesError) throw employeesError;
       setEmployees(employeesData || []);
@@ -128,8 +135,13 @@ export default function AdminDashboard() {
 
       if (attendanceError) throw attendanceError;
 
-      // Map employee info to attendance records
-      const attendanceWithEmployees = (attendanceData || []).map(record => {
+      // Map employee info to attendance records - filter for company if owner
+      const relevantEmployeeIds = new Set(employeesData?.map(e => e.user_id) || []);
+      const filteredAttendance = (attendanceData || []).filter(record => 
+        role === 'owner' ? relevantEmployeeIds.has(record.user_id) : true
+      );
+
+      const attendanceWithEmployees = filteredAttendance.map(record => {
         const employee = employeesData?.find(e => e.user_id === record.user_id);
         return {
           ...record,
@@ -161,7 +173,7 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate, toast]);
+  }, [selectedDate, toast, role, profile?.company_id]);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
