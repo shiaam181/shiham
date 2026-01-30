@@ -103,6 +103,15 @@ export default function DeveloperDashboard() {
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
 
+  // Face++ configuration state
+  const [faceppApiKey, setFaceppApiKey] = useState('');
+  const [faceppApiSecret, setFaceppApiSecret] = useState('');
+  const [showFaceppKeys, setShowFaceppKeys] = useState(false);
+  const [faceppConfigSaving, setFaceppConfigSaving] = useState(false);
+  const [faceppConfigured, setFaceppConfigured] = useState(false);
+  const [faceppApiKeyMasked, setFaceppApiKeyMasked] = useState('');
+  const [testingFacepp, setTestingFacepp] = useState(false);
+  const [faceppTestResult, setFaceppTestResult] = useState<'success' | 'error' | null>(null);
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -180,6 +189,59 @@ export default function DeveloperDashboard() {
     
     // Check if Twilio is configured by checking if the edge function works
     checkTwilioConfig();
+    // Check if Face++ is configured
+    checkFaceppConfig();
+  };
+
+  const checkFaceppConfig = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-facepp-credentials', {
+        body: { action: 'get' }
+      });
+      
+      if (!error && data) {
+        setFaceppConfigured(data.configured || false);
+        setFaceppApiKeyMasked(data.apiKeyMasked || '');
+      }
+    } catch (err) {
+      console.error('Error checking Face++ config:', err);
+    }
+  };
+
+  const testFaceppCredentials = async () => {
+    setTestingFacepp(true);
+    setFaceppTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('update-facepp-credentials', {
+        body: { 
+          action: 'test',
+          apiKey: faceppApiKey || undefined,
+          apiSecret: faceppApiSecret || undefined
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setFaceppTestResult('success');
+        toast({
+          title: 'Face++ Test Passed',
+          description: data.message || 'API credentials are valid',
+        });
+      } else {
+        throw new Error(data?.error || 'Test failed');
+      }
+    } catch (error: any) {
+      setFaceppTestResult('error');
+      toast({
+        title: 'Face++ Test Failed',
+        description: error.message || 'Failed to verify credentials',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingFacepp(false);
+    }
   };
 
   const saveEmailConfig = async () => {
@@ -1665,6 +1727,106 @@ export default function DeveloperDashboard() {
                         onCheckedChange={toggleLeaveManagement}
                         disabled={settingsLoading}
                       />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Face++ API Configuration */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <ScanFace className="w-5 h-5" />
+                      Face++ API Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Configure Face++ (Megvii) API credentials for biometric verification. Get your API keys from{' '}
+                      <a href="https://www.faceplusplus.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        faceplusplus.com
+                      </a>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {faceppConfigured && (
+                      <div className="p-4 bg-success/10 rounded-lg border border-success/30">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-success">Face++ API Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              API Key: {faceppApiKeyMasked || 'Configured via backend secrets'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-info/10 rounded-lg border border-info/30">
+                      <div className="flex items-start gap-3">
+                        <Key className="w-5 h-5 text-info mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm text-info">Secrets Management</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Face++ API credentials are stored as backend secrets (FACEPP_API_KEY and FACEPP_API_SECRET). 
+                            To update them, use the Lovable Cloud secrets manager. You can test your current configuration below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="facepp-key">API Key (for testing new credentials)</Label>
+                        <Input
+                          id="facepp-key"
+                          type={showFaceppKeys ? 'text' : 'password'}
+                          placeholder="Enter new API key to test"
+                          value={faceppApiKey}
+                          onChange={(e) => setFaceppApiKey(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="facepp-secret">API Secret (for testing new credentials)</Label>
+                        <Input
+                          id="facepp-secret"
+                          type={showFaceppKeys ? 'text' : 'password'}
+                          placeholder="Enter new API secret to test"
+                          value={faceppApiSecret}
+                          onChange={(e) => setFaceppApiSecret(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowFaceppKeys(!showFaceppKeys)}
+                      >
+                        {showFaceppKeys ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                        {showFaceppKeys ? 'Hide Keys' : 'Show Keys'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={testFaceppCredentials}
+                        disabled={testingFacepp}
+                      >
+                        {testingFacepp ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : faceppTestResult === 'success' ? (
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                        ) : faceppTestResult === 'error' ? (
+                          <XCircle className="w-4 h-4 mr-2 text-destructive" />
+                        ) : (
+                          <PlayCircle className="w-4 h-4 mr-2" />
+                        )}
+                        {faceppApiKey ? 'Test New Credentials' : 'Test Current Config'}
+                      </Button>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• <strong>API Key:</strong> Found in Face++ Console → Apps → Your App</p>
+                      <p>• <strong>API Secret:</strong> Found in Face++ Console → Apps → Your App (keep secret!)</p>
+                      <p>• <strong>Endpoint:</strong> Using US API (api-us.faceplusplus.com)</p>
                     </div>
                   </CardContent>
                 </Card>
