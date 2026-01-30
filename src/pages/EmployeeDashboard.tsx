@@ -46,6 +46,7 @@ import {
   getCurrentPosition,
   ChallengeToken 
 } from '@/lib/faceVerificationService';
+import { loadFaceModels } from '@/lib/faceRecognition';
 
 interface TodayAttendance {
   id: string;
@@ -89,8 +90,16 @@ export default function EmployeeDashboard() {
   const [location, setLocation] = useState<{ lat: number; lng: number; timestamp: string; accuracy: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isInitiatingAttendance, setIsInitiatingAttendance] = useState(false);
   const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
+
+  // Preload face models in background for faster camera startup
+  useEffect(() => {
+    if (systemSettings.faceVerificationEnabled || systemSettings.photoCaptureEnabled) {
+      loadFaceModels().catch(console.error);
+    }
+  }, [systemSettings.faceVerificationEnabled, systemSettings.photoCaptureEnabled]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -201,43 +210,50 @@ export default function EmployeeDashboard() {
 
   // Initiate check-in/check-out with production verification
   const initiateAttendance = async (type: 'check-in' | 'check-out') => {
-    // Refresh GPS first
-    if (systemSettings.gpsTrackingEnabled) {
-      try {
-        await refreshLocation();
-      } catch (error: any) {
+    setIsInitiatingAttendance(true);
+    
+    try {
+      // Run GPS refresh and challenge token generation in parallel for speed
+      const tasks: Promise<any>[] = [];
+      
+      if (systemSettings.gpsTrackingEnabled) {
+        tasks.push(refreshLocation());
+      }
+      
+      if (systemSettings.faceVerificationEnabled) {
+        tasks.push(generateChallengeToken().then(token => setChallengeToken(token)));
+      }
+      
+      // Wait for all parallel tasks
+      await Promise.all(tasks);
+      
+      // Check if GPS failed (location would be null if it did)
+      if (systemSettings.gpsTrackingEnabled && !location && locationError) {
         toast({
           title: 'GPS Required',
-          description: error.message || 'Please enable GPS to mark attendance.',
+          description: locationError || 'Please enable GPS to mark attendance.',
           variant: 'destructive',
         });
         return;
       }
-    }
 
-    // Generate challenge token for anti-replay protection
-    if (systemSettings.faceVerificationEnabled) {
-      try {
-        const token = await generateChallengeToken();
-        setChallengeToken(token);
-      } catch (error: any) {
-        console.error('Challenge token error:', error);
-        toast({
-          title: 'Verification Error',
-          description: error.message || 'Failed to initialize verification. Please try again.',
-          variant: 'destructive',
-        });
-        return;
+      setCaptureType(type);
+      
+      if (systemSettings.photoCaptureEnabled) {
+        setShowCamera(true);
+      } else {
+        // Direct attendance without camera
+        await handleDirectAttendance(type);
       }
-    }
-
-    setCaptureType(type);
-    
-    if (systemSettings.photoCaptureEnabled) {
-      setShowCamera(true);
-    } else {
-      // Direct attendance without camera
-      await handleDirectAttendance(type);
+    } catch (error: any) {
+      console.error('Attendance initiation error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to initialize. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsInitiatingAttendance(false);
     }
   };
 
@@ -617,10 +633,16 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckIn}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance}
               >
-                {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
-                Check In Now
+                {isInitiatingAttendance ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : systemSettings.photoCaptureEnabled ? (
+                  <Camera className="w-5 h-5 mr-2" />
+                ) : (
+                  <LogIn className="w-5 h-5 mr-2" />
+                )}
+                {isInitiatingAttendance ? 'Preparing...' : 'Check In Now'}
               </Button>
             ) : !hasCheckedOut ? (
               <Button 
@@ -628,10 +650,16 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance}
               >
-                {systemSettings.photoCaptureEnabled ? <Camera className="w-5 h-5 mr-2" /> : <LogOut className="w-5 h-5 mr-2" />}
-                Check Out Now
+                {isInitiatingAttendance ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : systemSettings.photoCaptureEnabled ? (
+                  <Camera className="w-5 h-5 mr-2" />
+                ) : (
+                  <LogOut className="w-5 h-5 mr-2" />
+                )}
+                {isInitiatingAttendance ? 'Preparing...' : 'Check Out Now'}
               </Button>
             ) : (
               <div className="flex items-center justify-center gap-3 py-4 text-success">
