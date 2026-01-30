@@ -16,12 +16,7 @@ export default function PhoneVerification() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [phoneNumber, setPhoneNumber] = useState(() => {
-    const raw = profile?.phone || '';
-    // Default UX: assume +91 if present, otherwise keep digits only
-    if (raw.startsWith('+91')) return raw.replace(/^\+91\s?/, '').replace(/\D/g, '');
-    return raw.replace(/^\+/, '').replace(/\D/g, '');
-  });
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
   const [otpValue, setOtpValue] = useState('');
   const [showOtpInput, setShowOtpInput] = useState(false);
