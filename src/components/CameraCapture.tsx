@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Camera, X, Loader2, ShieldCheck, ShieldX, User } from 'lucide-react';
+import { Camera, X, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { extractFaceEmbedding, compareFaceEmbeddings, loadFaceModels } from '@/lib/faceRecognition';
@@ -36,8 +36,8 @@ function normalizeEmbedding(embedding: unknown): number[] | null {
   return null;
 }
 
-const FACE_HOLD_FRAMES = 6; // Hold face steady for 6 frames
-const DETECTION_INTERVAL = 150; // Check every 150ms
+const FACE_HOLD_FRAMES = 2; // Quick capture after 2 frames
+const DETECTION_INTERVAL = 100; // Check every 100ms
 
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -51,6 +51,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState(60);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [detectionProgress, setDetectionProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Preparing camera...');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -139,7 +140,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
   };
 
-  // Simple face detection loop - auto captures when face is stable
+  // Simple face detection loop - auto captures when face is detected
   const startFaceDetection = useCallback(() => {
     const detect = async () => {
       if (!videoRef.current || captureTriggeredRef.current) return;
@@ -153,22 +154,17 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
 
         if (detection) {
           faceFrameCountRef.current++;
-          const progress = Math.min((faceFrameCountRef.current / FACE_HOLD_FRAMES) * 100, 100);
-          setDetectionProgress(progress);
-          setStatusMessage(`Hold steady... ${Math.round(progress)}%`);
 
-          // Auto capture when held for enough frames
+          // Auto capture when held for enough frames (quick)
           if (faceFrameCountRef.current >= FACE_HOLD_FRAMES && !captureTriggeredRef.current) {
             captureTriggeredRef.current = true;
-            setStatusMessage('Capturing...');
+            setIsCapturing(true);
             await captureAndVerify();
             return;
           }
         } else {
           // Reset if face lost
-          faceFrameCountRef.current = Math.max(0, faceFrameCountRef.current - 2);
-          setDetectionProgress(Math.max(0, (faceFrameCountRef.current / FACE_HOLD_FRAMES) * 100));
-          setStatusMessage('Position your face in the frame');
+          faceFrameCountRef.current = 0;
         }
 
         // Continue detection
@@ -323,37 +319,35 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
             style={{ transform: 'scaleX(-1)' }}
           />
 
-          {/* Face Guide Overlay */}
-          {!error && !verificationComplete && (
+          {/* Face Guide Overlay - only show when not capturing */}
+          {!error && !verificationComplete && !isCapturing && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className={`w-48 h-60 border-2 border-dashed rounded-full transition-colors ${
-                detectionProgress >= 100 ? 'border-success' : 'border-white/50'
-              }`} />
+              <div className="w-48 h-60 border-2 border-dashed rounded-full border-white/50" />
             </div>
           )}
 
-          {/* Status Overlay */}
-          {!error && (
+          {/* Status Overlay - only show during verification or after complete */}
+          {!error && (isVerifying || verificationComplete) && (
             <div className="absolute top-4 left-4 right-4">
               <div className={`backdrop-blur rounded-lg p-3 ${
                 verificationComplete 
                   ? verificationResult?.match ? 'bg-success/90' : 'bg-destructive/90'
                   : 'bg-black/70'
               }`}>
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3">
                   {verificationComplete ? (
                     verificationResult?.match ? (
                       <ShieldCheck className="w-5 h-5 text-white" />
                     ) : (
                       <ShieldX className="w-5 h-5 text-white" />
                     )
-                  ) : isVerifying ? (
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
                   ) : (
-                    <User className="w-5 h-5 text-white" />
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
                   )}
                   <span className="text-white text-sm font-medium flex-1">
-                    {statusMessage}
+                    {verificationComplete 
+                      ? (verificationResult?.match ? 'Face verified!' : 'Face not matched')
+                      : 'Verifying...'}
                   </span>
                   {verificationComplete && verificationResult && (
                     <span className="text-white/80 text-xs">
@@ -361,9 +355,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
                     </span>
                   )}
                 </div>
-                {!verificationComplete && (
-                  <Progress value={isVerifying ? 100 : detectionProgress} className="h-1.5" />
-                )}
               </div>
             </div>
           )}
@@ -376,7 +367,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
           <p className="text-sm text-muted-foreground">
             {verificationComplete 
               ? (verificationResult?.match ? 'Attendance recorded!' : 'Please try again')
-              : 'Look at the camera - auto capture in progress'
+              : 'Position your face in the frame'
             }
           </p>
         </div>
