@@ -447,6 +447,32 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
     } else {
+      // Calculate overtime based on 8-hour standard day
+      const STANDARD_WORK_DAY_MINUTES = 8 * 60; // 480 minutes
+      const MAX_SHIFT_HOURS = 24;
+      
+      const checkInTime = new Date(existingAttendance.check_in_time);
+      const checkOutTime = new Date(nowISO);
+      
+      // Calculate total minutes worked
+      const totalMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+      const hoursWorked = totalMinutes / 60;
+      
+      let overtimeMinutes = 0;
+      let status = 'present';
+      
+      // Check if checkout is more than 24 hours after check-in
+      if (hoursWorked >= MAX_SHIFT_HOURS) {
+        // Punch missing - only count 8 hours, no OT
+        overtimeMinutes = 0;
+        status = 'punch_missing';
+        console.log(`Punch missing detected: ${hoursWorked.toFixed(2)} hours since check-in`);
+      } else if (totalMinutes > STANDARD_WORK_DAY_MINUTES) {
+        // Normal OT calculation: worked more than 8 hours
+        overtimeMinutes = totalMinutes - STANDARD_WORK_DAY_MINUTES;
+        console.log(`Overtime calculated: ${overtimeMinutes} minutes (${(overtimeMinutes/60).toFixed(2)} hours)`);
+      }
+      
       const { error: updateError } = await supabase
         .from("attendance")
         .update({
@@ -455,9 +481,11 @@ serve(async (req: Request): Promise<Response> => {
           check_out_longitude: longitude,
           check_out_photo_url: photoFileName,
           check_out_face_verified: true,
+          overtime_minutes: overtimeMinutes,
+          status: status,
         })
         .eq("user_id", user.id)
-        .eq("date", today);
+        .eq("date", existingAttendance.date);
 
       if (updateError) {
         console.error("Attendance update error:", updateError);

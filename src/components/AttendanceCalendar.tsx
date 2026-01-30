@@ -33,6 +33,7 @@ const statusColors: Record<string, string> = {
   week_off: 'bg-muted text-muted-foreground',
   holiday: 'bg-warning text-warning-foreground',
   half_day: 'bg-info/50 text-info-foreground',
+  punch_missing: 'bg-destructive/70 text-destructive-foreground',
 };
 
 const statusLabels: Record<string, string> = {
@@ -42,6 +43,7 @@ const statusLabels: Record<string, string> = {
   week_off: 'W',
   holiday: 'H',
   half_day: 'HD',
+  punch_missing: 'PM',
 };
 
 export default function AttendanceCalendar({ userId }: AttendanceCalendarProps) {
