@@ -83,7 +83,7 @@ export function CompanySearchSelect({ value, onChange, disabled, error }: Compan
   };
 
   return (
-    <div ref={containerRef} className="relative space-y-2">
+    <div ref={containerRef} className="relative space-y-2 z-50">
       <Label htmlFor="company-search">
         Company <span className="text-destructive">*</span>
       </Label>
@@ -142,7 +142,7 @@ export function CompanySearchSelect({ value, onChange, disabled, error }: Compan
 
       {/* Dropdown results */}
       {isOpen && !value && query.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-auto">
+        <div className="absolute left-0 right-0 z-[100] w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-auto">
           {isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin mx-auto mb-2" />

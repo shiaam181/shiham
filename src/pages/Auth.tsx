@@ -1073,14 +1073,16 @@ export default function Auth() {
               )}
               
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Company Search - Only for signup */}
+                {/* Company Search - Required for signup - Always visible first */}
                 {!isLogin && (
-                  <CompanySearchSelect
-                    value={selectedCompany}
-                    onChange={setSelectedCompany}
-                    error={errors.company}
-                    disabled={isLoading}
-                  />
+                  <div className="pb-2 mb-2 border-b border-border/50">
+                    <CompanySearchSelect
+                      value={selectedCompany}
+                      onChange={setSelectedCompany}
+                      error={errors.company}
+                      disabled={isLoading}
+                    />
+                  </div>
                 )}
 
                 {!isLogin && (
