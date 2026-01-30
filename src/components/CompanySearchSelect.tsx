@@ -39,7 +39,7 @@ export function CompanySearchSelect({ value, onChange, disabled, error }: Compan
           .from("companies")
           .select("id, name, logo_url")
           .eq("is_active", true)
-          .ilike("name", `%${query}%`)
+          .ilike("name", `${query}%`)
           .order("name")
           .limit(10);
 
