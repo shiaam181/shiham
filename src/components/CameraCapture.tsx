@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Camera, X, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,8 +51,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const [error, setError] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState(60);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [detectionProgress, setDetectionProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState('Preparing camera...');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
@@ -64,12 +61,11 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const validReferenceEmbedding = useMemo(() => normalizeEmbedding(referenceEmbedding), [referenceEmbedding]);
   const requiresFaceVerification = validReferenceEmbedding !== null;
 
-  // Load face models
+  // Load face models (likely already preloaded)
   useEffect(() => {
     loadFaceModels()
       .then(() => {
         setModelsLoading(false);
-        setStatusMessage('Position your face in the frame');
       })
       .catch((err) => {
         console.error('Failed to load face models:', err);
@@ -216,7 +212,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     // Verify face if reference exists
     if (requiresFaceVerification && validReferenceEmbedding) {
       setIsVerifying(true);
-      setStatusMessage('Verifying face...');
       
       try {
         const capturedEmbedding = await extractFaceEmbedding(canvas);
@@ -225,7 +220,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
           setVerificationResult({ match: false, confidence: 0 });
           setVerificationComplete(true);
           setIsVerifying(false);
-          setStatusMessage('No face detected');
           // Auto close after delay
           setTimeout(() => onCapture(dataUrl, false), 1500);
           return;
@@ -237,7 +231,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         setVerificationResult({ match: result.match, confidence: result.confidence });
         setVerificationComplete(true);
         setIsVerifying(false);
-        setStatusMessage(result.match ? 'Face verified!' : 'Face not matched');
         
         // Auto-confirm after short delay
         setTimeout(() => {
@@ -249,12 +242,10 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         setVerificationResult({ match: false, confidence: 0 });
         setVerificationComplete(true);
         setIsVerifying(false);
-        setStatusMessage('Verification failed');
         setTimeout(() => onCapture(dataUrl, false), 1500);
       }
     } else {
       // No verification needed, just capture
-      setStatusMessage('Photo captured!');
       setVerificationComplete(true);
       setTimeout(() => onCapture(dataUrl, true), 500);
     }
