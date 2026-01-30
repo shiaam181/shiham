@@ -38,7 +38,7 @@ import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
-import { calculateOvertime, formatDuration } from '@/lib/overtime';
+import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { 
   generateChallengeToken, 
@@ -561,6 +561,26 @@ export default function EmployeeDashboard() {
               >
                 Retry
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Warning: Approaching 24-hour limit */}
+        {hasCheckedIn && !hasCheckedOut && todayAttendance?.check_in_time && isApproaching24Hours(todayAttendance.check_in_time) && (
+          <Card className="border-destructive/50 bg-destructive-soft">
+            <CardContent className="py-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+              <div>
+                <p className="font-medium text-destructive">Punch Out Soon!</p>
+                <p className="text-sm text-destructive/80">
+                  You have {(() => {
+                    const remaining = getRemainingTime(todayAttendance.check_in_time);
+                    if (!remaining) return '0 minutes';
+                    return `${remaining.hours}h ${remaining.minutes}m`;
+                  })()} left to check out. 
+                  After 24 hours, your attendance will be marked as "Punch Missing" with no overtime.
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}

@@ -80,6 +80,7 @@ const statusColors: Record<string, string> = {
   holiday: 'bg-warning text-warning-foreground hover:bg-warning/80',
   half_day: 'bg-info/70 text-info-foreground hover:bg-info/60',
   late: 'bg-warning/70 text-warning-foreground hover:bg-warning/60',
+  punch_missing: 'bg-destructive/70 text-destructive-foreground hover:bg-destructive/60',
 };
 
 const statusLabels: Record<string, string> = {
@@ -90,6 +91,7 @@ const statusLabels: Record<string, string> = {
   holiday: 'H',
   half_day: 'HD',
   late: 'LT',
+  punch_missing: 'PM',
 };
 
 export default function EmployeeAttendance() {
@@ -472,6 +474,10 @@ export default function EmployeeAttendance() {
                 <div className="w-3 h-3 rounded bg-muted" />
                 <span>Week Off</span>
               </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-destructive/70" />
+                <span>Punch Missing</span>
+              </div>
             </div>
           </CardHeader>
 
@@ -528,7 +534,7 @@ export default function EmployeeAttendance() {
         </Card>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Present</p>
             <p className="text-2xl font-bold text-success">
@@ -551,6 +557,12 @@ export default function EmployeeAttendance() {
             <p className="text-xs text-muted-foreground">Late</p>
             <p className="text-2xl font-bold text-warning">
               {Array.from(attendance.values()).filter(a => a.status === 'late').length}
+            </p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">Punch Missing</p>
+            <p className="text-2xl font-bold text-destructive/70">
+              {Array.from(attendance.values()).filter(a => a.status === 'punch_missing').length}
             </p>
           </Card>
         </div>
@@ -592,6 +604,7 @@ export default function EmployeeAttendance() {
                   <SelectItem value="half_day">Half Day</SelectItem>
                   <SelectItem value="late">Late</SelectItem>
                   <SelectItem value="week_off">Week Off</SelectItem>
+                  <SelectItem value="punch_missing">Punch Missing</SelectItem>
                 </SelectContent>
               </Select>
             </div>

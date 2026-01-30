@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.verify-attendance]
 verify_jwt = false
+
+[functions.check-punch-missing]
+verify_jwt = false
