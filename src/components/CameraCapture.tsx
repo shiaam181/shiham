@@ -10,7 +10,11 @@ interface CameraCaptureProps {
   onCapture: (photoDataUrl: string, faceVerified: boolean) => void;
   onClose: () => void;
   type: 'check-in' | 'check-out';
-  referenceEmbedding?: number[] | null;
+  /**
+   * May be a numeric vector (legacy/local verification) or provider metadata (backend verification).
+   * We normalize internally, so keep this flexible.
+   */
+  referenceEmbedding?: unknown;
 }
 
 // Helper to validate and normalize embedding

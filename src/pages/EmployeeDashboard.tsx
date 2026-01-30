@@ -40,6 +40,7 @@ import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { hasFaceEmbedding } from '@/lib/faceEmbedding';
 import { 
   generateChallengeToken, 
   verifyAttendance, 
@@ -773,7 +774,7 @@ export default function EmployeeDashboard() {
         )}
 
         {/* Face Verification Setup - only show if needed */}
-        {systemSettings.faceVerificationEnabled && (!profile?.face_embedding || profile.face_embedding.length === 0) && (
+        {systemSettings.faceVerificationEnabled && !hasFaceEmbedding(profile?.face_embedding ?? null) && (
           <Card 
             className="p-4 cursor-pointer hover:shadow-elevated transition-shadow border-warning/50 bg-warning-soft"
             onClick={() => navigate('/profile')}
