@@ -159,7 +159,7 @@ export default function RoleBasedHeader({
                       Developer Panel
                     </DropdownMenuItem>
                   )}
-                  {isOwner && (
+                  {isOwner && !isDeveloper && (
                     <DropdownMenuItem 
                       onClick={() => navigate('/owner')}
                       className={currentView === 'owner' ? 'bg-muted' : ''}
