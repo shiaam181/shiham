@@ -118,7 +118,7 @@ export default function RoleBasedHeader({
 
   return (
     <header className={`sticky top-0 z-50 border-b border-border/50 ${getHeaderStyles()}`}>
-      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 bg-primary-foreground">
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-white/20' : 'bg-sidebar-primary text-sidebar-primary-foreground'}`}>
