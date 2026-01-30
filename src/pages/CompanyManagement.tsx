@@ -42,7 +42,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw, Trash2 } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw, Trash2, Settings } from 'lucide-react';
+import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -928,7 +929,13 @@ export default function CompanyManagement() {
                   Select a company to view details
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Pending Employees Section */}
+                  <PendingEmployeesList 
+                    companyId={selectedCompany.id} 
+                    onUpdate={() => fetchCompanyUsers(selectedCompany.id)}
+                  />
+                  {/* Actions Bar */}
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
@@ -983,6 +990,7 @@ export default function CompanyManagement() {
                     </Dialog>
                   </div>
 
+                  {/* Company Users Table */}
                   {companyUsers.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
                       No users in this company yet
