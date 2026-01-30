@@ -103,15 +103,15 @@ export default function DeveloperDashboard() {
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
 
-  // Face++ configuration state
-  const [faceppApiKey, setFaceppApiKey] = useState('');
-  const [faceppApiSecret, setFaceppApiSecret] = useState('');
-  const [showFaceppKeys, setShowFaceppKeys] = useState(false);
-  const [faceppConfigSaving, setFaceppConfigSaving] = useState(false);
-  const [faceppConfigured, setFaceppConfigured] = useState(false);
-  const [faceppApiKeyMasked, setFaceppApiKeyMasked] = useState('');
-  const [testingFacepp, setTestingFacepp] = useState(false);
-  const [faceppTestResult, setFaceppTestResult] = useState<'success' | 'error' | null>(null);
+  // AWS Rekognition configuration state
+  const [awsAccessKeyId, setAwsAccessKeyId] = useState('');
+  const [awsSecretAccessKey, setAwsSecretAccessKey] = useState('');
+  const [showAwsKeys, setShowAwsKeys] = useState(false);
+  const [awsConfigSaving, setAwsConfigSaving] = useState(false);
+  const [awsConfigured, setAwsConfigured] = useState(false);
+  const [awsAccessKeyMasked, setAwsAccessKeyMasked] = useState('');
+  const [testingAws, setTestingAws] = useState(false);
+  const [awsTestResult, setAwsTestResult] = useState<'success' | 'error' | null>(null);
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -189,58 +189,58 @@ export default function DeveloperDashboard() {
     
     // Check if Twilio is configured by checking if the edge function works
     checkTwilioConfig();
-    // Check if Face++ is configured
-    checkFaceppConfig();
+    // Check if AWS Rekognition is configured
+    checkAwsConfig();
   };
 
-  const checkFaceppConfig = async () => {
+  const checkAwsConfig = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('update-facepp-credentials', {
+      const { data, error } = await supabase.functions.invoke('update-aws-credentials', {
         body: { action: 'get' }
       });
       
       if (!error && data) {
-        setFaceppConfigured(data.configured || false);
-        setFaceppApiKeyMasked(data.apiKeyMasked || '');
+        setAwsConfigured(data.configured || false);
+        setAwsAccessKeyMasked(data.accessKeyMasked || '');
       }
     } catch (err) {
-      console.error('Error checking Face++ config:', err);
+      console.error('Error checking AWS config:', err);
     }
   };
 
-  const testFaceppCredentials = async () => {
-    setTestingFacepp(true);
-    setFaceppTestResult(null);
+  const testAwsCredentials = async () => {
+    setTestingAws(true);
+    setAwsTestResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('update-facepp-credentials', {
+      const { data, error } = await supabase.functions.invoke('update-aws-credentials', {
         body: { 
           action: 'test',
-          apiKey: faceppApiKey || undefined,
-          apiSecret: faceppApiSecret || undefined
+          accessKeyId: awsAccessKeyId || undefined,
+          secretAccessKey: awsSecretAccessKey || undefined
         }
       });
       
       if (error) throw error;
       
       if (data?.success) {
-        setFaceppTestResult('success');
+        setAwsTestResult('success');
         toast({
-          title: 'Face++ Test Passed',
+          title: 'AWS Rekognition Test Passed',
           description: data.message || 'API credentials are valid',
         });
       } else {
         throw new Error(data?.error || 'Test failed');
       }
     } catch (error: any) {
-      setFaceppTestResult('error');
+      setAwsTestResult('error');
       toast({
-        title: 'Face++ Test Failed',
+        title: 'AWS Rekognition Test Failed',
         description: error.message || 'Failed to verify credentials',
         variant: 'destructive',
       });
     } finally {
-      setTestingFacepp(false);
+      setTestingAws(false);
     }
   };
 
@@ -1731,29 +1731,29 @@ export default function DeveloperDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Face++ API Configuration */}
+                {/* AWS Rekognition Configuration */}
                 <Card className="mt-6">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ScanFace className="w-5 h-5" />
-                      Face++ API Configuration
+                      AWS Rekognition Configuration
                     </CardTitle>
                     <CardDescription>
-                      Configure Face++ (Megvii) API credentials for biometric verification. Get your API keys from{' '}
-                      <a href="https://www.faceplusplus.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                        faceplusplus.com
+                      Configure AWS Rekognition credentials for biometric verification. Get your credentials from{' '}
+                      <a href="https://console.aws.amazon.com/iam/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        AWS IAM Console
                       </a>
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {faceppConfigured && (
+                    {awsConfigured && (
                       <div className="p-4 bg-success/10 rounded-lg border border-success/30">
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
                           <div>
-                            <p className="font-medium text-sm text-success">Face++ API Configured</p>
+                            <p className="font-medium text-sm text-success">AWS Rekognition Configured</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              API Key: {faceppApiKeyMasked || 'Configured via backend secrets'}
+                              Access Key: {awsAccessKeyMasked || 'Configured via backend secrets'}
                             </p>
                           </div>
                         </div>
@@ -1766,7 +1766,7 @@ export default function DeveloperDashboard() {
                         <div>
                           <p className="font-medium text-sm text-info">Secrets Management</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Face++ API credentials are stored as backend secrets (FACEPP_API_KEY and FACEPP_API_SECRET). 
+                            AWS credentials are stored as backend secrets (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY). 
                             To update them, use the Lovable Cloud secrets manager. You can test your current configuration below.
                           </p>
                         </div>
@@ -1775,23 +1775,23 @@ export default function DeveloperDashboard() {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="facepp-key">API Key (for testing new credentials)</Label>
+                        <Label htmlFor="aws-key">Access Key ID (for testing new credentials)</Label>
                         <Input
-                          id="facepp-key"
-                          type={showFaceppKeys ? 'text' : 'password'}
-                          placeholder="Enter new API key to test"
-                          value={faceppApiKey}
-                          onChange={(e) => setFaceppApiKey(e.target.value)}
+                          id="aws-key"
+                          type={showAwsKeys ? 'text' : 'password'}
+                          placeholder="Enter new Access Key ID to test"
+                          value={awsAccessKeyId}
+                          onChange={(e) => setAwsAccessKeyId(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="facepp-secret">API Secret (for testing new credentials)</Label>
+                        <Label htmlFor="aws-secret">Secret Access Key (for testing new credentials)</Label>
                         <Input
-                          id="facepp-secret"
-                          type={showFaceppKeys ? 'text' : 'password'}
-                          placeholder="Enter new API secret to test"
-                          value={faceppApiSecret}
-                          onChange={(e) => setFaceppApiSecret(e.target.value)}
+                          id="aws-secret"
+                          type={showAwsKeys ? 'text' : 'password'}
+                          placeholder="Enter new Secret Access Key to test"
+                          value={awsSecretAccessKey}
+                          onChange={(e) => setAwsSecretAccessKey(e.target.value)}
                         />
                       </div>
                     </div>
@@ -1800,33 +1800,34 @@ export default function DeveloperDashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowFaceppKeys(!showFaceppKeys)}
+                        onClick={() => setShowAwsKeys(!showAwsKeys)}
                       >
-                        {showFaceppKeys ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                        {showFaceppKeys ? 'Hide Keys' : 'Show Keys'}
+                        {showAwsKeys ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                        {showAwsKeys ? 'Hide Keys' : 'Show Keys'}
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={testFaceppCredentials}
-                        disabled={testingFacepp}
+                        onClick={testAwsCredentials}
+                        disabled={testingAws}
                       >
-                        {testingFacepp ? (
+                        {testingAws ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : faceppTestResult === 'success' ? (
+                        ) : awsTestResult === 'success' ? (
                           <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
-                        ) : faceppTestResult === 'error' ? (
+                        ) : awsTestResult === 'error' ? (
                           <XCircle className="w-4 h-4 mr-2 text-destructive" />
                         ) : (
                           <PlayCircle className="w-4 h-4 mr-2" />
                         )}
-                        {faceppApiKey ? 'Test New Credentials' : 'Test Current Config'}
+                        {awsAccessKeyId ? 'Test New Credentials' : 'Test Current Config'}
                       </Button>
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• <strong>API Key:</strong> Found in Face++ Console → Apps → Your App</p>
-                      <p>• <strong>API Secret:</strong> Found in Face++ Console → Apps → Your App (keep secret!)</p>
-                      <p>• <strong>Endpoint:</strong> Using US API (api-us.faceplusplus.com)</p>
+                      <p>• <strong>Access Key ID:</strong> Found in AWS IAM → Users → Security Credentials</p>
+                      <p>• <strong>Secret Access Key:</strong> Generated when creating Access Key (keep secret!)</p>
+                      <p>• <strong>Region:</strong> ap-south-1 (Mumbai)</p>
+                      <p>• <strong>Required Policy:</strong> AmazonRekognitionFullAccess</p>
                     </div>
                   </CardContent>
                 </Card>
