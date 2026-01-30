@@ -45,5 +45,5 @@ verify_jwt = false
 [functions.check-punch-missing]
 verify_jwt = false
 
-[functions.update-facepp-credentials]
+[functions.update-aws-credentials]
 verify_jwt = false
