@@ -25,8 +25,12 @@ import {
   Settings,
   Timer,
   Bell,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Scan,
+  AlertTriangle
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import {
   Table,
@@ -91,6 +95,12 @@ interface DashboardStats {
   onLeave: number;
 }
 
+interface Company {
+  id: string;
+  name: string;
+  face_verification_disabled: boolean;
+}
+
 export default function AdminDashboard() {
   const { profile, isAdmin, isOwner, isDeveloper, role, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -110,6 +120,58 @@ export default function AdminDashboard() {
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+
+  // Fetch company data for admin's company
+  useEffect(() => {
+    const fetchCompany = async () => {
+      if (!profile?.company_id) return;
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, face_verification_disabled')
+        .eq('id', profile.company_id)
+        .single();
+      
+      if (!error && data) {
+        setCompany(data);
+      }
+    };
+
+    if (!authLoading && profile?.company_id) {
+      fetchCompany();
+    }
+  }, [authLoading, profile?.company_id]);
+
+  const toggleFaceVerification = async () => {
+    if (!company) return;
+    
+    const newValue = !company.face_verification_disabled;
+    
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ face_verification_disabled: newValue })
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      setCompany({ ...company, face_verification_disabled: newValue });
+      
+      toast({
+        title: newValue ? 'Face Verification Disabled' : 'Face Verification Enabled',
+        description: newValue 
+          ? 'Employees can now check in without face verification.'
+          : 'Face verification is now required for attendance.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update setting',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -421,6 +483,59 @@ export default function AdminDashboard() {
             <EmployeeAttendanceList />
           </TabsContent>
         </Tabs>
+
+        {/* Company Settings - Face Verification Toggle */}
+        {company && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Scan className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                Company Settings
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Configure attendance and security settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    company.face_verification_disabled ? 'bg-warning/20' : 'bg-success/20'
+                  }`}>
+                    <Scan className={`w-5 h-5 ${
+                      company.face_verification_disabled ? 'text-warning' : 'text-success'
+                    }`} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="admin-face-toggle" className="text-sm font-medium cursor-pointer">
+                      Face Verification
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {company.face_verification_disabled 
+                        ? 'Disabled - employees can check in without face verification'
+                        : 'Enabled - employees must verify their face during attendance'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="admin-face-toggle"
+                  checked={!company.face_verification_disabled}
+                  onCheckedChange={toggleFaceVerification}
+                />
+              </div>
+
+              {company.face_verification_disabled && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-soft border border-warning/30">
+                  <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                  <p className="text-xs text-warning">
+                    Face verification is disabled for troubleshooting. Remember to re-enable it for security.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
