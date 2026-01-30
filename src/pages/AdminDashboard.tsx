@@ -50,6 +50,8 @@ import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
+import MonthlyAttendanceManager from '@/components/MonthlyAttendanceManager';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
 interface Employee {
@@ -268,136 +270,157 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Today's Attendance */}
-        <Card>
-          <CardHeader className="pb-3 sm:pb-6">
-            <div className="flex flex-col gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  Attendance Records
-                </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">View and manage employee attendance</CardDescription>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full sm:w-auto"
-                />
-                <div className="relative flex-1 sm:flex-initial">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search employees..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-full sm:w-[200px]"
-                  />
+        {/* Attendance Management with Tabs */}
+        <Tabs defaultValue="daily" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+            <TabsTrigger value="daily" className="text-sm">
+              <Clock className="w-4 h-4 mr-2" />
+              Daily View
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className="text-sm">
+              <Calendar className="w-4 h-4 mr-2" />
+              Monthly View
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Daily Attendance Tab */}
+          <TabsContent value="daily">
+            <Card>
+              <CardHeader className="pb-3 sm:pb-6">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                      Daily Attendance
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">View and edit attendance for a specific date</CardDescription>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full sm:w-auto"
+                    />
+                    <div className="relative flex-1 sm:flex-initial">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search employees..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-full sm:w-[200px]"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="rounded-lg border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-xs sm:text-sm">Employee</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Check In</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Check Out</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Photos</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAttendance.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
-                        No attendance records found for this date
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredAttendance.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                            </div>
-                            <span className="font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">{record.employee_name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
-                          {record.employee_department || '-'}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {record.check_in_time 
-                            ? format(new Date(record.check_in_time), 'hh:mm a')
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {record.check_out_time 
-                            ? format(new Date(record.check_out_time), 'hh:mm a')
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="flex items-center gap-2">
-                            <PhotoThumbnail 
-                              photoUrl={record.check_in_photo_url} 
-                              alt={`${record.employee_name} check-in`}
-                            />
-                            <PhotoThumbnail 
-                              photoUrl={record.check_out_photo_url} 
-                              alt={`${record.employee_name} check-out`}
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(record.status)} className="text-[10px] sm:text-xs">
-                            {record.status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <AttendancePhotoViewer
-                              record={record}
-                              trigger={
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6">
+                <div className="rounded-lg border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Check In</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Check Out</TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Photos</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAttendance.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
+                            No attendance records found for this date
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredAttendance.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                                </div>
+                                <span className="font-medium text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">{record.employee_name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
+                              {record.employee_department || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              {record.check_in_time 
+                                ? format(new Date(record.check_in_time), 'hh:mm a')
+                                : '-'
+                              }
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              {record.check_out_time 
+                                ? format(new Date(record.check_out_time), 'hh:mm a')
+                                : '-'
+                              }
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                              <div className="flex items-center gap-2">
+                                <PhotoThumbnail 
+                                  photoUrl={record.check_in_photo_url} 
+                                  alt={`${record.employee_name} check-in`}
+                                />
+                                <PhotoThumbnail 
+                                  photoUrl={record.check_out_photo_url} 
+                                  alt={`${record.employee_name} check-out`}
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusBadgeVariant(record.status)} className="text-[10px] sm:text-xs">
+                                {record.status.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <AttendancePhotoViewer
+                                  record={record}
+                                  trigger={
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      className="w-7 h-7 sm:w-8 sm:h-8"
+                                    >
+                                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    </Button>
+                                  }
+                                />
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
                                   className="w-7 h-7 sm:w-8 sm:h-8"
+                                  onClick={() => {
+                                    setEditingRecord(record);
+                                    setShowEditDialog(true);
+                                  }}
                                 >
-                                  <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </Button>
-                              }
-                            />
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="w-7 h-7 sm:w-8 sm:h-8"
-                              onClick={() => {
-                                setEditingRecord(record);
-                                setShowEditDialog(true);
-                              }}
-                            >
-                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Monthly Attendance Tab */}
+          <TabsContent value="monthly">
+            <MonthlyAttendanceManager />
+          </TabsContent>
+        </Tabs>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
