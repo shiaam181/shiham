@@ -155,6 +155,41 @@ export default function Auth() {
     try {
       const validated = signupSchema.parse(formData);
       
+      // Check if email already exists in profiles
+      const { data: existingEmail } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', validated.email)
+        .maybeSingle();
+      
+      if (existingEmail) {
+        toast({
+          title: 'Email Already Registered',
+          description: 'This email is already registered. Please sign in instead.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check if phone already exists (for phone OTP method)
+      if (method === 'phone' && formData.phone) {
+        const fullPhone = `${countryCode}${formData.phone.replace(/\D/g, '')}`;
+        const { data: existingPhone } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('phone', fullPhone)
+          .maybeSingle();
+        
+        if (existingPhone) {
+          toast({
+            title: 'Phone Already Registered',
+            description: 'This phone number is already registered with another account.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+      
       setIsSendingOtp(true);
       setOtpMethod(method);
       
@@ -597,6 +632,43 @@ export default function Auth() {
     try {
       const validated = signupSchema.parse(formData);
       setIsLoading(true);
+      
+      // Check if email already exists in profiles
+      const { data: existingEmail } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', validated.email)
+        .maybeSingle();
+      
+      if (existingEmail) {
+        toast({
+          title: 'Email Already Registered',
+          description: 'This email is already registered. Please sign in instead.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if phone already exists (if phone is provided)
+      if (formData.phone) {
+        const fullPhone = `${countryCode}${formData.phone.replace(/\D/g, '')}`;
+        const { data: existingPhone } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('phone', fullPhone)
+          .maybeSingle();
+        
+        if (existingPhone) {
+          toast({
+            title: 'Phone Already Registered',
+            description: 'This phone number is already registered with another account.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
       
       const { error: signUpError } = await signUp(
         validated.email,
