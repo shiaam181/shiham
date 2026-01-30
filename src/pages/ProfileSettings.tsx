@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { hasFaceEmbedding } from '@/lib/faceEmbedding';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -341,7 +342,7 @@ export default function ProfileSettings() {
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  {profile?.face_embedding && profile.face_embedding.length > 0 ? (
+                  {hasFaceEmbedding(profile?.face_embedding ?? null) ? (
                     <>
                       <CheckCircle2 className="w-5 h-5 text-success" />
                       <span className="font-medium text-success">Face Registered</span>
@@ -354,13 +355,13 @@ export default function ProfileSettings() {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  {profile?.face_embedding && profile.face_embedding.length > 0
+                  {hasFaceEmbedding(profile?.face_embedding ?? null)
                     ? 'Your face is registered for verification. You can update it anytime.'
                     : 'Please capture a clear photo of your face for verification during attendance.'}
                 </p>
                 <Button onClick={() => navigate('/face-setup?update=true')} variant="outline" size="sm">
                   <Camera className="w-4 h-4 mr-2" />
-                  {profile?.face_embedding && profile.face_embedding.length > 0 ? 'Update Face' : 'Setup Face'}
+                    {hasFaceEmbedding(profile?.face_embedding ?? null) ? 'Update Face' : 'Setup Face'}
                 </Button>
               </div>
             </div>

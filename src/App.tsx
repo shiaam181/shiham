@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { hasFaceEmbedding } from "@/lib/faceEmbedding";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 // Invite flow removed - employees now search for company during signup
@@ -84,8 +85,8 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
   }
 
   // Developers bypass face setup, also skip if face verification is disabled
-  // Now check for face_embedding instead of face_reference_url
-  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  // face_embedding can be an object (Face++) or an array (legacy)
+  const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
   if (requireFaceSetup && faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }
@@ -121,7 +122,7 @@ const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Allow updating face even if already registered
-  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
   if (!isUpdate && (hasFaceData || isDeveloper)) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -149,7 +150,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // Check face setup first (developers bypass, also skip if disabled)
-  const hasFaceData = profile?.face_embedding && profile.face_embedding.length > 0;
+  const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
   if (faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
   }

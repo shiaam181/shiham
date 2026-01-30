@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Profile {
   id: string;
@@ -12,7 +13,7 @@ interface Profile {
   phone: string | null;
   avatar_url: string | null;
   face_reference_url: string | null;
-  face_embedding: number[] | null;
+  face_embedding: Json | null;
   is_active: boolean;
   phone_verified: boolean;
   company_id: string | null;
@@ -63,11 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Cast face_embedding from Json to number[] if it exists
+      // face_embedding is stored as Json (Face++ metadata object or legacy array)
       if (profileData) {
         const profile: Profile = {
           ...profileData,
-          face_embedding: profileData.face_embedding as number[] | null,
+          face_embedding: profileData.face_embedding as Json | null,
           company_id: profileData.company_id as string | null,
         };
         setProfile(profile);
