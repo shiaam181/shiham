@@ -11,6 +11,168 @@ interface VerifyFaceRequest {
   capturedImage: string;
 }
 
+const AWS_REGION = "ap-south-1"; // Mumbai region
+const FACE_MATCH_THRESHOLD = 90; // AWS Rekognition similarity threshold
+
+/**
+ * AWS Signature V4 signing for Rekognition API
+ */
+async function signAWSRequest(
+  method: string,
+  service: string,
+  region: string,
+  host: string,
+  path: string,
+  payload: string,
+  accessKey: string,
+  secretKey: string
+): Promise<{ headers: Record<string, string>; url: string }> {
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.substring(0, 8);
+  
+  const canonicalUri = path;
+  const canonicalQuerystring = '';
+  const payloadHash = await sha256Hex(payload);
+  
+  const canonicalHeaders = 
+    `content-type:application/x-amz-json-1.1\n` +
+    `host:${host}\n` +
+    `x-amz-date:${amzDate}\n` +
+    `x-amz-target:RekognitionService.${service}\n`;
+  
+  const signedHeaders = 'content-type;host;x-amz-date;x-amz-target';
+  
+  const canonicalRequest = 
+    `${method}\n${canonicalUri}\n${canonicalQuerystring}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const credentialScope = `${dateStamp}/${region}/rekognition/aws4_request`;
+  const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${await sha256Hex(canonicalRequest)}`;
+  
+  const signingKey = await getSignatureKey(secretKey, dateStamp, region, 'rekognition');
+  const signature = await hmacHex(signingKey, stringToSign);
+  
+  const authorizationHeader = 
+    `${algorithm} Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  
+  return {
+    headers: {
+      'Content-Type': 'application/x-amz-json-1.1',
+      'X-Amz-Date': amzDate,
+      'X-Amz-Target': `RekognitionService.${service}`,
+      'Authorization': authorizationHeader,
+    },
+    url: `https://${host}${path}`,
+  };
+}
+
+async function sha256Hex(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+}
+
+async function hmacHex(key: ArrayBuffer, message: string): Promise<string> {
+  const result = await hmacSha256(key, message);
+  return Array.from(new Uint8Array(result)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getSignatureKey(key: string, dateStamp: string, region: string, service: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const kDate = await hmacSha256(encoder.encode('AWS4' + key).buffer as ArrayBuffer, dateStamp);
+  const kRegion = await hmacSha256(kDate, region);
+  const kService = await hmacSha256(kRegion, service);
+  return await hmacSha256(kService, 'aws4_request');
+}
+
+/**
+ * Compare two faces using AWS Rekognition CompareFaces API
+ */
+async function compareFaces(
+  sourceImage: string,
+  targetImage: string,
+  accessKey: string,
+  secretKey: string
+): Promise<{ match: boolean; confidence: number; reason: string }> {
+  const host = `rekognition.${AWS_REGION}.amazonaws.com`;
+  const path = '/';
+  
+  // Remove data URL prefix if present
+  const sourceBase64 = sourceImage.includes(',') ? sourceImage.split(',')[1] : sourceImage;
+  const targetBase64 = targetImage.includes(',') ? targetImage.split(',')[1] : targetImage;
+  
+  const payload = JSON.stringify({
+    SourceImage: { Bytes: sourceBase64 },
+    TargetImage: { Bytes: targetBase64 },
+    SimilarityThreshold: FACE_MATCH_THRESHOLD,
+    QualityFilter: 'AUTO',
+  });
+  
+  try {
+    const { headers, url } = await signAWSRequest(
+      'POST', 'CompareFaces', AWS_REGION, host, path, payload, accessKey, secretKey
+    );
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: payload,
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('Rekognition CompareFaces error:', data);
+      
+      // Handle specific error types
+      if (data.__type?.includes('InvalidParameterException')) {
+        if (data.Message?.includes('source')) {
+          return { match: false, confidence: 0, reason: 'No face detected in reference image' };
+        }
+        if (data.Message?.includes('target')) {
+          return { match: false, confidence: 0, reason: 'No face detected in captured image' };
+        }
+        return { match: false, confidence: 0, reason: 'Invalid image provided' };
+      }
+      
+      return { match: false, confidence: 0, reason: 'Face comparison service error' };
+    }
+    
+    const faceMatches = data.FaceMatches as Array<{ Similarity: number }> || [];
+    
+    if (faceMatches.length === 0) {
+      const unmatchedFaces = data.UnmatchedFaces as Array<unknown> || [];
+      if (unmatchedFaces.length > 0) {
+        return { match: false, confidence: 0, reason: 'Face does not match registered photo' };
+      }
+      return { match: false, confidence: 0, reason: 'No matching face found' };
+    }
+    
+    const bestMatch = faceMatches[0];
+    const similarity = bestMatch.Similarity;
+    
+    console.log(`Face comparison result: similarity=${similarity.toFixed(1)}%`);
+    
+    return {
+      match: similarity >= FACE_MATCH_THRESHOLD,
+      confidence: Math.round(similarity),
+      reason: similarity >= FACE_MATCH_THRESHOLD 
+        ? 'Face verified successfully' 
+        : `Face similarity too low (${Math.round(similarity)}%)`,
+    };
+  } catch (error) {
+    console.error('CompareFaces exception:', error);
+    return { match: false, confidence: 0, reason: 'Face verification failed' };
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -42,6 +204,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const awsAccessKey = Deno.env.get("AWS_ACCESS_KEY_ID");
+    const awsSecretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
+
+    if (!awsAccessKey || !awsSecretKey) {
+      console.error("AWS credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "Face verification service not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { referenceImage, capturedImage }: VerifyFaceRequest = await req.json();
 
     if (!referenceImage || !capturedImage) {
@@ -63,113 +236,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Face verification service not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     console.log(`Face verification request from user ${user.id}`);
 
-    // Call the AI gateway for face verification
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a face verification AI assistant. Your job is to compare two face images and determine if they belong to the same person.
-
-Analyze the following aspects:
-1. Facial structure (face shape, proportions)
-2. Key facial features (eyes, nose, mouth, eyebrows)
-3. Distinguishing characteristics
-
-Respond ONLY with a JSON object in this exact format:
-{
-  "match": true or false,
-  "confidence": number between 0 and 100,
-  "reason": "brief explanation of your decision"
-}
-
-Be strict but fair. Consider that lighting, angle, and expression may differ between photos. Focus on structural features that don't change.`
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Compare these two face images. The first is the reference photo (stored employee photo) and the second is the captured selfie. Determine if they are the same person."
-              },
-              {
-                type: "image_url",
-                image_url: { url: referenceImage }
-              },
-              {
-                type: "image_url",
-                image_url: { url: capturedImage }
-              }
-            ]
-          }
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please contact support." }),
-          { status: 402, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ error: "Face verification service error" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const data = await aiResponse.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    console.log("AI Response received for user:", user.id);
-
-    // Parse the JSON response
-    let result;
-    try {
-      // Extract JSON from the response (it might have markdown code blocks)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("No JSON found in response");
-      }
-    } catch (parseError) {
-      console.error("Parse error:", parseError);
-      // Default to no match if we can't parse
-      result = {
-        match: false,
-        confidence: 0,
-        reason: "Unable to verify face. Please try again."
-      };
-    }
+    // Compare faces using AWS Rekognition
+    const result = await compareFaces(referenceImage, capturedImage, awsAccessKey, awsSecretKey);
 
     console.log(`Face verification result for user ${user.id}: match=${result.match}, confidence=${result.confidence}`);
 

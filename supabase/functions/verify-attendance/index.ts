@@ -15,170 +15,227 @@ interface VerifyAttendanceRequest {
   action: 'check-in' | 'check-out';
 }
 
-const FACE_MATCH_THRESHOLD = 70; // Face++ confidence threshold (0-100)
+const AWS_REGION = "ap-south-1"; // Mumbai region
+const FACE_MATCH_THRESHOLD = 90; // AWS Rekognition similarity threshold (0-100)
 const GPS_FRESHNESS_MS = 30000; // GPS must be within 30 seconds
 const GPS_CLOCK_SKEW_MS = 5000; // Allow 5s clock skew
 
-// Delay helper for rate limiting
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/**
+ * AWS Signature V4 signing for Rekognition API
+ */
+async function signAWSRequest(
+  method: string,
+  service: string,
+  region: string,
+  host: string,
+  path: string,
+  payload: string,
+  accessKey: string,
+  secretKey: string
+): Promise<{ headers: Record<string, string>; url: string }> {
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.substring(0, 8);
+  
+  const canonicalUri = path;
+  const canonicalQuerystring = '';
+  const payloadHash = await sha256Hex(payload);
+  
+  const canonicalHeaders = 
+    `content-type:application/x-amz-json-1.1\n` +
+    `host:${host}\n` +
+    `x-amz-date:${amzDate}\n` +
+    `x-amz-target:RekognitionService.${service}\n`;
+  
+  const signedHeaders = 'content-type;host;x-amz-date;x-amz-target';
+  
+  const canonicalRequest = 
+    `${method}\n${canonicalUri}\n${canonicalQuerystring}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+  
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const credentialScope = `${dateStamp}/${region}/rekognition/aws4_request`;
+  const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${await sha256Hex(canonicalRequest)}`;
+  
+  const signingKey = await getSignatureKey(secretKey, dateStamp, region, 'rekognition');
+  const signature = await hmacHex(signingKey, stringToSign);
+  
+  const authorizationHeader = 
+    `${algorithm} Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  
+  return {
+    headers: {
+      'Content-Type': 'application/x-amz-json-1.1',
+      'X-Amz-Date': amzDate,
+      'X-Amz-Target': `RekognitionService.${service}`,
+      'Authorization': authorizationHeader,
+    },
+    url: `https://${host}${path}`,
+  };
+}
+
+async function sha256Hex(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha256(key: ArrayBuffer, message: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+}
+
+async function hmacHex(key: ArrayBuffer, message: string): Promise<string> {
+  const result = await hmacSha256(key, message);
+  return Array.from(new Uint8Array(result)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getSignatureKey(key: string, dateStamp: string, region: string, service: string): Promise<ArrayBuffer> {
+  const encoder = new TextEncoder();
+  const kDate = await hmacSha256(encoder.encode('AWS4' + key).buffer as ArrayBuffer, dateStamp);
+  const kRegion = await hmacSha256(kDate, region);
+  const kService = await hmacSha256(kRegion, service);
+  return await hmacSha256(kService, 'aws4_request');
+}
 
 /**
- * Retry wrapper for Face++ API calls with exponential backoff
+ * Call AWS Rekognition API
  */
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: Error | null = null;
+async function callRekognition(
+  operation: string,
+  payload: Record<string, unknown>,
+  accessKey: string,
+  secretKey: string
+): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
+  const host = `rekognition.${AWS_REGION}.amazonaws.com`;
+  const path = '/';
+  const payloadStr = JSON.stringify(payload);
   
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-      const errorMsg = lastError.message || '';
-      
-      if (errorMsg.includes('CONCURRENCY_LIMIT_EXCEEDED') || errorMsg.includes('rate')) {
-        const waitTime = baseDelay * Math.pow(2, attempt);
-        console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}`);
-        await delay(waitTime);
-      } else {
-        throw error;
-      }
+  try {
+    const { headers, url } = await signAWSRequest(
+      'POST', operation, AWS_REGION, host, path, payloadStr, accessKey, secretKey
+    );
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: payloadStr,
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error(`Rekognition ${operation} error:`, data);
+      return { success: false, error: data.Message || data.__type || 'Rekognition API error' };
+    }
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error(`Rekognition ${operation} exception:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Detect face in captured image
+ */
+async function detectFace(
+  imageBase64: string,
+  accessKey: string,
+  secretKey: string
+): Promise<{ valid: boolean; error?: string }> {
+  const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+  
+  const result = await callRekognition('DetectFaces', {
+    Image: { Bytes: base64Data },
+    Attributes: ['DEFAULT'],
+  }, accessKey, secretKey);
+  
+  if (!result.success) {
+    return { valid: false, error: result.error };
+  }
+  
+  const faces = result.data?.FaceDetails as Array<{
+    Confidence?: number;
+    Pose?: { Pitch?: number; Roll?: number; Yaw?: number };
+    BoundingBox?: { Width?: number; Height?: number };
+  }> || [];
+  
+  if (faces.length === 0) {
+    return { valid: false, error: 'No face detected in image' };
+  }
+  
+  if (faces.length > 1) {
+    return { valid: false, error: 'Multiple faces detected' };
+  }
+  
+  const face = faces[0];
+  
+  // Check for extreme head poses (potential static image)
+  if (face.Pose) {
+    const { Pitch, Roll, Yaw } = face.Pose;
+    if (Math.abs(Pitch || 0) > 30 || Math.abs(Roll || 0) > 30 || Math.abs(Yaw || 0) > 40) {
+      return { valid: false, error: 'Please face the camera directly' };
     }
   }
   
-  throw lastError;
+  return { valid: true };
 }
 
 /**
- * Detect face in captured image and return face_token (with retry)
+ * Search face against user's collection
  */
-async function detectFace(apiKey: string, apiSecret: string, imageBase64: string): Promise<{
-  faceToken: string | null;
-  error?: string;
-}> {
+async function searchFaceInCollection(
+  imageBase64: string,
+  collectionId: string,
+  accessKey: string,
+  secretKey: string
+): Promise<{ match: boolean; confidence: number; faceId?: string; error?: string }> {
   const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
   
-  try {
-    return await retryWithBackoff(async () => {
-      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          api_key: apiKey,
-          api_secret: apiSecret,
-          image_base64: base64Data,
-          return_attributes: "blur,headpose",
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
-        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
-      }
-      
-      if (data.error_message) {
-        console.error("Face++ detect error:", data.error_message);
-        return { faceToken: null, error: data.error_message };
-      }
-
-      if (!data.faces || data.faces.length === 0) {
-        return { faceToken: null, error: "No face detected in image" };
-      }
-
-      if (data.faces.length > 1) {
-        return { faceToken: null, error: "Multiple faces detected" };
-      }
-
-      // Check for excessive blur (potential photo of photo)
-      const face = data.faces[0];
-      if (face.attributes?.blur?.blurness?.value > 80) {
-        return { faceToken: null, error: "Image too blurry - use live camera" };
-      }
-
-      // Check for extreme head poses (potential static image)
-      if (face.attributes?.headpose) {
-        const { pitch_angle, roll_angle, yaw_angle } = face.attributes.headpose;
-        if (Math.abs(pitch_angle) > 30 || Math.abs(roll_angle) > 30 || Math.abs(yaw_angle) > 40) {
-          return { faceToken: null, error: "Please face the camera directly" };
-        }
-      }
-
-      return { faceToken: face.face_token };
-    }, 3, 1000);
-  } catch (error) {
-    console.error("Face detection failed after retries:", error);
-    return { faceToken: null, error: "Service busy, please try again" };
+  const result = await callRekognition('SearchFacesByImage', {
+    CollectionId: collectionId,
+    Image: { Bytes: base64Data },
+    MaxFaces: 1,
+    FaceMatchThreshold: FACE_MATCH_THRESHOLD,
+    QualityFilter: 'AUTO',
+  }, accessKey, secretKey);
+  
+  if (!result.success) {
+    // Check for specific error types
+    if (result.error?.includes('InvalidParameterException')) {
+      return { match: false, confidence: 0, error: 'No face detected in captured image' };
+    }
+    return { match: false, confidence: 0, error: result.error };
   }
+  
+  const faceMatches = result.data?.FaceMatches as Array<{
+    Similarity: number;
+    Face: { FaceId: string; ExternalImageId?: string };
+  }> || [];
+  
+  if (faceMatches.length === 0) {
+    return { match: false, confidence: 0, error: 'No matching face found' };
+  }
+  
+  const bestMatch = faceMatches[0];
+  const similarity = bestMatch.Similarity;
+  
+  console.log(`Face search result: similarity=${similarity.toFixed(1)}%, threshold=${FACE_MATCH_THRESHOLD}%`);
+  
+  return {
+    match: similarity >= FACE_MATCH_THRESHOLD,
+    confidence: Math.round(similarity),
+    faceId: bestMatch.Face.FaceId,
+  };
 }
 
 /**
- * Search face against user's FaceSet (with retry)
- */
-async function searchFace(
-  apiKey: string,
-  apiSecret: string,
-  faceToken: string,
-  faceSetToken: string
-): Promise<{
-  match: boolean;
-  confidence: number;
-  error?: string;
-}> {
-  try {
-    return await retryWithBackoff(async () => {
-      const response = await fetch("https://api-us.faceplusplus.com/facepp/v3/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          api_key: apiKey,
-          api_secret: apiSecret,
-          face_token: faceToken,
-          faceset_token: faceSetToken,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.error_message === 'CONCURRENCY_LIMIT_EXCEEDED') {
-        throw new Error('CONCURRENCY_LIMIT_EXCEEDED');
-      }
-      
-      if (data.error_message) {
-        console.error("Face++ search error:", data.error_message);
-        return { match: false, confidence: 0, error: data.error_message };
-      }
-
-      if (!data.results || data.results.length === 0) {
-        return { match: false, confidence: 0, error: "No matching face found" };
-      }
-
-      // Get the best match
-      const bestMatch = data.results[0];
-      const confidence = bestMatch.confidence;
-      
-      console.log(`Face search result: confidence=${confidence}, threshold=${FACE_MATCH_THRESHOLD}`);
-      
-      return {
-        match: confidence >= FACE_MATCH_THRESHOLD,
-        confidence: confidence,
-      };
-    }, 3, 1500);
-  } catch (error) {
-    console.error("Face search failed after retries:", error);
-    return { match: false, confidence: 0, error: "Service busy, please try again" };
-  }
-}
-
-/**
- * Production-grade attendance verification with Face++:
+ * Production-grade attendance verification with AWS Rekognition:
  * 1. Validates challenge token (anti-replay)
  * 2. Validates GPS coordinates and timestamp freshness
  * 3. Detects face in captured image
- * 4. Searches against user's registered faces
+ * 4. Searches against user's registered faces in collection
  * 5. Only marks attendance if ALL validations pass
  */
 serve(async (req: Request): Promise<Response> => {
@@ -200,11 +257,11 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const faceppApiKey = Deno.env.get("FACEPP_API_KEY");
-    const faceppApiSecret = Deno.env.get("FACEPP_API_SECRET");
+    const awsAccessKey = Deno.env.get("AWS_ACCESS_KEY_ID");
+    const awsSecretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
 
-    if (!faceppApiKey || !faceppApiSecret) {
-      console.error("Face++ credentials not configured");
+    if (!awsAccessKey || !awsSecretKey) {
+      console.error("AWS credentials not configured");
       return new Response(
         JSON.stringify({ error: "Face verification service not configured", code: "SERVICE_NOT_CONFIGURED" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -316,7 +373,7 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Challenge ${challenge.id} validated and marked as used`);
 
-    // === STEP 2: Get user's FaceSet token ===
+    // === STEP 2: Get user's collection ID ===
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("face_embedding")
@@ -331,22 +388,22 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const faceEmbedding = profile.face_embedding as { faceset_token?: string; provider?: string };
+    const faceEmbedding = profile.face_embedding as { collection_id?: string; provider?: string };
     
-    if (faceEmbedding.provider !== 'facepp' || !faceEmbedding.faceset_token) {
+    if (faceEmbedding.provider !== 'aws_rekognition' || !faceEmbedding.collection_id) {
       return new Response(
         JSON.stringify({ error: "Face registration outdated. Please re-register your face.", code: "FACE_OUTDATED" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const faceSetToken = faceEmbedding.faceset_token;
-    console.log(`Using FaceSet: ${faceSetToken}`);
+    const collectionId = faceEmbedding.collection_id;
+    console.log(`Using collection: ${collectionId}`);
 
     // === STEP 3: Detect face in captured image ===
-    const detection = await detectFace(faceppApiKey, faceppApiSecret, captured_image);
+    const detection = await detectFace(captured_image, awsAccessKey, awsSecretKey);
     
-    if (!detection.faceToken) {
+    if (!detection.valid) {
       return new Response(
         JSON.stringify({ 
           error: detection.error || "Face detection failed",
@@ -356,10 +413,12 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Face detected: ${detection.faceToken}`);
+    console.log('Face detected in captured image');
 
     // === STEP 4: Search face against registered faces ===
-    const searchResult = await searchFace(faceppApiKey, faceppApiSecret, detection.faceToken, faceSetToken);
+    const searchResult = await searchFaceInCollection(
+      captured_image, collectionId, awsAccessKey, awsSecretKey
+    );
     
     if (!searchResult.match) {
       return new Response(
@@ -435,7 +494,7 @@ serve(async (req: Request): Promise<Response> => {
           challenge_token: challenge_token,
           gps_timestamp: gps_timestamp,
           face_confidence: searchResult.confidence,
-          verification_method: 'facepp',
+          verification_method: 'aws_rekognition',
           status: 'present',
         });
 
@@ -463,12 +522,10 @@ serve(async (req: Request): Promise<Response> => {
       
       // Check if checkout is more than 24 hours after check-in
       if (hoursWorked >= MAX_SHIFT_HOURS) {
-        // Punch missing - only count 8 hours, no OT
         overtimeMinutes = 0;
         status = 'punch_missing';
         console.log(`Punch missing detected: ${hoursWorked.toFixed(2)} hours since check-in`);
       } else if (totalMinutes > STANDARD_WORK_DAY_MINUTES) {
-        // Normal OT calculation: worked more than 8 hours
         overtimeMinutes = totalMinutes - STANDARD_WORK_DAY_MINUTES;
         console.log(`Overtime calculated: ${overtimeMinutes} minutes (${(overtimeMinutes/60).toFixed(2)} hours)`);
       }
@@ -481,11 +538,12 @@ serve(async (req: Request): Promise<Response> => {
           check_out_longitude: longitude,
           check_out_photo_url: photoFileName,
           check_out_face_verified: true,
+          face_confidence: searchResult.confidence,
+          verification_method: 'aws_rekognition',
           overtime_minutes: overtimeMinutes,
           status: status,
         })
-        .eq("user_id", user.id)
-        .eq("date", existingAttendance.date);
+        .eq("id", existingAttendance.id);
 
       if (updateError) {
         console.error("Attendance update error:", updateError);
@@ -496,7 +554,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`Attendance ${action} recorded successfully for user ${user.id} with Face++ confidence ${searchResult.confidence}%`);
+    console.log(`Attendance ${action} recorded for user ${user.id}`);
 
     return new Response(
       JSON.stringify({
@@ -510,9 +568,9 @@ serve(async (req: Request): Promise<Response> => {
     );
 
   } catch (error) {
-    console.error("Verify attendance error:", error);
+    console.error("Attendance verification error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", code: "INTERNAL_ERROR" }),
+      JSON.stringify({ error: "Attendance verification failed", code: "INTERNAL_ERROR" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
