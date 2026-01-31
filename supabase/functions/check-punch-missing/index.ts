@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const STANDARD_WORK_DAY_MINUTES = 8 * 60; // 480 minutes (8 hours)
@@ -17,6 +17,10 @@ const MAX_SHIFT_HOURS = 24;
  * These records are marked as 'punch_missing' with no overtime calculated.
  * 
  * This should be run periodically (e.g., every hour via cron)
+ * 
+ * SECURITY: This function requires either:
+ * 1. A valid admin/developer JWT token, OR
+ * 2. The service role key in the Authorization header (for internal cron jobs)
  */
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -25,7 +29,51 @@ serve(async (req: Request): Promise<Response> => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // SECURITY: Validate authorization
+    const authHeader = req.headers.get("Authorization") || "";
+    
+    // Option 1: Service role key (for cron/scheduled jobs)
+    const isServiceRoleAuth = authHeader === `Bearer ${supabaseServiceKey}`;
+    
+    // Option 2: Admin/Developer JWT validation
+    let isAuthorizedUser = false;
+    if (!isServiceRoleAuth && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      
+      const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+      
+      if (!claimsError && claimsData?.claims?.sub) {
+        const userId = claimsData.claims.sub as string;
+        
+        // Check if user is admin or developer
+        const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: roleData } = await supabaseService
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .in("role", ["admin", "developer"])
+          .maybeSingle();
+        
+        isAuthorizedUser = !!roleData;
+        if (isAuthorizedUser && roleData) {
+          console.log(`Authorized user ${userId} with role ${roleData.role}`);
+        }
+      }
+    }
+    
+    if (!isServiceRoleAuth && !isAuthorizedUser) {
+      console.error("Unauthorized access attempt to check-punch-missing");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
