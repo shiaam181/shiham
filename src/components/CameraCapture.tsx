@@ -39,8 +39,8 @@ function normalizeEmbedding(embedding: unknown): number[] | null {
   return null;
 }
 
-const FACE_HOLD_FRAMES = 2; // Quick capture after 2 frames
-const DETECTION_INTERVAL = 100; // Check every 100ms
+const FACE_HOLD_FRAMES = 1; // Instant capture when face detected
+const DETECTION_INTERVAL = 80; // Fast detection interval
 
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
