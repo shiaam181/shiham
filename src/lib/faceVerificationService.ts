@@ -33,6 +33,8 @@ export interface FaceRegistrationResult {
   success: boolean;
   imagesStored: number;
   error?: string;
+  code?: string;
+  registeredCount?: number;
 }
 
 export interface ChallengeToken {
@@ -113,10 +115,15 @@ export async function registerFace(images: string[]): Promise<FaceRegistrationRe
   });
 
   if (response.error) {
+    const errorData = parseEdgeFunctionErrorMessage(
+      (response.error as any)?.context ?? response.error.message ?? response.error
+    );
     return {
       success: false,
       imagesStored: 0,
-      error: response.error.message || 'Face registration failed',
+      error: (errorData as any).error || response.error.message || 'Face registration failed',
+      code: (errorData as any).code,
+      registeredCount: (errorData as any).registered_count,
     };
   }
 
@@ -124,6 +131,8 @@ export async function registerFace(images: string[]): Promise<FaceRegistrationRe
     success: response.data.success,
     imagesStored: response.data.images_stored || 0,
     error: response.data.error,
+    code: response.data.code,
+    registeredCount: response.data.registered_count,
   };
 }
 
