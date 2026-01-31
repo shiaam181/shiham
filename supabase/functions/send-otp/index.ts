@@ -51,6 +51,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Ensure phone has + prefix for E.164 format (required by Twilio)
+    if (!phone.startsWith('+')) {
+      phone = '+' + phone;
+    }
+    
+    console.log(`Processing OTP request for phone: ${phone.slice(0, 5)}****`);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
