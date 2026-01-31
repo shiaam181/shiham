@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface VerifyAttendanceRequest {
@@ -165,15 +165,29 @@ async function detectFace(
     return { valid: false, error: 'No face detected in image' };
   }
   
+  // Rekognition may detect background posters/reflections as faces.
+  // Pick the dominant (largest) face and only reject if a secondary face is comparably large.
+  const faceAreas = faces
+    .map((f, idx) => {
+      const w = f.BoundingBox?.Width ?? 0;
+      const h = f.BoundingBox?.Height ?? 0;
+      return { idx, area: w * h };
+    })
+    .sort((a, b) => b.area - a.area);
+
+  const primaryArea = faceAreas[0].area;
+  const primaryFace = faces[faceAreas[0].idx];
+
   if (faces.length > 1) {
-    return { valid: false, error: 'Multiple faces detected' };
+    const secondArea = faceAreas[1]?.area ?? 0;
+    if (primaryArea > 0 && secondArea / primaryArea > 0.35) {
+      return { valid: false, error: 'Multiple clear faces detected - please ensure only your face is in frame' };
+    }
   }
   
-  const face = faces[0];
-  
   // Check for extreme head poses (potential static image)
-  if (face.Pose) {
-    const { Pitch, Roll, Yaw } = face.Pose;
+  if (primaryFace.Pose) {
+    const { Pitch, Roll, Yaw } = primaryFace.Pose;
     if (Math.abs(Pitch || 0) > 30 || Math.abs(Roll || 0) > 30 || Math.abs(Yaw || 0) > 40) {
       return { valid: false, error: 'Please face the camera directly' };
     }
