@@ -40,7 +40,7 @@ import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
-import { hasFaceEmbedding } from '@/lib/faceEmbedding';
+import { hasAwsRekognitionRegistration, hasFaceEmbedding } from '@/lib/faceEmbedding';
 import { 
   generateChallengeToken, 
   verifyAttendance, 
@@ -214,6 +214,18 @@ export default function EmployeeDashboard() {
     setIsInitiatingAttendance(true);
     
     try {
+      // If face verification is enabled but the user's face data is still legacy/outdated,
+      // don't start the attendance flow (it will fail with FACE_OUTDATED).
+      if (systemSettings.faceVerificationEnabled && !hasAwsRekognitionRegistration(profile?.face_embedding)) {
+        toast({
+          title: 'Face Setup Required',
+          description: 'Your face registration is outdated. Please re-register your face to continue.',
+          variant: 'destructive',
+        });
+        navigate('/face-setup');
+        return;
+      }
+
       // Run GPS refresh and challenge token generation in parallel for speed
       const tasks: Promise<any>[] = [];
       

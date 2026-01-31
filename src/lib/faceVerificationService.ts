@@ -16,6 +16,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { parseEdgeFunctionErrorMessage } from '@/lib/edgeFunctionError';
 
 export interface FaceVerificationResult {
   success: boolean;
@@ -160,12 +161,9 @@ export async function verifyAttendance(
   });
 
   if (response.error) {
-    // Parse error response
-    const errorData = response.error.message ? 
-      (typeof response.error.message === 'string' ? 
-        (() => { try { return JSON.parse(response.error.message); } catch { return { error: response.error.message }; } })() 
-        : response.error) 
-      : { error: 'Unknown error' };
+    const errorData = parseEdgeFunctionErrorMessage(
+      (response.error as any)?.context ?? response.error.message ?? response.error
+    );
     
     return {
       success: false,
@@ -173,8 +171,8 @@ export async function verifyAttendance(
       timestamp: '',
       faceConfidence: 0,
       location: { latitude: 0, longitude: 0 },
-      error: errorData.error || 'Verification failed',
-      code: errorData.code || 'VERIFICATION_FAILED',
+      error: (errorData as any).error || 'Verification failed',
+      code: (errorData as any).code || 'VERIFICATION_FAILED',
     };
   }
 
