@@ -96,9 +96,21 @@ export default function EmployeeDashboard() {
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
 
   // Preload face models in background for faster camera startup
+  // Non-blocking - if it fails, we'll handle it when camera opens
   useEffect(() => {
     if (systemSettings.faceVerificationEnabled || systemSettings.photoCaptureEnabled) {
-      loadFaceModels().catch(console.error);
+      // Use requestIdleCallback for better mobile performance, fallback to setTimeout
+      const loadModels = () => {
+        loadFaceModels().catch((err) => {
+          console.warn('Background face model loading failed (will retry when needed):', err.message);
+        });
+      };
+      
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(loadModels, { timeout: 5000 });
+      } else {
+        setTimeout(loadModels, 1000);
+      }
     }
   }, [systemSettings.faceVerificationEnabled, systemSettings.photoCaptureEnabled]);
 

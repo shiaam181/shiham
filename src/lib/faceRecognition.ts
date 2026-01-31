@@ -2,37 +2,85 @@ import * as faceapi from 'face-api.js';
 
 let modelsLoaded = false;
 let modelsLoading = false;
+let modelsLoadPromise: Promise<void> | null = null;
+let modelsLoadError: Error | null = null;
 
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+const MODEL_LOAD_TIMEOUT_MS = 30000; // 30 second timeout
+
+/**
+ * Check if WebGL is supported by the device
+ */
+function isWebGLSupported(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    return !!gl;
+  } catch (e) {
+    return false;
+  }
+}
 
 /**
  * Load face-api.js models for face detection and recognition
+ * With timeout and WebGL fallback for older devices
  */
 export async function loadFaceModels(): Promise<void> {
+  // Already loaded successfully
   if (modelsLoaded) return;
-  if (modelsLoading) {
-    // Wait for models to finish loading
-    while (modelsLoading) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return;
+  
+  // Previous load failed - throw the cached error
+  if (modelsLoadError) {
+    throw modelsLoadError;
+  }
+  
+  // Another load is in progress - wait for it
+  if (modelsLoading && modelsLoadPromise) {
+    return modelsLoadPromise;
+  }
+
+  // Check WebGL support before attempting to load
+  if (!isWebGLSupported()) {
+    const error = new Error('WebGL not supported on this device. Face recognition requires a newer browser.');
+    modelsLoadError = error;
+    console.warn('WebGL not supported - face recognition disabled');
+    throw error;
   }
 
   modelsLoading = true;
-  try {
-    await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
-    modelsLoaded = true;
-    console.log('Face recognition models loaded successfully');
-  } catch (error) {
-    console.error('Failed to load face models:', error);
-    throw new Error('Failed to load face recognition models');
-  } finally {
-    modelsLoading = false;
-  }
+  
+  modelsLoadPromise = new Promise<void>(async (resolve, reject) => {
+    // Set a timeout to prevent infinite hangs on problematic devices
+    const timeoutId = setTimeout(() => {
+      modelsLoading = false;
+      const error = new Error('Face model loading timed out. Please try again or use a different device.');
+      modelsLoadError = error;
+      reject(error);
+    }, MODEL_LOAD_TIMEOUT_MS);
+    
+    try {
+      await Promise.all([
+        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
+      
+      clearTimeout(timeoutId);
+      modelsLoaded = true;
+      modelsLoading = false;
+      console.log('Face recognition models loaded successfully');
+      resolve();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      modelsLoading = false;
+      const loadError = new Error(`Failed to load face recognition models: ${error.message || 'Unknown error'}`);
+      modelsLoadError = loadError;
+      console.error('Failed to load face models:', error);
+      reject(loadError);
+    }
+  });
+  
+  return modelsLoadPromise;
 }
 
 /**
