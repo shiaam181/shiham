@@ -10,8 +10,6 @@ const corsHeaders = {
 interface TrackInviteUsageRequest {
   companyId: string;
   inviteCode: string;
-  userId: string;
-  userEmail: string;
   userName?: string;
 }
 
@@ -26,19 +24,51 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Validate JWT - require authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", code: 401 }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create client with the user's auth token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Validate the JWT using getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("Claims error:", claimsError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", code: 401 }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const authenticatedUserId = claimsData.claims.sub as string;
+    const authenticatedEmail = claimsData.claims.email as string;
+    console.log(`Authenticated user for invite tracking: ${authenticatedUserId}`);
+
     const body: TrackInviteUsageRequest = await req.json();
+    const { companyId, inviteCode, userName } = body;
     
-    const { companyId, inviteCode, userId, userEmail, userName } = body;
-    
-    if (!companyId || !inviteCode || !userId || !userEmail) {
+    if (!companyId || !inviteCode) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get IP and user agent from request headers
@@ -47,14 +77,14 @@ const handler = async (req: Request): Promise<Response> => {
                       "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
 
-    // Insert invite usage record
+    // Insert invite usage record - use authenticated user data
     const { error: insertError } = await supabase
       .from("invite_usage_history")
       .insert({
         company_id: companyId,
         invite_code: inviteCode,
-        user_id: userId,
-        user_email: userEmail,
+        user_id: authenticatedUserId,
+        user_email: authenticatedEmail,
         user_name: userName || null,
         ip_address: ipAddress,
         user_agent: userAgent,
@@ -116,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
               await resend.emails.send({
                 from: "Attendance System <onboarding@resend.dev>",
                 to: [admin.email],
-                subject: `🎉 New Employee Joined: ${userName || userEmail}`,
+                subject: `🎉 New Employee Joined: ${userName || authenticatedEmail}`,
                 html: `
                   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
@@ -137,7 +167,7 @@ const handler = async (req: Request): Promise<Response> => {
                           </tr>
                           <tr>
                             <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Email:</td>
-                            <td style="padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: 600;">${userEmail}</td>
+                            <td style="padding: 8px 0; color: #0f172a; font-size: 14px; font-weight: 600;">${authenticatedEmail}</td>
                           </tr>
                           <tr>
                             <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Joined:</td>
