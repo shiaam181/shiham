@@ -139,9 +139,10 @@ async function detectFaceQuality(
   // Remove data URL prefix
   const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
   
+  // Use 'ALL' to get quality metrics (Brightness, Sharpness) - 'QUALITY' is not a valid attribute
   const result = await callRekognition('DetectFaces', {
     Image: { Bytes: base64Data },
-    Attributes: ['QUALITY', 'DEFAULT'],
+    Attributes: ['ALL'],
   }, accessKey, secretKey);
   
   if (!result.success) {
