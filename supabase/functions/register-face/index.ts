@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface RegisterFaceRequest {
@@ -159,11 +159,28 @@ async function detectFaceQuality(
     return { valid: false, quality: 0, error: 'No face detected in image' };
   }
   
+  // Rekognition occasionally returns multiple faces due to false positives (posters, reflections, etc.).
+  // Instead of hard-failing, pick the dominant face and only reject if another face is comparably large.
+  const faceAreas = faces
+    .map((f, idx) => {
+      const w = f.BoundingBox?.Width ?? 0;
+      const h = f.BoundingBox?.Height ?? 0;
+      return { idx, area: w * h, confidence: f.Confidence ?? 0 };
+    })
+    .sort((a, b) => b.area - a.area);
+
+  const primary = faces[faceAreas[0].idx];
+  const primaryArea = faceAreas[0].area;
+
   if (faces.length > 1) {
-    return { valid: false, quality: 0, error: 'Multiple faces detected - please capture one face' };
+    const secondArea = faceAreas[1]?.area ?? 0;
+    // If a second face is close in size, it's likely a real second person.
+    if (primaryArea > 0 && secondArea / primaryArea > 0.35) {
+      return { valid: false, quality: 0, error: 'Multiple clear faces detected - please ensure only your face is in frame' };
+    }
   }
-  
-  const face = faces[0];
+
+  const face = primary;
   const brightness = face.Quality?.Brightness || 0;
   const sharpness = face.Quality?.Sharpness || 0;
   const confidence = face.Confidence || 0;
@@ -187,6 +204,17 @@ async function detectFaceQuality(
   console.log(`Face detected: brightness=${brightness.toFixed(1)}, sharpness=${sharpness.toFixed(1)}, confidence=${confidence.toFixed(1)}, quality=${quality}`);
   
   return { valid: true, quality };
+}
+
+/**
+ * Delete a Rekognition collection (best-effort cleanup)
+ */
+async function deleteCollection(
+  collectionId: string,
+  accessKey: string,
+  secretKey: string
+): Promise<void> {
+  await callRekognition('DeleteCollection', { CollectionId: collectionId }, accessKey, secretKey);
 }
 
 /**
@@ -365,11 +393,27 @@ serve(async (req: Request): Promise<Response> => {
     // Use service role for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Create a unique collection ID for this user
-    const collectionId = `user-${user.id.replace(/-/g, '')}`;
+     // IMPORTANT: create a NEW collection per successful registration.
+     // This prevents a failed attempt from wiping the previously working collection.
+     const newCollectionId = `user-${user.id.replace(/-/g, '')}-${Date.now()}`;
 
-    // Step 1: Ensure collection exists
-    const collectionResult = await ensureCollection(collectionId, awsAccessKey, awsSecretKey);
+     // Read the currently active collection (if any) so we can clean it up AFTER a successful registration.
+     const { data: existingProfile } = await supabase
+       .from('profiles')
+       .select('face_embedding')
+       .eq('user_id', user.id)
+       .maybeSingle();
+
+     const oldCollectionId = (() => {
+       const embedding = existingProfile?.face_embedding as Record<string, unknown> | null | undefined;
+       if (!embedding || typeof embedding !== 'object' || Array.isArray(embedding)) return null;
+       if (embedding['provider'] !== 'aws_rekognition') return null;
+       const cid = embedding['collection_id'];
+       return typeof cid === 'string' && cid.trim().length ? cid : null;
+     })();
+
+     // Step 1: Ensure NEW collection exists
+     const collectionResult = await ensureCollection(newCollectionId, awsAccessKey, awsSecretKey);
     if (!collectionResult.success) {
       console.error("Collection creation failed:", collectionResult.error);
       return new Response(
@@ -378,10 +422,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Step 2: Clear existing faces from collection
-    await clearCollection(collectionId, awsAccessKey, awsSecretKey);
-
-    // Step 3: Validate and index faces from each image
+     // Step 2: Validate and index faces from each image
     const registeredFaces: { faceId: string; quality: number; imagePath: string }[] = [];
     
     for (let i = 0; i < images.length; i++) {
@@ -397,7 +438,7 @@ serve(async (req: Request): Promise<Response> => {
 
       // Index face into collection
       const externalImageId = `face-${i + 1}-${Date.now()}`;
-      const indexResult = await indexFace(collectionId, image, externalImageId, awsAccessKey, awsSecretKey);
+       const indexResult = await indexFace(newCollectionId, image, externalImageId, awsAccessKey, awsSecretKey);
       
       if (!indexResult.success) {
         console.log(`Image ${i + 1}: failed to index - ${indexResult.error}`);
@@ -431,6 +472,8 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     if (registeredFaces.length < 3) {
+       // Cleanup the new collection so it doesn't accumulate orphaned collections.
+       await deleteCollection(newCollectionId, awsAccessKey, awsSecretKey);
       return new Response(
         JSON.stringify({ 
           error: `Only ${registeredFaces.length} valid face images detected. Please capture 3-5 clear face images.`,
@@ -455,17 +498,17 @@ serve(async (req: Request): Promise<Response> => {
           image_path: face.imagePath,
           quality_score: face.quality,
           is_active: true,
-          embedding: { face_id: face.faceId, collection_id: collectionId },
+          embedding: { face_id: face.faceId, collection_id: newCollectionId },
         });
     }
 
-    // Step 5: Update profile with AWS Rekognition metadata
+     // Step 5: Update profile with AWS Rekognition metadata
     await supabase
       .from("profiles")
       .update({
         face_embedding: { 
           provider: "aws_rekognition",
-          collection_id: collectionId,
+           collection_id: newCollectionId,
           face_count: registeredFaces.length,
           region: AWS_REGION,
           registered_at: new Date().toISOString(),
@@ -474,7 +517,12 @@ serve(async (req: Request): Promise<Response> => {
       })
       .eq("user_id", user.id);
 
-    console.log(`Face registration complete for user ${user.id}: ${registeredFaces.length} faces registered with AWS Rekognition`);
+     // Best-effort cleanup: remove old collection AFTER successful update.
+     if (oldCollectionId && oldCollectionId !== newCollectionId) {
+       await deleteCollection(oldCollectionId, awsAccessKey, awsSecretKey);
+     }
+
+     console.log(`Face registration complete for user ${user.id}: ${registeredFaces.length} faces registered with AWS Rekognition (collection=${newCollectionId})`);
 
     return new Response(
       JSON.stringify({
