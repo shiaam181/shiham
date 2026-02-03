@@ -38,6 +38,7 @@ import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
+import { LiveTrackingConsent } from '@/components/LiveTrackingConsent';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { hasAwsRekognitionRegistration, hasFaceEmbedding } from '@/lib/faceEmbedding';
@@ -791,6 +792,9 @@ export default function EmployeeDashboard() {
             <AttendanceCalendar userId={user?.id} />
           </CardContent>
         </Card>
+
+        {/* Live Location Tracking Consent */}
+        <LiveTrackingConsent />
 
         {/* Leave Requests - only show if leave management is enabled */}
         {systemSettings.leaveManagementEnabled && (
