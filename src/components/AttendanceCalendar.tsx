@@ -162,27 +162,27 @@ export default function AttendanceCalendar({ userId }: AttendanceCalendarProps) 
         </Button>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-2 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-success" />
-          <span>Present</span>
+      {/* Legend - Compact 3-column grid on mobile */}
+      <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-x-3 gap-y-1.5 text-[11px] sm:text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-success shrink-0" />
+          <span className="text-muted-foreground">Present</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-destructive" />
-          <span>Absent</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-destructive shrink-0" />
+          <span className="text-muted-foreground">Absent</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-info" />
-          <span>Leave</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-info shrink-0" />
+          <span className="text-muted-foreground">Leave</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-warning" />
-          <span>Holiday</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-warning shrink-0" />
+          <span className="text-muted-foreground">Holiday</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-muted" />
-          <span>Week Off</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-muted shrink-0" />
+          <span className="text-muted-foreground">Week Off</span>
         </div>
       </div>
 

@@ -6,7 +6,8 @@ import {
   User, 
   Shield,
   FileText,
-  Code
+  Code,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,12 +15,12 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   path: string;
-  adminOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
+const employeeNavItems: NavItem[] = [
   { icon: Home, label: 'Home', path: '/dashboard' },
-  { icon: Calendar, label: 'Calendar', path: '/dashboard', adminOnly: false },
+  { icon: ClipboardList, label: 'Attendance', path: '/my-attendance' },
+  { icon: User, label: 'Profile', path: '/profile' },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -44,7 +45,7 @@ export default function MobileBottomNav() {
   const isDeveloperRoute = location.pathname.startsWith('/developer');
   const isAdminRoute = location.pathname.startsWith('/admin');
   
-  let items = navItems;
+  let items = employeeNavItems;
   if (isDeveloperRoute) {
     items = developerNavItems;
   } else if (isAdminRoute) {
@@ -52,8 +53,8 @@ export default function MobileBottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/50 sm:hidden">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border sm:hidden safe-area-bottom">
+      <div className="flex items-center justify-around h-16 px-1">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -63,14 +64,23 @@ export default function MobileBottomNav() {
               key={item.path + item.label}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px]",
+                "relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95",
                 isActive 
-                  ? "text-primary bg-primary/10" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "text-primary" 
+                  : "text-muted-foreground"
               )}
             >
+              {/* Active indicator pill */}
+              {isActive && (
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full" />
+              )}
               <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className={cn(
+                "text-[10px] font-medium",
+                isActive && "text-primary"
+              )}>
+                {item.label}
+              </span>
             </button>
           );
         })}
@@ -79,7 +89,7 @@ export default function MobileBottomNav() {
         {!isDeveloperRoute && isDeveloper && (
           <button
             onClick={() => navigate('/developer')}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-purple-500 hover:bg-purple-500/10"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-purple-500"
           >
             <Code className="w-5 h-5" />
             <span className="text-[10px] font-medium">Dev</span>
@@ -90,7 +100,7 @@ export default function MobileBottomNav() {
         {!isAdminRoute && !isDeveloperRoute && isAdmin && !isDeveloper && (
           <button
             onClick={() => navigate('/admin')}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
           >
             <Shield className="w-5 h-5" />
             <span className="text-[10px] font-medium">Admin</span>
@@ -101,7 +111,7 @@ export default function MobileBottomNav() {
         {(isAdminRoute || isDeveloperRoute) && (
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
           >
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-medium">My View</span>

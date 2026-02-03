@@ -549,7 +549,7 @@ export default function EmployeeDashboard() {
       {/* Header */}
       <RoleBasedHeader currentView="employee" />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 sm:pb-6">
         {/* Greeting & Time */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -716,56 +716,56 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
-        {/* Monthly Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success-soft flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-success" />
+        {/* Monthly Stats - 2x2 grid on mobile */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-success-soft flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
               </div>
-              <div>
-                <p className="text-2xl font-display font-bold">{monthlyStats.present}</p>
-                <p className="text-xs text-muted-foreground">Present</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-destructive-soft flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <p className="text-2xl font-display font-bold">{monthlyStats.absent}</p>
-                <p className="text-xs text-muted-foreground">Absent</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.present}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Present</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-info-soft flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-info" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-destructive-soft flex items-center justify-center shrink-0">
+                <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
               </div>
-              <div>
-                <p className="text-2xl font-display font-bold">{monthlyStats.leave}</p>
-                <p className="text-xs text-muted-foreground">Leave</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.absent}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Absent</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <Clock className="w-5 h-5 text-accent-foreground" />
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-info-soft flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
               </div>
-              <div>
-                <p className="text-2xl font-display font-bold">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.leave}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Leave</p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-display font-bold">
                   {monthlyStats.total > 0 
                     ? Math.round((monthlyStats.present / monthlyStats.total) * 100) 
                     : 0}%
                 </p>
-                <p className="text-xs text-muted-foreground">Attendance</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Attendance</p>
               </div>
             </div>
           </Card>
@@ -840,8 +840,7 @@ export default function EmployeeDashboard() {
         />
       )}
 
-      {/* Bottom padding for mobile nav */}
-      <div className="h-16 sm:hidden" />
+      {/* Bottom safe area for mobile nav - removed duplicate padding */}
     </div>
   );
 }
