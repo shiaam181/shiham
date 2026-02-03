@@ -43,6 +43,8 @@ import RoleManagement from '@/components/RoleManagement';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
+import { LiveTrackingSettings } from '@/components/LiveTrackingSettings';
+import { LiveLocationMap } from '@/components/LiveLocationMap';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -705,9 +707,10 @@ export default function DeveloperDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Overview</TabsTrigger>
             <TabsTrigger value="roles" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Roles</TabsTrigger>
+            <TabsTrigger value="tracking" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Tracking</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Settings</TabsTrigger>
           </TabsList>
 
@@ -929,6 +932,11 @@ export default function DeveloperDashboard() {
 
           <TabsContent value="roles">
             <RoleManagement />
+          </TabsContent>
+
+          <TabsContent value="tracking" className="space-y-6">
+            <LiveTrackingSettings />
+            <LiveLocationMap isDeveloper={true} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">

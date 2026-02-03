@@ -202,10 +202,12 @@ export type Database = {
           invite_max_uses: number | null
           invite_uses_count: number | null
           is_active: boolean | null
+          live_tracking_enabled: boolean | null
           logo_url: string | null
           name: string
           slug: string
           tagline: string | null
+          tracking_interval_seconds: number | null
           updated_at: string
         }
         Insert: {
@@ -218,10 +220,12 @@ export type Database = {
           invite_max_uses?: number | null
           invite_uses_count?: number | null
           is_active?: boolean | null
+          live_tracking_enabled?: boolean | null
           logo_url?: string | null
           name: string
           slug: string
           tagline?: string | null
+          tracking_interval_seconds?: number | null
           updated_at?: string
         }
         Update: {
@@ -234,10 +238,12 @@ export type Database = {
           invite_max_uses?: number | null
           invite_uses_count?: number | null
           is_active?: boolean | null
+          live_tracking_enabled?: boolean | null
           logo_url?: string | null
           name?: string
           slug?: string
           tagline?: string | null
+          tracking_interval_seconds?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -288,6 +294,83 @@ export type Database = {
             columns: ["default_shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_consent: {
+        Row: {
+          consented_at: string | null
+          created_at: string | null
+          id: string
+          location_tracking_consented: boolean | null
+          revoked_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          consented_at?: string | null
+          created_at?: string | null
+          id?: string
+          location_tracking_consented?: boolean | null
+          revoked_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          consented_at?: string | null
+          created_at?: string | null
+          id?: string
+          location_tracking_consented?: boolean | null
+          revoked_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_live_locations: {
+        Row: {
+          accuracy: number | null
+          company_id: string | null
+          created_at: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string | null
+          speed: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string | null
+          speed?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string | null
+          speed?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_live_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
