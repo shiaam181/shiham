@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -12,12 +11,13 @@ import {
   Key, 
   ChevronDown, 
   ChevronUp, 
-  Save, 
   Loader2, 
   CheckCircle2,
   AlertTriangle,
   Building2,
-  ExternalLink
+  ExternalLink,
+  XCircle,
+  PlayCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -35,11 +35,79 @@ export function LiveTrackingSettings() {
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  
+  // AWS Location Service status
+  const [awsConfigured, setAwsConfigured] = useState(false);
+  const [awsStatus, setAwsStatus] = useState<{
+    hasAccessKey: boolean;
+    hasSecretKey: boolean;
+    hasRegion: boolean;
+    hasMapName: boolean;
+    region: string;
+    mapName: string;
+  } | null>(null);
+  const [testingAws, setTestingAws] = useState(false);
+  const [awsTestResult, setAwsTestResult] = useState<'success' | 'error' | null>(null);
 
   // Fetch settings on mount
   useEffect(() => {
     fetchSettings();
+    checkAwsConfig();
   }, []);
+
+  const checkAwsConfig = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-aws-location', {
+        body: { action: 'get' }
+      });
+      
+      if (!error && data) {
+        setAwsConfigured(data.configured || false);
+        setAwsStatus({
+          hasAccessKey: data.hasAccessKey || false,
+          hasSecretKey: data.hasSecretKey || false,
+          hasRegion: data.hasRegion || false,
+          hasMapName: data.hasMapName || false,
+          region: data.region || 'Not set',
+          mapName: data.mapName || 'Not set',
+        });
+      }
+    } catch (err) {
+      console.error('Error checking AWS Location config:', err);
+    }
+  };
+
+  const testAwsLocation = async () => {
+    setTestingAws(true);
+    setAwsTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('test-aws-location', {
+        body: { action: 'test' }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setAwsTestResult('success');
+        toast({
+          title: 'AWS Location Service Test Passed',
+          description: data.message || 'Credentials are valid and map exists',
+        });
+      } else {
+        throw new Error(data?.error || 'Test failed');
+      }
+    } catch (error: any) {
+      setAwsTestResult('error');
+      toast({
+        title: 'AWS Location Service Test Failed',
+        description: error.message || 'Failed to verify credentials',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingAws(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -197,6 +265,101 @@ export function LiveTrackingSettings() {
         </Card>
       )}
 
+      {/* AWS Location Service Status */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            <CardTitle className="text-lg">AWS Location Service</CardTitle>
+          </div>
+          <CardDescription>
+            Required for map rendering in live tracking
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Configuration Status */}
+          <div className="grid gap-3">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Access Key</span>
+              </div>
+              <Badge variant={awsStatus?.hasAccessKey ? 'default' : 'outline'}>
+                {awsStatus?.hasAccessKey ? 'Configured' : 'Not Set'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Secret Key</span>
+              </div>
+              <Badge variant={awsStatus?.hasSecretKey ? 'default' : 'outline'}>
+                {awsStatus?.hasSecretKey ? 'Configured' : 'Not Set'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Region</span>
+              </div>
+              <Badge variant={awsStatus?.hasRegion ? 'default' : 'outline'}>
+                {awsStatus?.region || 'Not Set'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Map Name</span>
+              </div>
+              <Badge variant={awsStatus?.hasMapName ? 'default' : 'outline'}>
+                {awsStatus?.mapName || 'Not Set'}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Overall Status */}
+          {awsConfigured ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/30">
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-xs text-primary">
+                All AWS Location Service secrets are configured. Use the test button to verify connectivity.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">
+                Some AWS secrets are missing. Map rendering will not work until all secrets are configured.
+              </p>
+            </div>
+          )}
+
+          {/* Test Button */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="text-xs text-muted-foreground">
+              Test connection to AWS Location Service
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testAwsLocation}
+              disabled={testingAws || !awsConfigured}
+            >
+              {testingAws ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : awsTestResult === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 mr-2 text-primary" />
+              ) : awsTestResult === 'error' ? (
+                <XCircle className="w-4 h-4 mr-2 text-destructive" />
+              ) : (
+                <PlayCircle className="w-4 h-4 mr-2" />
+              )}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* AWS Setup Guide */}
       <Collapsible open={showGuide} onOpenChange={setShowGuide}>
         <Card>
@@ -205,7 +368,7 @@ export function LiveTrackingSettings() {
               <div className="flex items-center justify-between cursor-pointer">
                 <div className="flex items-center gap-2">
                   <Key className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-lg">AWS Location Service Setup</CardTitle>
+                  <CardTitle className="text-lg">Setup Guide</CardTitle>
                 </div>
                 {showGuide ? (
                   <ChevronUp className="w-5 h-5 text-muted-foreground" />
@@ -215,7 +378,7 @@ export function LiveTrackingSettings() {
               </div>
             </CollapsibleTrigger>
             <CardDescription>
-              Configure AWS credentials for map rendering
+              How to configure AWS credentials for map rendering
             </CardDescription>
           </CardHeader>
           <CollapsibleContent>
@@ -277,12 +440,12 @@ export function LiveTrackingSettings() {
                   </ul>
                 </div>
 
-                <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 space-y-2">
-                  <h4 className="font-semibold flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-amber-600 dark:text-amber-400">
                     <AlertTriangle className="w-4 h-4" />
                     Free Tier Limits
                   </h4>
-                  <ul className="text-yellow-700 dark:text-yellow-300 pl-6 space-y-1 list-disc list-inside text-xs">
+                  <ul className="text-amber-600 dark:text-amber-400 pl-6 space-y-1 list-disc list-inside text-xs">
                     <li>1,000 tiles/month for maps (free)</li>
                     <li>10,000 geocoding requests/month (free)</li>
                     <li>If you exceed limits, charges apply ($0.04/1,000 tiles)</li>
