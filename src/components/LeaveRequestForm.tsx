@@ -153,18 +153,18 @@ export default function LeaveRequestForm({ leaveRequests, onRefresh }: LeaveRequ
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4">
+        <div className="min-w-0">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Calendar className="w-5 h-5 text-primary shrink-0" />
             Leave Requests
           </CardTitle>
-          <CardDescription>Request and track your leaves</CardDescription>
+          <CardDescription className="text-xs sm:text-sm mt-1">Request and track your leaves</CardDescription>
         </div>
         
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
               <Plus className="w-4 h-4 mr-2" />
               Request Leave
             </Button>
@@ -241,12 +241,12 @@ export default function LeaveRequestForm({ leaveRequests, onRefresh }: LeaveRequ
         </Dialog>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         {leaveRequests.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No leave requests yet</p>
-            <p className="text-sm">Click "Request Leave" to submit a new request</p>
+          <div className="text-center py-6 sm:py-8 text-muted-foreground">
+            <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 opacity-50" />
+            <p className="text-sm sm:text-base">No leave requests yet</p>
+            <p className="text-xs sm:text-sm mt-1">Tap "Request Leave" to submit a new request</p>
           </div>
         ) : (
           <div className="space-y-3">
