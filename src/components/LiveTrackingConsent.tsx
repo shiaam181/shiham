@@ -27,6 +27,7 @@ export function LiveTrackingConsent() {
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading tracking settings...</span>
         </CardContent>
       </Card>
     );
@@ -34,7 +35,22 @@ export function LiveTrackingConsent() {
 
   // Don't show if tracking is globally disabled or company hasn't enabled it
   if (!globalEnabled || !companyEnabled) {
-    return null;
+    // Show informative message instead of hiding completely
+    return (
+      <Card className="border-muted">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-muted-foreground" />
+            <CardTitle className="text-lg text-muted-foreground">Live Location Tracking</CardTitle>
+          </div>
+          <CardDescription>
+            {!globalEnabled 
+              ? 'Live tracking is currently disabled by your administrator'
+              : 'Live tracking is not enabled for your company'}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
   }
 
   return (

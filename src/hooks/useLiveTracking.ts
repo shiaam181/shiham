@@ -37,40 +37,55 @@ export function useLiveTracking() {
 
   // Fetch tracking settings
   const fetchSettings = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      return;
+    }
 
     try {
       // Get global setting
-      const { data: globalSetting } = await supabase
+      const { data: globalSetting, error: globalError } = await supabase
         .from('system_settings')
         .select('value')
         .eq('key', 'live_tracking_enabled')
         .maybeSingle();
 
+      if (globalError) {
+        console.error('Error fetching global setting:', globalError);
+      }
+
       const globalEnabled = (globalSetting?.value as { enabled?: boolean })?.enabled ?? false;
 
       // Get company setting if user has a company
-      // If user has no company (owner/developer), treat as enabled by default
+      // If user has no company (developer/owner), treat company as enabled by default
       let companyEnabled = true; // Default to true for users without company
       let trackingInterval = 60;
       
       if (profile?.company_id) {
-        const { data: company } = await supabase
+        const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('live_tracking_enabled, tracking_interval_seconds')
           .eq('id', profile.company_id)
           .single();
+
+        if (companyError) {
+          console.error('Error fetching company settings:', companyError);
+        }
 
         companyEnabled = company?.live_tracking_enabled ?? false;
         trackingInterval = company?.tracking_interval_seconds ?? 60;
       }
 
       // Get user consent
-      const { data: consent } = await supabase
+      const { data: consent, error: consentError } = await supabase
         .from('employee_consent')
         .select('location_tracking_consented')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      if (consentError) {
+        console.error('Error fetching consent:', consentError);
+      }
 
       setState({
         globalEnabled,

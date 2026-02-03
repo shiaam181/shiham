@@ -33,7 +33,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
+        JSON.stringify({ success: false, error: "Please sign in to view live locations", code: "UNAUTHORIZED" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -48,7 +48,7 @@ serve(async (req) => {
     
     if (authError || !claims.user) {
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid token" }),
+        JSON.stringify({ success: false, error: "Your session has expired. Please sign in again", code: "INVALID_TOKEN" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -68,7 +68,7 @@ serve(async (req) => {
 
     if (!isDeveloper && !isOwnerOrAdmin) {
       return new Response(
-        JSON.stringify({ success: false, error: "Access denied. Owner, Admin, or Developer role required." }),
+        JSON.stringify({ success: false, error: "You need Owner, Admin, or Developer role to view live locations", code: "ACCESS_DENIED" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -85,10 +85,11 @@ serve(async (req) => {
       
       companyFilter = profile?.company_id || null;
       
+      // For owners/admins without a company, return empty locations (not an error)
       if (!companyFilter) {
         return new Response(
-          JSON.stringify({ success: false, error: "No company associated with your account" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ success: true, locations: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
