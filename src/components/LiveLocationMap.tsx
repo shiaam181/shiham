@@ -137,9 +137,9 @@ export function LiveLocationMap({ companyId, isDeveloper, companies = [] }: Live
         </div>
       </CardHeader>
       <CardContent>
-        {error && (
+        {error && !error.includes('Unable to load') && (
           <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/30">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
             <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
