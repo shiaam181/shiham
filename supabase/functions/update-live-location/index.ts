@@ -56,16 +56,34 @@ serve(async (req) => {
       .eq("user_id", userId)
       .single();
 
-    if (profileError || !profile?.company_id) {
+    if (profileError) {
       return new Response(
-        JSON.stringify({ success: false, error: "Employee not associated with a company" }),
+        JSON.stringify({ success: false, error: "Could not load your profile. Please try again." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check user role - developers can track without a company for testing
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    const userRole = roleData?.role || "employee";
+    const isDeveloper = userRole === "developer";
+
+    // Regular employees must have a company
+    if (!isDeveloper && !profile?.company_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Your account is not linked to a company. Please contact your administrator." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!profile.is_active) {
       return new Response(
-        JSON.stringify({ success: false, error: "Employee account is inactive" }),
+        JSON.stringify({ success: false, error: "Your account is inactive. Please contact your administrator." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -75,11 +93,11 @@ serve(async (req) => {
       .from("employee_consent")
       .select("location_tracking_consented")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (consentError || !consent?.location_tracking_consented) {
       return new Response(
-        JSON.stringify({ success: false, error: "Location tracking consent not given" }),
+        JSON.stringify({ success: false, error: "Please enable location tracking consent in your profile settings first." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -95,34 +113,37 @@ serve(async (req) => {
     
     if (!globalEnabled) {
       return new Response(
-        JSON.stringify({ success: false, error: "Live tracking is globally disabled" }),
+        JSON.stringify({ success: false, error: "Live tracking is disabled by your administrator." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if company has live tracking enabled
-    const { data: company, error: companyError } = await supabase
-      .from("companies")
-      .select("live_tracking_enabled, tracking_interval_seconds")
-      .eq("id", profile.company_id)
-      .single();
+    // Check if company has live tracking enabled (skip for developers without company)
+    let trackingInterval = 60;
+    
+    if (profile.company_id) {
+      const { data: company, error: companyError } = await supabase
+        .from("companies")
+        .select("live_tracking_enabled, tracking_interval_seconds")
+        .eq("id", profile.company_id)
+        .single();
 
-    if (companyError || !company?.live_tracking_enabled) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Company has not enabled live tracking" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (companyError || !company?.live_tracking_enabled) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Live tracking is not enabled for your company." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      trackingInterval = company.tracking_interval_seconds || 60;
     }
 
-    // TODO: Optionally check if current time is within work hours
-    // This would require shift information from the employee's profile
-
-    // Insert the location record (company_id derived server-side for security)
+    // Insert the location record
     const { error: insertError } = await supabase
       .from("employee_live_locations")
       .insert({
         user_id: userId,
-        company_id: profile.company_id,
+        company_id: profile.company_id, // Can be null for developers
         latitude,
         longitude,
         accuracy: accuracy ?? null,
@@ -143,7 +164,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: "Location recorded",
-        nextUpdateSeconds: company.tracking_interval_seconds || 60
+        nextUpdateSeconds: trackingInterval
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
