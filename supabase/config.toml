@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.get-live-locations]
 verify_jwt = false
+
+[functions.test-aws-location]
+verify_jwt = false
