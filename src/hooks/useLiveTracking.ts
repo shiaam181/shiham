@@ -50,7 +50,8 @@ export function useLiveTracking() {
       const globalEnabled = (globalSetting?.value as { enabled?: boolean })?.enabled ?? false;
 
       // Get company setting if user has a company
-      let companyEnabled = false;
+      // If user has no company (owner/developer), treat as enabled by default
+      let companyEnabled = true; // Default to true for users without company
       let trackingInterval = 60;
       
       if (profile?.company_id) {
