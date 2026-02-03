@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog';
+import { LiveTrackingConsent } from '@/components/LiveTrackingConsent';
 import { 
   ArrowLeft, 
   User, 
@@ -503,6 +504,9 @@ export default function ProfileSettings() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Live Location Tracking Consent */}
+        <LiveTrackingConsent />
 
         {/* Install App */}
         <InstallAppCard />
