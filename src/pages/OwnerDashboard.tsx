@@ -89,7 +89,7 @@ export default function OwnerDashboard() {
       
       const { data, error } = await supabase
         .from('companies')
-        .select('id, name, slug, invite_code, is_active, face_verification_disabled')
+        .select('id, name, slug, invite_code, is_active, face_verification_disabled, live_tracking_enabled, tracking_interval_seconds')
         .order('name');
       
       if (!error && data) {
