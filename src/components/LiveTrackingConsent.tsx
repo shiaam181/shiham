@@ -2,8 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, Shield, AlertTriangle, Loader2, Play, Pause } from 'lucide-react';
+import { MapPin, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { format } from 'date-fns';
 
@@ -96,38 +95,19 @@ export function LiveTrackingConsent() {
           />
         </div>
 
-        {/* Tracking Controls */}
+        {/* Tracking Status */}
         {consented && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {isTracking ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={stopTracking}
-                  className="gap-2"
-                >
-                  <Pause className="w-4 h-4" />
-                  Stop Tracking
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={startTracking}
-                  disabled={!canTrack}
-                  className="gap-2"
-                >
-                  <Play className="w-4 h-4" />
-                  Start Tracking
-                </Button>
-              )}
-            </div>
-
             {/* Status Info */}
-            {lastUpdate && (
+            {isTracking && lastUpdate && (
               <p className="text-xs text-muted-foreground">
                 Last update: {format(lastUpdate, 'hh:mm:ss a')}
+              </p>
+            )}
+
+            {!isTracking && canTrack && (
+              <p className="text-xs text-muted-foreground">
+                Tracking will start automatically...
               </p>
             )}
 

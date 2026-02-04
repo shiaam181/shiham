@@ -19,6 +19,9 @@ interface LocationUpdate {
   heading?: number;
 }
 
+// Track if we've already auto-started to prevent duplicate starts
+let hasAutoStarted = false;
+
 export function useLiveTracking() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -104,6 +107,24 @@ export function useLiveTracking() {
     fetchSettings();
   }, [fetchSettings]);
 
+  // Auto-start tracking when consent is given and all conditions are met
+  useEffect(() => {
+    if (!state.isLoading && state.globalEnabled && state.companyEnabled && state.consented && !isTracking) {
+      // Small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        startTrackingInternal();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [state.isLoading, state.globalEnabled, state.companyEnabled, state.consented, isTracking]);
+
+  // Auto-stop when consent is revoked
+  useEffect(() => {
+    if (!state.consented && isTracking) {
+      stopTracking();
+    }
+  }, [state.consented, isTracking]);
+
   // Update consent
   const updateConsent = async (consented: boolean) => {
     if (!user) return;
@@ -166,25 +187,18 @@ export function useLiveTracking() {
     }
   }, [user]);
 
-  // Start tracking
-  const startTracking = useCallback(() => {
+  // Internal start tracking (no toast for auto-start)
+  const startTrackingInternal = useCallback(() => {
     if (!state.globalEnabled || !state.companyEnabled || !state.consented) {
-      toast({
-        title: 'Cannot Start Tracking',
-        description: 'Live tracking must be enabled and you must provide consent.',
-        variant: 'destructive',
-      });
       return;
     }
 
     if (!navigator.geolocation) {
-      toast({
-        title: 'Geolocation Not Supported',
-        description: 'Your browser does not support location services.',
-        variant: 'destructive',
-      });
+      setError('Your browser does not support location services.');
       return;
     }
+
+    if (isTracking) return; // Already tracking
 
     setIsTracking(true);
     setError(null);
@@ -202,11 +216,6 @@ export function useLiveTracking() {
       },
       (err) => {
         setError(err.message);
-        toast({
-          title: 'Location Error',
-          description: err.message,
-          variant: 'destructive',
-        });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -229,12 +238,35 @@ export function useLiveTracking() {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }, state.trackingInterval * 1000);
+  }, [state, sendLocationUpdate, isTracking]);
+
+  // Manual start tracking (with toast)
+  const startTracking = useCallback(() => {
+    if (!state.globalEnabled || !state.companyEnabled || !state.consented) {
+      toast({
+        title: 'Cannot Start Tracking',
+        description: 'Live tracking must be enabled and you must provide consent.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Geolocation Not Supported',
+        description: 'Your browser does not support location services.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    startTrackingInternal();
 
     toast({
       title: 'Live Tracking Started',
       description: `Your location will be updated every ${state.trackingInterval} seconds.`,
     });
-  }, [state, sendLocationUpdate, toast]);
+  }, [state, startTrackingInternal, toast]);
 
   // Stop tracking
   const stopTracking = useCallback(() => {

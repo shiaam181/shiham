@@ -118,7 +118,14 @@ serve(async (req) => {
 
     if (companyFilter) {
       locationsQuery = locationsQuery.eq("company_id", companyFilter);
+    } else if (!isDeveloper) {
+      // Non-developers without company filter should see nothing
+      return new Response(
+        JSON.stringify({ success: true, locations: [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    // Developers without filter see ALL locations (including null company_id)
 
     const { data: locations, error: locationsError } = await locationsQuery;
 
