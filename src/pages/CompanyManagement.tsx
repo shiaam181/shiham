@@ -42,13 +42,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw, Trash2, Settings } from 'lucide-react';
+import { Building2, Plus, Copy, Users, Link2, Crown, Loader2, Pencil, Share2, Settings2, Infinity, Calendar, RotateCcw, Trash2, Settings, MapPin } from 'lucide-react';
 import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import TopHeader from '@/components/TopHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import { LiveLocationMap } from '@/components/LiveLocationMap';
 
 interface Company {
   id: string;
@@ -911,6 +912,15 @@ export default function CompanyManagement() {
                       </TableBody>
                     </Table>
                   )}
+
+                  {/* Live Location Tracking Map */}
+                  <div className="mt-6">
+                    <LiveLocationMap 
+                      companyId={selectedCompany.id} 
+                      isDeveloper={true}
+                      companies={companies.map(c => ({ id: c.id, name: c.name }))}
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>
