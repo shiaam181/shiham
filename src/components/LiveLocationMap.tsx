@@ -189,12 +189,12 @@ export function LiveLocationMap({ companyId, isDeveloper, companies = [] }: Live
           </div>
           <div className="flex items-center gap-2">
             {isDeveloper && companies.length > 0 && (
-              <Select value={selectedCompany || ''} onValueChange={setSelectedCompany}>
+              <Select value={selectedCompany || 'all'} onValueChange={(val) => setSelectedCompany(val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="All Companies" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Companies</SelectItem>
+                  <SelectItem value="all">All Companies</SelectItem>
                   {companies.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
