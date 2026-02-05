@@ -114,6 +114,15 @@ export default function DeveloperDashboard() {
   const [awsAccessKeyMasked, setAwsAccessKeyMasked] = useState('');
   const [testingAws, setTestingAws] = useState(false);
   const [awsTestResult, setAwsTestResult] = useState<'success' | 'error' | null>(null);
+
+  // AWS Location Service configuration state
+  const [awsLocationMapName, setAwsLocationMapName] = useState('');
+  const [awsLocationRegion, setAwsLocationRegion] = useState('ap-south-1');
+  const [awsLocationConfigured, setAwsLocationConfigured] = useState(false);
+  const [savingAwsLocation, setSavingAwsLocation] = useState(false);
+  const [testingAwsLocation, setTestingAwsLocation] = useState(false);
+  const [awsLocationTestResult, setAwsLocationTestResult] = useState<'success' | 'error' | null>(null);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -193,6 +202,8 @@ export default function DeveloperDashboard() {
     checkTwilioConfig();
     // Check if AWS Rekognition is configured
     checkAwsConfig();
+    // Check if AWS Location Service is configured
+    checkAwsLocationConfig();
   };
 
   const checkAwsConfig = async () => {
@@ -243,6 +254,55 @@ export default function DeveloperDashboard() {
       });
     } finally {
       setTestingAws(false);
+    }
+  };
+
+  const checkAwsLocationConfig = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-aws-location', {
+        body: { action: 'get-config' }
+      });
+      
+      if (!error && data) {
+        setAwsLocationConfigured(data.configured || false);
+        setAwsLocationMapName(data.mapName || '');
+        setAwsLocationRegion(data.region || 'ap-south-1');
+      }
+    } catch (err) {
+      console.error('Error checking AWS Location config:', err);
+    }
+  };
+
+  const testAwsLocation = async () => {
+    setTestingAwsLocation(true);
+    setAwsLocationTestResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('test-aws-location', {
+        body: { action: 'test' }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setAwsLocationTestResult('success');
+        setAwsLocationConfigured(true);
+        toast({
+          title: 'AWS Location Service Test Passed',
+          description: data.message || 'Map configuration is valid',
+        });
+      } else {
+        throw new Error(data?.error || 'Test failed');
+      }
+    } catch (error: any) {
+      setAwsLocationTestResult('error');
+      toast({
+        title: 'AWS Location Service Test Failed',
+        description: error.message || 'Failed to verify map configuration',
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingAwsLocation(false);
     }
   };
 
@@ -1836,6 +1896,100 @@ export default function DeveloperDashboard() {
                       <p>• <strong>Secret Access Key:</strong> Generated when creating Access Key (keep secret!)</p>
                       <p>• <strong>Region:</strong> ap-south-1 (Mumbai)</p>
                       <p>• <strong>Required Policy:</strong> AmazonRekognitionFullAccess</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* AWS Location Service Configuration */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MapPin className="w-5 h-5" />
+                      AWS Location Service Configuration
+                    </CardTitle>
+                    <CardDescription>
+                      Configure AWS Location Service for live employee tracking maps. Create a map in the{' '}
+                      <a href="https://console.aws.amazon.com/location/maps" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        AWS Location Console
+                      </a>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {awsLocationConfigured && (
+                      <div className="p-4 bg-success/10 rounded-lg border border-success/30">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm text-success">AWS Location Service Configured</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Map Name: {awsLocationMapName || 'Configured via backend secrets'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-info/10 rounded-lg border border-info/30">
+                      <div className="flex items-start gap-3">
+                        <Key className="w-5 h-5 text-info mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm text-info">How to Configure</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            AWS Location Service uses your existing AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).
+                            You need to set the <strong>AWS_LOCATION_MAP_NAME</strong> secret to your map resource name.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Current Map Name</Label>
+                        <Input
+                          value={awsLocationMapName}
+                          disabled
+                          placeholder="Not configured"
+                          className="bg-muted"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          To change this, update the AWS_LOCATION_MAP_NAME secret in Lovable Cloud settings.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Region</Label>
+                        <Input
+                          value={awsLocationRegion}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={testAwsLocation}
+                        disabled={testingAwsLocation}
+                      >
+                        {testingAwsLocation ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : awsLocationTestResult === 'success' ? (
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                        ) : awsLocationTestResult === 'error' ? (
+                          <XCircle className="w-4 h-4 mr-2 text-destructive" />
+                        ) : (
+                          <PlayCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Test Map Configuration
+                      </Button>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• <strong>Step 1:</strong> Go to AWS Location Service → Maps → Create map</p>
+                      <p>• <strong>Step 2:</strong> Choose a style (e.g., "Esri Navigation" or "Open Data Standard Light")</p>
+                      <p>• <strong>Step 3:</strong> Note the map name and set it as AWS_LOCATION_MAP_NAME secret</p>
+                      <p>• <strong>Required Policy:</strong> AmazonLocationServiceReadOnlyAccess</p>
                     </div>
                   </CardContent>
                 </Card>
