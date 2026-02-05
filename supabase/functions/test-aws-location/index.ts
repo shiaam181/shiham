@@ -163,7 +163,7 @@ serve(async (req) => {
 
     const { action } = await req.json();
 
-    if (action === "get") {
+    if (action === "get" || action === "get-config") {
       // Return current credentials status
       const accessKey = Deno.env.get("AWS_ACCESS_KEY_ID") || "";
       const secretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY") || "";
