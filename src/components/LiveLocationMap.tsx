@@ -262,6 +262,11 @@ export function LiveLocationMap({ companyId, isDeveloper, companies = [] }: Live
               <p className="text-xs text-muted-foreground mt-1">
                 Click an employee below to view location details
               </p>
+              {awsConfig && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Map: {awsConfig.mapName} ({awsConfig.region})
+                </p>
+              )}
             </div>
           )}
         </div>
