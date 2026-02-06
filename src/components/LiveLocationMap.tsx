@@ -128,6 +128,7 @@ export function LiveLocationMap({ companyId, isDeveloper, companies = [] }: Live
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>(companyId);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
+  const [awsConfig, setAwsConfig] = useState<{ mapName: string; region: string } | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeLocation | null>(null);
   const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -137,33 +138,35 @@ export function LiveLocationMap({ companyId, isDeveloper, companies = [] }: Live
     30000 // Refresh every 30 seconds
   );
 
-  // Initialize AWS Location Service map
-  const initializeMap = useCallback(async () => {
-    if (!mapContainerRef.current) return;
-
-    try {
-      setIsMapLoading(true);
-      setMapError(null);
-
-      const mapName = import.meta.env.VITE_AWS_LOCATION_MAP_NAME;
-
-      if (!mapName) {
-        setMapError('AWS Location Service map not configured. Please configure AWS credentials.');
-        setIsMapLoading(false);
-        return;
-      }
-
-      setIsMapLoading(false);
-    } catch (err: any) {
-      console.error('Map initialization error:', err);
-      setMapError(err.message || 'Failed to load map');
-      setIsMapLoading(false);
-    }
-  }, []);
-
+  // Fetch AWS config from edge function
   useEffect(() => {
-    initializeMap();
-  }, [initializeMap]);
+    const fetchAwsConfig = async () => {
+      try {
+        setIsMapLoading(true);
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        const { data, error } = await supabase.functions.invoke('test-aws-location', {
+          body: { action: 'get-config' }
+        });
+
+        if (error) throw error;
+
+        if (data?.configured && data?.mapName) {
+          setAwsConfig({ mapName: data.mapName, region: data.region || 'ap-south-1' });
+          setMapError(null);
+        } else {
+          setMapError('AWS Location Service not configured. Please configure in Developer Dashboard.');
+        }
+      } catch (err: any) {
+        console.error('AWS config fetch error:', err);
+        setMapError('Unable to load map configuration. Please check AWS Location Service settings.');
+      } finally {
+        setIsMapLoading(false);
+      }
+    };
+
+    fetchAwsConfig();
+  }, []);
 
   const getLocationStatus = (recordedAt: string) => {
     const time = new Date(recordedAt);
