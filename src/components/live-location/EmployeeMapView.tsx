@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import L from 'leaflet';
 import { EmployeeLocation } from '@/hooks/useLiveLocations';
-import { MapPin, Loader2, Users } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import 'leaflet/dist/leaflet.css';
 
@@ -35,7 +34,7 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-// Get location freshness
+// Get location freshness color
 function getStatusColor(recordedAt: string): string {
   const minutesAgo = (Date.now() - new Date(recordedAt).getTime()) / 1000 / 60;
   if (minutesAgo <= 5) return '#22c55e';
@@ -93,33 +92,11 @@ function createAvatarIcon(employee: EmployeeLocation): L.DivIcon {
   });
 }
 
-// Component to auto-fit map bounds when locations change
-function MapBoundsUpdater({ locations }: { locations: EmployeeLocation[] }) {
-  const map = useMap();
-  const prevLocationsRef = useRef<string>('');
-
-  useEffect(() => {
-    if (locations.length === 0) return;
-
-    const locKey = locations.map(l => `${l.user_id}:${l.latitude}:${l.longitude}`).join('|');
-    if (locKey === prevLocationsRef.current) return;
-    prevLocationsRef.current = locKey;
-
-    const bounds = L.latLngBounds(
-      locations.map(loc => [loc.latitude, loc.longitude] as [number, number])
-    );
-
-    if (locations.length === 1) {
-      map.setView([locations[0].latitude, locations[0].longitude], 15, { animate: true });
-    } else {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
-    }
-  }, [locations, map]);
-
-  return null;
-}
-
 export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: EmployeeMapViewProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
   // Default center (India)
   const defaultCenter: [number, number] = useMemo(() => {
     if (locations.length > 0) {
@@ -127,8 +104,78 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
       const avgLng = locations.reduce((sum, l) => sum + l.longitude, 0) / locations.length;
       return [avgLat, avgLng];
     }
-    return [20.5937, 78.9629]; // India center
+    return [20.5937, 78.9629];
   }, [locations]);
+
+  // Initialize map once
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: defaultCenter,
+      zoom: 12,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []); // Only run once on mount
+
+  // Update markers when locations change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    if (locations.length === 0) return;
+
+    // Add new markers
+    locations.forEach((location) => {
+      const marker = L.marker([location.latitude, location.longitude], {
+        icon: createAvatarIcon(location),
+      });
+
+      const popupContent = `
+        <div style="text-align:center;min-width:140px;">
+          <p style="font-weight:600;font-size:14px;margin:0 0 4px 0;">${location.full_name}</p>
+          <p style="font-size:12px;color:#6b7280;margin:0 0 4px 0;">
+            ${location.department || 'No dept'} • ${location.position || 'No position'}
+          </p>
+          <p style="font-size:11px;color:#9ca3af;margin:0;">
+            ${formatDistanceToNow(new Date(location.recorded_at), { addSuffix: true })}
+          </p>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      marker.on('click', () => onEmployeeClick(location));
+      marker.addTo(map);
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds to show all markers
+    if (locations.length === 1) {
+      map.setView([locations[0].latitude, locations[0].longitude], 15, { animate: true });
+    } else {
+      const bounds = L.latLngBounds(
+        locations.map(loc => [loc.latitude, loc.longitude] as [number, number])
+      );
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15, animate: true });
+    }
+  }, [locations, onEmployeeClick]);
 
   if (isLoading && locations.length === 0) {
     return (
@@ -152,41 +199,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
-      <MapContainer
-        center={defaultCenter}
-        zoom={12}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={true}
-        attributionControl={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapBoundsUpdater locations={locations} />
-        {locations.map((location) => (
-          <Marker
-            key={location.user_id}
-            position={[location.latitude, location.longitude]}
-            icon={createAvatarIcon(location)}
-            eventHandlers={{
-              click: () => onEmployeeClick(location),
-            }}
-          >
-            <Popup>
-              <div className="text-center min-w-[140px]">
-                <p className="font-semibold text-sm">{location.full_name}</p>
-                <p className="text-xs text-gray-500">
-                  {location.department || 'No dept'} • {location.position || 'No position'}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {formatDistanceToNow(new Date(location.recorded_at), { addSuffix: true })}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
     </div>
   );
 }
