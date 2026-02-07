@@ -814,6 +814,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_challenges: { Args: never; Returns: undefined }
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -822,6 +823,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_company_owner: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_developer: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
     }
