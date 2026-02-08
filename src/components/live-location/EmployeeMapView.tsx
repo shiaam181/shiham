@@ -146,6 +146,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
         // Get the Supabase anon key for tile requests
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const proxyBase = `${supabaseUrl}/functions/v1/map-proxy`;
 
         const map = new maplibregl.Map({
           container: mapContainerRef.current!,
@@ -153,13 +154,18 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
           center: defaultCenter,
           zoom: 10,
           transformRequest: (url: string) => {
-            // Add auth headers for requests to our edge function
+            // Route AWS requests through our signing proxy
+            if (url.includes('amazonaws.com')) {
+              return {
+                url: `${proxyBase}?action=proxy&url=${encodeURIComponent(url)}`,
+                headers: { 'apikey': supabaseKey },
+              };
+            }
+            // Add auth headers for requests already going to our edge function
             if (url.includes('map-proxy')) {
               return {
                 url,
-                headers: {
-                  'apikey': supabaseKey,
-                },
+                headers: { 'apikey': supabaseKey },
               };
             }
             return { url };
@@ -250,29 +256,20 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
     }
   }, [locations, onEmployeeClick]);
 
-  if (isLoading && locations.length === 0 && !mapRef.current) {
-    return (
-      <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (mapError) {
-    return (
-      <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden bg-muted flex flex-col items-center justify-center p-6 text-center">
-        <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
-        <p className="text-sm font-medium text-destructive">{mapError}</p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Ensure AWS Location Service credentials and map name are configured correctly.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
-      {isMapLoading && (
+      {/* Map error overlay */}
+      {mapError && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-muted p-6 text-center">
+          <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
+          <p className="text-sm font-medium text-destructive">{mapError}</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ensure AWS Location Service credentials and map name are configured correctly.
+          </p>
+        </div>
+      )}
+      {/* Loading overlay */}
+      {(isMapLoading || (isLoading && locations.length === 0)) && !mapError && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/80">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -280,8 +277,9 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
           </div>
         </div>
       )}
+      {/* Always render the map container so the ref is available */}
       <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
-      {!isMapLoading && locations.length === 0 && (
+      {!isMapLoading && !mapError && locations.length === 0 && !isLoading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60">
           <Users className="w-10 h-10 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">No active locations to display</p>
