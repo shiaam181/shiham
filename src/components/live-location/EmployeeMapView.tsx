@@ -112,6 +112,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
     if (!mapContainerRef.current || mapRef.current) return;
 
     let cancelled = false;
+    let loadTimeout: ReturnType<typeof setTimeout>;
 
     const initMap = async () => {
       try {
@@ -129,7 +130,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
         if (error) {
           console.error('Error fetching map style:', error);
-          setMapError('Failed to load AWS map. Check your AWS credentials.');
+          setMapError('Failed to load map. Please check AWS credentials in settings.');
           setIsMapLoading(false);
           return;
         }
@@ -150,7 +151,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
         const map = new maplibregl.Map({
           container: mapContainerRef.current!,
-          style: data, // The style object from edge function
+          style: data,
           center: defaultCenter,
           zoom: 10,
           transformRequest: (url: string) => {
@@ -177,15 +178,39 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
         map.on('load', () => {
           console.log('MapLibre map loaded successfully');
           if (!cancelled) {
+            clearTimeout(loadTimeout);
+            setIsMapLoading(false);
+          }
+        });
+
+        // If tiles render before full load, also clear loading
+        map.on('idle', () => {
+          if (!cancelled && mapRef.current) {
+            clearTimeout(loadTimeout);
             setIsMapLoading(false);
           }
         });
 
         map.on('error', (e) => {
           console.error('MapLibre error:', e);
+          // Don't fail completely on individual tile/resource errors
+          // but still mark as loaded so user sees the map container
+          if (!cancelled) {
+            clearTimeout(loadTimeout);
+            setIsMapLoading(false);
+          }
         });
 
         mapRef.current = map;
+
+        // Fallback timeout: if map doesn't load in 15s, stop loading spinner
+        loadTimeout = setTimeout(() => {
+          if (!cancelled) {
+            console.warn('Map load timed out after 15s, clearing loading state');
+            setIsMapLoading(false);
+          }
+        }, 15000);
+
       } catch (err: any) {
         console.error('Map init error:', err);
         if (!cancelled) {
@@ -199,6 +224,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
     return () => {
       cancelled = true;
+      clearTimeout(loadTimeout);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
