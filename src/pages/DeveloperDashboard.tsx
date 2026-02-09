@@ -105,7 +105,7 @@ export default function DeveloperDashboard() {
   const [testEmail, setTestEmail] = useState('');
   const [testPhone, setTestPhone] = useState('');
 
-  // AWS Rekognition configuration state
+  // Face verification configuration state
   const [awsAccessKeyId, setAwsAccessKeyId] = useState('');
   const [awsSecretAccessKey, setAwsSecretAccessKey] = useState('');
   const [showAwsKeys, setShowAwsKeys] = useState(false);
@@ -115,7 +115,7 @@ export default function DeveloperDashboard() {
   const [testingAws, setTestingAws] = useState(false);
   const [awsTestResult, setAwsTestResult] = useState<'success' | 'error' | null>(null);
 
-  // AWS Location Service configuration state
+  // Map service configuration state
   const [awsLocationMapName, setAwsLocationMapName] = useState('');
   const [awsLocationRegion, setAwsLocationRegion] = useState('ap-south-1');
   const [awsLocationConfigured, setAwsLocationConfigured] = useState(false);
@@ -200,9 +200,9 @@ export default function DeveloperDashboard() {
     
     // Check if Twilio is configured by checking if the edge function works
     checkTwilioConfig();
-    // Check if AWS Rekognition is configured
+    // Check if face verification is configured
     checkAwsConfig();
-    // Check if AWS Location Service is configured
+    // Check if map service is configured
     checkAwsLocationConfig();
   };
 
@@ -239,7 +239,7 @@ export default function DeveloperDashboard() {
       if (data?.success) {
         setAwsTestResult('success');
         toast({
-          title: 'AWS Rekognition Test Passed',
+          title: 'Face Verification Test Passed',
           description: data.message || 'API credentials are valid',
         });
       } else {
@@ -248,7 +248,7 @@ export default function DeveloperDashboard() {
     } catch (error: any) {
       setAwsTestResult('error');
       toast({
-        title: 'AWS Rekognition Test Failed',
+        title: 'Face Verification Test Failed',
         description: error.message || 'Failed to verify credentials',
         variant: 'destructive',
       });
@@ -269,7 +269,7 @@ export default function DeveloperDashboard() {
         setAwsLocationRegion(data.region || 'ap-south-1');
       }
     } catch (err) {
-      console.error('Error checking AWS Location config:', err);
+      console.error('Error checking map service config:', err);
     }
   };
 
@@ -288,7 +288,7 @@ export default function DeveloperDashboard() {
         setAwsLocationTestResult('success');
         setAwsLocationConfigured(true);
         toast({
-          title: 'AWS Location Service Test Passed',
+          title: 'Map Service Test Passed',
           description: data.message || 'Map configuration is valid',
         });
       } else {
@@ -297,7 +297,7 @@ export default function DeveloperDashboard() {
     } catch (error: any) {
       setAwsLocationTestResult('error');
       toast({
-        title: 'AWS Location Service Test Failed',
+        title: 'Map Service Test Failed',
         description: error.message || 'Failed to verify map configuration',
         variant: 'destructive',
       });
@@ -1799,17 +1799,17 @@ export default function DeveloperDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* AWS Rekognition Configuration */}
+                {/* Face Verification Configuration */}
                 <Card className="mt-6">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <ScanFace className="w-5 h-5" />
-                      AWS Rekognition Configuration
+                      Face Verification Configuration
                     </CardTitle>
                     <CardDescription>
-                      Configure AWS Rekognition credentials for biometric verification. Get your credentials from{' '}
+                      Configure credentials for biometric face verification. Get your credentials from{' '}
                       <a href="https://console.aws.amazon.com/iam/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                        AWS IAM Console
+                        IAM Console
                       </a>
                     </CardDescription>
                   </CardHeader>
@@ -1819,7 +1819,7 @@ export default function DeveloperDashboard() {
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
                           <div>
-                            <p className="font-medium text-sm text-success">AWS Rekognition Configured</p>
+                            <p className="font-medium text-sm text-success">Face Verification Configured</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Access Key: {awsAccessKeyMasked || 'Configured via backend secrets'}
                             </p>
@@ -1834,8 +1834,8 @@ export default function DeveloperDashboard() {
                         <div>
                           <p className="font-medium text-sm text-info">Secrets Management</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            AWS credentials are stored as backend secrets (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY). 
-                            To update them, use the Lovable Cloud secrets manager. You can test your current configuration below.
+                            Credentials are stored as backend secrets (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY). 
+                            To update them, use the Cloud secrets manager. You can test your current configuration below.
                           </p>
                         </div>
                       </div>
@@ -1900,17 +1900,17 @@ export default function DeveloperDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* AWS Location Service Configuration */}
+                {/* Map Service Configuration */}
                 <Card className="mt-6">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <MapPin className="w-5 h-5" />
-                      AWS Location Service Configuration
+                      Map Service Configuration
                     </CardTitle>
                     <CardDescription>
-                      Configure AWS Location Service for live employee tracking maps. Create a map in the{' '}
+                      Configure map service for live employee tracking maps. Create a map in the{' '}
                       <a href="https://console.aws.amazon.com/location/maps" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                        AWS Location Console
+                        Location Console
                       </a>
                     </CardDescription>
                   </CardHeader>
@@ -1920,7 +1920,7 @@ export default function DeveloperDashboard() {
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
                           <div>
-                            <p className="font-medium text-sm text-success">AWS Location Service Configured</p>
+                            <p className="font-medium text-sm text-success">Map Service Configured</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Map Name: {awsLocationMapName || 'Configured via backend secrets'}
                             </p>
@@ -1935,7 +1935,7 @@ export default function DeveloperDashboard() {
                         <div>
                           <p className="font-medium text-sm text-info">How to Configure</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            AWS Location Service uses your existing AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).
+                            The map service uses your existing credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY).
                             You need to set the <strong>AWS_LOCATION_MAP_NAME</strong> secret to your map resource name.
                           </p>
                         </div>
@@ -1986,7 +1986,7 @@ export default function DeveloperDashboard() {
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>• <strong>Step 1:</strong> Go to AWS Location Service → Maps → Create map</p>
+                      <p>• <strong>Step 1:</strong> Go to Location Service → Maps → Create map</p>
                       <p>• <strong>Step 2:</strong> Choose a style (e.g., "Esri Navigation" or "Open Data Standard Light")</p>
                       <p>• <strong>Step 3:</strong> Note the map name and set it as AWS_LOCATION_MAP_NAME secret</p>
                       <p>• <strong>Required Policy:</strong> AmazonLocationServiceReadOnlyAccess</p>

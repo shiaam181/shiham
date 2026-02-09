@@ -119,7 +119,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
         setIsMapLoading(true);
         setMapError(null);
 
-        console.log('Fetching AWS map style...');
+        console.log('Fetching map style...');
 
         // Fetch the style from our proxy edge function
         const { data, error } = await supabase.functions.invoke('map-proxy', {
@@ -130,7 +130,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
         if (error) {
           console.error('Error fetching map style:', error);
-          setMapError('Failed to load map. Please check AWS credentials in settings.');
+          setMapError('Failed to load map. Please check map credentials in settings.');
           setIsMapLoading(false);
           return;
         }
@@ -142,7 +142,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
           return;
         }
 
-        console.log('Map style fetched, initializing MapLibre...');
+        console.log('Map style fetched, initializing map...');
 
         // Get the Supabase anon key for tile requests
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -283,14 +283,14 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
   }, [locations, onEmployeeClick]);
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
+    <div className="relative w-full h-[300px] sm:h-[400px] rounded-lg overflow-hidden border touch-auto">
       {/* Map error overlay */}
       {mapError && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-muted p-6 text-center">
           <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
           <p className="text-sm font-medium text-destructive">{mapError}</p>
           <p className="text-xs text-muted-foreground mt-2">
-            Ensure AWS Location Service credentials and map name are configured correctly.
+            Ensure map service credentials are configured correctly in settings.
           </p>
         </div>
       )}
@@ -299,14 +299,14 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/80">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading AWS map...</p>
+            <p className="text-sm text-muted-foreground">Loading map...</p>
           </div>
         </div>
       )}
       {/* Always render the map container so the ref is available */}
-      <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
+      <div ref={mapContainerRef} className="touch-auto" style={{ height: '100%', width: '100%' }} />
       {!isMapLoading && !mapError && locations.length === 0 && !isLoading && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 pointer-events-none">
           <Users className="w-10 h-10 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground">No active locations to display</p>
         </div>
