@@ -38,7 +38,7 @@ import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import LocationDisplay from '@/components/LocationDisplay';
-
+import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { hasAwsRekognitionRegistration, hasFaceEmbedding } from '@/lib/faceEmbedding';
@@ -95,6 +95,7 @@ export default function EmployeeDashboard() {
   const [isInitiatingAttendance, setIsInitiatingAttendance] = useState(false);
   const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
+  const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
 
   // Preload face models in background for faster camera startup
   // Non-blocking - if it fails, we'll handle it when camera opens
@@ -313,6 +314,11 @@ export default function EmployeeDashboard() {
           title: 'Checked In!',
           description: `You checked in at ${format(new Date(), 'hh:mm a')}`,
         });
+
+        // Auto-start live tracking on check-in
+        if (canTrack) {
+          startTrackingSilent();
+        }
       } else {
         const { error } = await supabase
           .from('attendance')
@@ -332,6 +338,9 @@ export default function EmployeeDashboard() {
           title: 'Checked Out!',
           description: `You checked out at ${format(new Date(), 'hh:mm a')}`,
         });
+
+        // Auto-stop live tracking on check-out
+        stopTrackingSilent();
       }
 
       fetchTodayAttendance();
@@ -407,6 +416,13 @@ export default function EmployeeDashboard() {
           description: `Face verified (${result.faceConfidence}% confidence)`,
         });
 
+        // Auto-start/stop live tracking
+        if (captureType === 'check-in' && canTrack) {
+          startTrackingSilent();
+        } else if (captureType === 'check-out') {
+          stopTrackingSilent();
+        }
+
         fetchTodayAttendance();
         fetchMonthlyStats();
       } catch (error: any) {
@@ -450,6 +466,11 @@ export default function EmployeeDashboard() {
           title: 'Checked In!',
           description: `You checked in at ${format(new Date(), 'hh:mm a')}`,
         });
+
+        // Auto-start live tracking on check-in
+        if (canTrack) {
+          startTrackingSilent();
+        }
       } else {
         const { error } = await supabase
           .from('attendance')
@@ -469,6 +490,9 @@ export default function EmployeeDashboard() {
           title: 'Checked Out!',
           description: `You checked out at ${format(new Date(), 'hh:mm a')}`,
         });
+
+        // Auto-stop live tracking on check-out
+        stopTrackingSilent();
       }
 
       fetchTodayAttendance();

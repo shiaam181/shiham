@@ -268,8 +268,8 @@ export function useLiveTracking() {
     });
   }, [state, startTrackingInternal, toast]);
 
-  // Stop tracking
-  const stopTracking = useCallback(() => {
+  // Stop tracking (silent version for auto-stop on checkout)
+  const stopTrackingSilent = useCallback(() => {
     if (trackingIntervalRef.current) {
       clearInterval(trackingIntervalRef.current);
       trackingIntervalRef.current = null;
@@ -279,12 +279,17 @@ export function useLiveTracking() {
       watchIdRef.current = null;
     }
     setIsTracking(false);
+  }, []);
+
+  // Stop tracking (with toast)
+  const stopTracking = useCallback(() => {
+    stopTrackingSilent();
     
     toast({
       title: 'Live Tracking Stopped',
       description: 'Your location is no longer being shared.',
     });
-  }, [toast]);
+  }, [stopTrackingSilent, toast]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -309,7 +314,9 @@ export function useLiveTracking() {
     canTrack,
     updateConsent,
     startTracking,
+    startTrackingSilent: startTrackingInternal,
     stopTracking,
+    stopTrackingSilent,
     refetch: fetchSettings,
   };
 }
