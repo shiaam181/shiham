@@ -226,7 +226,7 @@ export function LiveTrackingSettings() {
         </CardContent>
       </Card>
 
-      {/* Companies Status */}
+      {/* Companies Status - Toggleable */}
       {globalEnabled && (
         <Card>
           <CardHeader>
@@ -235,7 +235,7 @@ export function LiveTrackingSettings() {
               <CardTitle className="text-lg">Company Tracking Status</CardTitle>
             </div>
             <CardDescription>
-              View which companies have enabled live tracking
+              Enable or disable live tracking for each company
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,9 +254,11 @@ export function LiveTrackingSettings() {
                       <Building2 className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{company.name}</span>
                     </div>
-                    <Badge variant={company.live_tracking_enabled ? 'default' : 'secondary'}>
-                      {company.live_tracking_enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
+                    <Switch
+                      checked={company.live_tracking_enabled}
+                      onCheckedChange={(enabled) => toggleCompanyTracking(company.id, enabled)}
+                      disabled={isSaving}
+                    />
                   </div>
                 ))
               )}
