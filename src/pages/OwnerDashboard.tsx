@@ -216,62 +216,6 @@ export default function OwnerDashboard() {
     }
   };
 
-  const toggleLiveTracking = async () => {
-    if (!company) return;
-    
-    const newValue = !company.live_tracking_enabled;
-    
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ live_tracking_enabled: newValue })
-        .eq('id', company.id);
-
-      if (error) throw error;
-
-      setCompany({ ...company, live_tracking_enabled: newValue });
-      
-      toast({
-        title: newValue ? 'Live Tracking Enabled' : 'Live Tracking Disabled',
-        description: newValue 
-          ? 'Employees who consent can now share their live location.'
-          : 'Live location tracking has been disabled for your company.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update setting',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const updateTrackingInterval = async (seconds: number) => {
-    if (!company) return;
-    
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ tracking_interval_seconds: seconds })
-        .eq('id', company.id);
-
-      if (error) throw error;
-
-      setCompany({ ...company, tracking_interval_seconds: seconds });
-      
-      toast({
-        title: 'Interval Updated',
-        description: `Location updates will be sent every ${seconds} seconds.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update interval',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const openRoleDialog = (employee: CompanyEmployee) => {
     if (employee.user_id === user?.id) {
       toast({
