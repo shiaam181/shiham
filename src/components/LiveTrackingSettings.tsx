@@ -37,6 +37,7 @@ export function LiveTrackingSettings() {
   const [globalEnabled, setGlobalEnabled] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   
   // Map service status
   const [awsConfigured, setAwsConfigured] = useState(false);
