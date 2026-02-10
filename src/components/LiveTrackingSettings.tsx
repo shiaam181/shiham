@@ -36,7 +36,7 @@ export function LiveTrackingSettings() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   
-  // AWS Location Service status
+  // Map service status
   const [awsConfigured, setAwsConfigured] = useState(false);
   const [awsStatus, setAwsStatus] = useState<{
     hasAccessKey: boolean;
@@ -91,7 +91,7 @@ export function LiveTrackingSettings() {
       if (data?.success) {
         setAwsTestResult('success');
         toast({
-          title: 'AWS Location Service Test Passed',
+          title: 'Map Service Test Passed',
           description: data.message || 'Credentials are valid and map exists',
         });
       } else {
@@ -100,7 +100,7 @@ export function LiveTrackingSettings() {
     } catch (error: any) {
       setAwsTestResult('error');
       toast({
-        title: 'AWS Location Service Test Failed',
+        title: 'Map Service Test Failed',
         description: error.message || 'Failed to verify credentials',
         variant: 'destructive',
       });
@@ -158,6 +158,36 @@ export function LiveTrackingSettings() {
       toast({
         title: 'Error',
         description: err.message || 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleCompanyTracking = async (companyId: string, enabled: boolean) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ live_tracking_enabled: enabled })
+        .eq('id', companyId);
+
+      if (error) throw error;
+
+      setCompanies(prev => prev.map(c => 
+        c.id === companyId ? { ...c, live_tracking_enabled: enabled } : c
+      ));
+
+      const companyName = companies.find(c => c.id === companyId)?.name || 'Company';
+      toast({
+        title: enabled ? 'Tracking Enabled' : 'Tracking Disabled',
+        description: `Live tracking ${enabled ? 'enabled' : 'disabled'} for ${companyName}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update company tracking',
         variant: 'destructive',
       });
     } finally {
@@ -226,7 +256,7 @@ export function LiveTrackingSettings() {
         </CardContent>
       </Card>
 
-      {/* Companies Status */}
+      {/* Companies Status - Toggleable */}
       {globalEnabled && (
         <Card>
           <CardHeader>
@@ -235,7 +265,7 @@ export function LiveTrackingSettings() {
               <CardTitle className="text-lg">Company Tracking Status</CardTitle>
             </div>
             <CardDescription>
-              View which companies have enabled live tracking
+              Enable or disable live tracking for each company
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,9 +284,11 @@ export function LiveTrackingSettings() {
                       <Building2 className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{company.name}</span>
                     </div>
-                    <Badge variant={company.live_tracking_enabled ? 'default' : 'secondary'}>
-                      {company.live_tracking_enabled ? 'Enabled' : 'Disabled'}
-                    </Badge>
+                    <Switch
+                      checked={company.live_tracking_enabled}
+                      onCheckedChange={(enabled) => toggleCompanyTracking(company.id, enabled)}
+                      disabled={isSaving}
+                    />
                   </div>
                 ))
               )}
@@ -265,12 +297,12 @@ export function LiveTrackingSettings() {
         </Card>
       )}
 
-      {/* AWS Location Service Status */}
+      {/* Map Service Status */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
-            <CardTitle className="text-lg">AWS Location Service</CardTitle>
+            <CardTitle className="text-lg">Map Service</CardTitle>
           </div>
           <CardDescription>
             Required for map rendering in live tracking
@@ -322,14 +354,14 @@ export function LiveTrackingSettings() {
             <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/30">
               <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <p className="text-xs text-primary">
-                All AWS Location Service secrets are configured. Use the test button to verify connectivity.
+                All map service secrets are configured. Use the test button to verify connectivity.
               </p>
             </div>
           ) : (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
               <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
               <p className="text-xs text-destructive">
-                Some AWS secrets are missing. Map rendering will not work until all secrets are configured.
+                Some map secrets are missing. Map rendering will not work until all secrets are configured.
               </p>
             </div>
           )}
@@ -337,7 +369,7 @@ export function LiveTrackingSettings() {
           {/* Test Button */}
           <div className="flex items-center justify-between pt-2">
             <div className="text-xs text-muted-foreground">
-              Test connection to AWS Location Service
+              Test connection to map service
             </div>
             <Button
               variant="outline"
@@ -378,7 +410,7 @@ export function LiveTrackingSettings() {
               </div>
             </CollapsibleTrigger>
             <CardDescription>
-              How to configure AWS credentials for map rendering
+              How to configure credentials for map rendering
             </CardDescription>
           </CardHeader>
           <CollapsibleContent>
