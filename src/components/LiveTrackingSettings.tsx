@@ -259,7 +259,7 @@ export function LiveTrackingSettings() {
         </CardContent>
       </Card>
 
-      {/* Companies Status - Toggleable */}
+      {/* Companies List - Clickable */}
       {globalEnabled && (
         <Card>
           <CardHeader>
@@ -268,7 +268,7 @@ export function LiveTrackingSettings() {
               <CardTitle className="text-lg">Company Tracking Status</CardTitle>
             </div>
             <CardDescription>
-              Enable or disable live tracking for each company
+              Click a company to manage its live tracking
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -281,17 +281,19 @@ export function LiveTrackingSettings() {
                 companies.map((company) => (
                   <div
                     key={company.id}
-                    className="flex items-center justify-between p-3 rounded-lg border"
+                    onClick={() => setSelectedCompany(company)}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center gap-3">
                       <Building2 className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{company.name}</span>
                     </div>
-                    <Switch
-                      checked={company.live_tracking_enabled}
-                      onCheckedChange={(enabled) => toggleCompanyTracking(company.id, enabled)}
-                      disabled={isSaving}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Badge variant={company.live_tracking_enabled ? 'default' : 'outline'}>
+                        {company.live_tracking_enabled ? 'Enabled' : 'Disabled'}
+                      </Badge>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </div>
                   </div>
                 ))
               )}
@@ -299,6 +301,17 @@ export function LiveTrackingSettings() {
           </CardContent>
         </Card>
       )}
+
+      {/* Company Tracking Dialog */}
+      <CompanyTrackingDialog
+        company={selectedCompany}
+        open={!!selectedCompany}
+        onOpenChange={(open) => { if (!open) setSelectedCompany(null); }}
+        onTrackingToggled={(companyId, enabled) => {
+          setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, live_tracking_enabled: enabled } : c));
+          setSelectedCompany(prev => prev?.id === companyId ? { ...prev, live_tracking_enabled: enabled } : prev);
+        }}
+      />
 
       {/* Map Service Status */}
       <Card>
