@@ -165,6 +165,36 @@ export function LiveTrackingSettings() {
     }
   };
 
+  const toggleCompanyTracking = async (companyId: string, enabled: boolean) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ live_tracking_enabled: enabled })
+        .eq('id', companyId);
+
+      if (error) throw error;
+
+      setCompanies(prev => prev.map(c => 
+        c.id === companyId ? { ...c, live_tracking_enabled: enabled } : c
+      ));
+
+      const companyName = companies.find(c => c.id === companyId)?.name || 'Company';
+      toast({
+        title: enabled ? 'Tracking Enabled' : 'Tracking Disabled',
+        description: `Live tracking ${enabled ? 'enabled' : 'disabled'} for ${companyName}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update company tracking',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>

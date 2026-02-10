@@ -533,78 +533,7 @@ export default function OwnerDashboard() {
               </CardContent>
             </Card>
 
-            {/* Live Location Tracking Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" />
-                  Live Location Tracking
-                </CardTitle>
-                <CardDescription>
-                  Enable live location tracking for your employees during work hours
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      company.live_tracking_enabled ? 'bg-primary/20' : 'bg-muted'
-                    }`}>
-                      <MapPin className={`w-5 h-5 ${
-                        company.live_tracking_enabled ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="live-tracking-toggle" className="text-sm font-medium cursor-pointer">
-                        Live Tracking
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {company.live_tracking_enabled 
-                          ? 'Employees with consent can share their location'
-                          : 'Location tracking is disabled for your company'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    id="live-tracking-toggle"
-                    checked={company.live_tracking_enabled || false}
-                    onCheckedChange={toggleLiveTracking}
-                  />
-                </div>
-
-                {company.live_tracking_enabled && (
-                  <>
-                    <div className="flex items-center gap-4 p-4 rounded-lg border">
-                      <Label className="text-sm whitespace-nowrap">Update Interval:</Label>
-                      <Select 
-                        value={String(company.tracking_interval_seconds || 60)}
-                        onValueChange={(v) => updateTrackingInterval(Number(v))}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="30">30 seconds</SelectItem>
-                          <SelectItem value="60">1 minute</SelectItem>
-                          <SelectItem value="120">2 minutes</SelectItem>
-                          <SelectItem value="300">5 minutes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        <strong>Privacy:</strong> Employees must explicitly consent to location tracking. 
-                        They can start/stop tracking at any time from their dashboard.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Live Location Map */}
+            {/* Live Location Map - read only for owners */}
             {company.live_tracking_enabled && (
               <LiveLocationMap companyId={company.id} isDeveloper={isDeveloper} />
             )}
