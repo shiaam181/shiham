@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -26,7 +25,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify JWT and get user
     const token = authHeader.replace("Bearer ", "");
     const { data: claims, error: authError } = await supabase.auth.getUser(token);
     
@@ -39,7 +37,6 @@ serve(async (req) => {
 
     const userId = claims.user.id;
 
-    // Parse request body
     const { latitude, longitude, accuracy, speed, heading } = await req.json();
 
     if (typeof latitude !== "number" || typeof longitude !== "number") {
@@ -49,7 +46,7 @@ serve(async (req) => {
       );
     }
 
-    // Get employee profile to find their company
+    // Get employee profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("company_id, is_active")
@@ -63,7 +60,7 @@ serve(async (req) => {
       );
     }
 
-    // Check user role - developers can track without a company for testing
+    // Check user role - developers can track without a company
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -73,7 +70,6 @@ serve(async (req) => {
     const userRole = roleData?.role || "employee";
     const isDeveloper = userRole === "developer";
 
-    // Regular employees must have a company
     if (!isDeveloper && !profile?.company_id) {
       return new Response(
         JSON.stringify({ success: false, error: "Your account is not linked to a company. Please contact your administrator." }),
@@ -88,19 +84,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if employee has consented to location tracking
-    const { data: consent, error: consentError } = await supabase
-      .from("employee_consent")
-      .select("location_tracking_consented")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (consentError || !consent?.location_tracking_consented) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Please enable location tracking consent in your profile settings first." }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // No consent check needed - tracking is managed by company/global settings
 
     // Check if global live tracking is enabled
     const { data: globalSetting } = await supabase
@@ -143,7 +127,7 @@ serve(async (req) => {
       .from("employee_live_locations")
       .insert({
         user_id: userId,
-        company_id: profile.company_id, // Can be null for developers
+        company_id: profile.company_id,
         latitude,
         longitude,
         accuracy: accuracy ?? null,
