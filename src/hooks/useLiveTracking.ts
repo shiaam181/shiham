@@ -6,7 +6,6 @@ import { useToast } from '@/hooks/use-toast';
 interface LiveTrackingState {
   globalEnabled: boolean;
   companyEnabled: boolean;
-  consented: boolean;
   trackingInterval: number;
   isLoading: boolean;
 }
@@ -19,16 +18,12 @@ interface LocationUpdate {
   heading?: number;
 }
 
-// Track if we've already auto-started to prevent duplicate starts
-let hasAutoStarted = false;
-
 export function useLiveTracking() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [state, setState] = useState<LiveTrackingState>({
     globalEnabled: false,
     companyEnabled: false,
-    consented: false,
     trackingInterval: 60,
     isLoading: true,
   });
@@ -38,7 +33,7 @@ export function useLiveTracking() {
   const trackingIntervalRef = useRef<number | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
-  // Fetch tracking settings
+  // Fetch tracking settings (no consent needed)
   const fetchSettings = useCallback(async () => {
     if (!user) {
       setState(prev => ({ ...prev, isLoading: false }));
@@ -59,9 +54,8 @@ export function useLiveTracking() {
 
       const globalEnabled = (globalSetting?.value as { enabled?: boolean })?.enabled ?? false;
 
-      // Get company setting if user has a company
-      // If user has no company (developer/owner), treat company as enabled by default
-      let companyEnabled = true; // Default to true for users without company
+      // Get company setting
+      let companyEnabled = true;
       let trackingInterval = 60;
       
       if (profile?.company_id) {
@@ -79,21 +73,9 @@ export function useLiveTracking() {
         trackingInterval = company?.tracking_interval_seconds ?? 60;
       }
 
-      // Get user consent
-      const { data: consent, error: consentError } = await supabase
-        .from('employee_consent')
-        .select('location_tracking_consented')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (consentError) {
-        console.error('Error fetching consent:', consentError);
-      }
-
       setState({
         globalEnabled,
         companyEnabled,
-        consented: consent?.location_tracking_consented ?? false,
         trackingInterval,
         isLoading: false,
       });
@@ -106,63 +88,6 @@ export function useLiveTracking() {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
-
-  // Auto-start tracking when consent is given and all conditions are met
-  useEffect(() => {
-    if (!state.isLoading && state.globalEnabled && state.companyEnabled && state.consented && !isTracking) {
-      // Small delay to ensure everything is ready
-      const timer = setTimeout(() => {
-        startTrackingInternal();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [state.isLoading, state.globalEnabled, state.companyEnabled, state.consented, isTracking]);
-
-  // Auto-stop when consent is revoked
-  useEffect(() => {
-    if (!state.consented && isTracking) {
-      stopTracking();
-    }
-  }, [state.consented, isTracking]);
-
-  // Update consent
-  const updateConsent = async (consented: boolean) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('employee_consent')
-        .upsert({
-          user_id: user.id,
-          location_tracking_consented: consented,
-          consented_at: consented ? new Date().toISOString() : null,
-          revoked_at: consented ? null : new Date().toISOString(),
-        }, { onConflict: 'user_id' });
-
-      if (error) throw error;
-
-      setState(prev => ({ ...prev, consented }));
-
-      toast({
-        title: consented ? 'Location Tracking Enabled' : 'Location Tracking Disabled',
-        description: consented 
-          ? 'Your location will be shared while tracking is active.'
-          : 'Your location will no longer be shared.',
-      });
-
-      // Stop tracking if consent revoked
-      if (!consented && isTracking) {
-        stopTracking();
-      }
-    } catch (err: any) {
-      console.error('Error updating consent:', err);
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to update consent',
-        variant: 'destructive',
-      });
-    }
-  };
 
   // Send location update to backend
   const sendLocationUpdate = useCallback(async (location: LocationUpdate) => {
@@ -187,9 +112,9 @@ export function useLiveTracking() {
     }
   }, [user]);
 
-  // Internal start tracking (no toast for auto-start)
+  // Internal start tracking (silent - used for auto-start on check-in)
   const startTrackingInternal = useCallback(() => {
-    if (!state.globalEnabled || !state.companyEnabled || !state.consented) {
+    if (!state.globalEnabled || !state.companyEnabled) {
       return;
     }
 
@@ -198,7 +123,7 @@ export function useLiveTracking() {
       return;
     }
 
-    if (isTracking) return; // Already tracking
+    if (isTracking) return;
 
     setIsTracking(true);
     setError(null);
@@ -242,10 +167,10 @@ export function useLiveTracking() {
 
   // Manual start tracking (with toast)
   const startTracking = useCallback(() => {
-    if (!state.globalEnabled || !state.companyEnabled || !state.consented) {
+    if (!state.globalEnabled || !state.companyEnabled) {
       toast({
         title: 'Cannot Start Tracking',
-        description: 'Live tracking must be enabled and you must provide consent.',
+        description: 'Live tracking is not enabled.',
         variant: 'destructive',
       });
       return;
@@ -303,8 +228,8 @@ export function useLiveTracking() {
     };
   }, []);
 
-  // Check if tracking should be active
-  const canTrack = state.globalEnabled && state.companyEnabled && state.consented;
+  // canTrack is now just based on global + company settings (no consent needed)
+  const canTrack = state.globalEnabled && state.companyEnabled;
 
   return {
     ...state,
@@ -312,7 +237,6 @@ export function useLiveTracking() {
     lastUpdate,
     error,
     canTrack,
-    updateConsent,
     startTracking,
     startTrackingSilent: startTrackingInternal,
     stopTracking,
