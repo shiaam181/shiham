@@ -318,6 +318,10 @@ export default function EmployeeDashboard() {
         // Auto-start live tracking on check-in
         if (canTrack) {
           startTrackingSilent();
+          toast({
+            title: '📍 Live Location Tracking Started',
+            description: 'Your live location is now being shared with your company.',
+          });
         }
       } else {
         const { error } = await supabase
@@ -340,7 +344,13 @@ export default function EmployeeDashboard() {
         });
 
         // Auto-stop live tracking on check-out
-        stopTrackingSilent();
+        if (canTrack) {
+          stopTrackingSilent();
+          toast({
+            title: '📍 Live Location Tracking Stopped',
+            description: 'Your live location is no longer being shared.',
+          });
+        }
       }
 
       fetchTodayAttendance();
@@ -419,8 +429,16 @@ export default function EmployeeDashboard() {
         // Auto-start/stop live tracking
         if (captureType === 'check-in' && canTrack) {
           startTrackingSilent();
-        } else if (captureType === 'check-out') {
+          toast({
+            title: '📍 Live Location Tracking Started',
+            description: 'Your live location is now being shared with your company.',
+          });
+        } else if (captureType === 'check-out' && canTrack) {
           stopTrackingSilent();
+          toast({
+            title: '📍 Live Location Tracking Stopped',
+            description: 'Your live location is no longer being shared.',
+          });
         }
 
         fetchTodayAttendance();
@@ -470,6 +488,10 @@ export default function EmployeeDashboard() {
         // Auto-start live tracking on check-in
         if (canTrack) {
           startTrackingSilent();
+          toast({
+            title: '📍 Live Location Tracking Started',
+            description: 'Your live location is now being shared with your company.',
+          });
         }
       } else {
         const { error } = await supabase
@@ -492,7 +514,13 @@ export default function EmployeeDashboard() {
         });
 
         // Auto-stop live tracking on check-out
-        stopTrackingSilent();
+        if (canTrack) {
+          stopTrackingSilent();
+          toast({
+            title: '📍 Live Location Tracking Stopped',
+            description: 'Your live location is no longer being shared.',
+          });
+        }
       }
 
       fetchTodayAttendance();
