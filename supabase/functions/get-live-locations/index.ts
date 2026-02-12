@@ -94,9 +94,22 @@ serve(async (req) => {
       }
     }
 
-    // Parse query params for optional company filter (developers only)
+    // Parse query params or body for optional company filter (developers only)
+    let requestedCompanyId: string | null = null;
+    
+    // Try URL params first
     const url = new URL(req.url);
-    const requestedCompanyId = url.searchParams.get("company_id");
+    requestedCompanyId = url.searchParams.get("company_id");
+    
+    // If not in URL, try request body
+    if (!requestedCompanyId && req.method === "POST") {
+      try {
+        const body = await req.json();
+        requestedCompanyId = body?.company_id || null;
+      } catch {
+        // No body or invalid JSON, that's fine
+      }
+    }
     
     if (isDeveloper && requestedCompanyId) {
       companyFilter = requestedCompanyId;
