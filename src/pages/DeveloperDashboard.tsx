@@ -64,6 +64,7 @@ export default function DeveloperDashboard() {
   const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
+  const [testingModeEnabled, setTestingModeEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   
   // EmailJS configuration state
@@ -193,6 +194,9 @@ export default function DeveloperDashboard() {
             break;
           case 'app_only_mode_enabled':
             setAppOnlyModeEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
+            break;
+          case 'testing_mode_enabled':
+            setTestingModeEnabled((setting.value as { enabled: boolean })?.enabled ?? false);
             break;
         }
       });
@@ -743,6 +747,10 @@ export default function DeveloperDashboard() {
   const toggleAppOnlyMode = (enabled: boolean) => 
     updateSetting('app_only_mode_enabled', enabled, setAppOnlyModeEnabled, 
       enabled ? 'App-only mode enabled. Users must install PWA after registration.' : 'App-only mode disabled. Website access is allowed.');
+
+  const toggleTestingMode = (enabled: boolean) => 
+    updateSetting('testing_mode_enabled', enabled, setTestingModeEnabled, 
+      enabled ? 'Testing mode ON — OTP verification bypassed for signup/login' : 'Testing mode OFF — OTP verification required');
 
   if (authLoading) {
     return (
@@ -1555,6 +1563,24 @@ export default function DeveloperDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    {/* Testing Mode Toggle */}
+                    <div className="flex items-center justify-between p-3 rounded-lg border-2 border-dashed border-warning/50 bg-warning/5">
+                      <div className="space-y-1">
+                        <Label htmlFor="testing-mode" className="font-medium flex items-center gap-2">
+                          🧪 Testing Mode
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Bypass OTP verification during signup/login for faster testing. Email + password only.
+                        </p>
+                      </div>
+                      <Switch
+                        id="testing-mode"
+                        checked={testingModeEnabled}
+                        onCheckedChange={toggleTestingMode}
+                        disabled={settingsLoading}
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label htmlFor="password-login" className="font-medium">

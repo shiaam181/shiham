@@ -19,6 +19,7 @@ export interface SystemSettings {
   googleSigninEnabled: boolean;
   oauthPhoneVerificationEnabled: boolean;
   appOnlyModeEnabled: boolean;
+  testingModeEnabled: boolean;
 }
 
 const defaultSettings: SystemSettings = {
@@ -39,6 +40,7 @@ const defaultSettings: SystemSettings = {
   googleSigninEnabled: true,
   oauthPhoneVerificationEnabled: true,
   appOnlyModeEnabled: false,
+  testingModeEnabled: false,
 };
 
 export function useSystemSettings() {
@@ -104,6 +106,9 @@ export function useSystemSettings() {
             break;
           case 'app_only_mode_enabled':
             newSettings.appOnlyModeEnabled = value?.enabled ?? false;
+            break;
+          case 'testing_mode_enabled':
+            newSettings.testingModeEnabled = value?.enabled ?? false;
             break;
         }
       });

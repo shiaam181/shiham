@@ -132,9 +132,10 @@ export default function Auth() {
   }, [selectedCompany, selectCompanyMode, user]);
 
   // Determine which auth options are available
+  const isTestingMode = settings.testingModeEnabled;
   const hasPasswordLogin = settings.passwordLoginEnabled;
-  const hasEmailOtp = settings.emailOtpEnabled;
-  const hasPhoneOtp = settings.phoneOtpEnabled;
+  const hasEmailOtp = !isTestingMode && settings.emailOtpEnabled;
+  const hasPhoneOtp = !isTestingMode && settings.phoneOtpEnabled;
   const hasAnyOtp = hasEmailOtp || hasPhoneOtp;
   const hasMultipleLoginMethods = (hasPasswordLogin ? 1 : 0) + (hasEmailOtp ? 1 : 0) + (hasPhoneOtp ? 1 : 0) > 1;
   const hasGoogleSignin = settings.googleSigninEnabled;
