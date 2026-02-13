@@ -80,7 +80,8 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
   }
 
   // Check phone verification for OAuth users (if OAuth + phone verification is enabled)
-  if (settings.oauthPhoneVerificationEnabled && profile && !profile.phone_verified && !isDeveloper) {
+  // Skip when testing mode is active
+  if (!settings.testingModeEnabled && settings.oauthPhoneVerificationEnabled && profile && !profile.phone_verified && !isDeveloper) {
     return <Navigate to="/phone-verify" replace />;
   }
 
@@ -208,8 +209,8 @@ const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If OAuth + phone verification is disabled or already verified, go to dashboard
-  if (!settings.oauthPhoneVerificationEnabled || profile?.phone_verified || isDeveloper) {
+  // If testing mode is on, or OAuth + phone verification is disabled or already verified, go to dashboard
+  if (settings.testingModeEnabled || !settings.oauthPhoneVerificationEnabled || profile?.phone_verified || isDeveloper) {
     return <Navigate to="/dashboard" replace />;
   }
 

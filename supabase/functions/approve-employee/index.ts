@@ -39,7 +39,9 @@ serve(async (req) => {
       });
     }
 
-    // 1) Validate JWT by passing token directly to service client
+    // 1) Create service client first, then validate JWT
+    const supabase = createClient(supabaseUrl, serviceKey);
+
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
@@ -62,7 +64,6 @@ serve(async (req) => {
     }
 
     // 2) Server-side authorization with service role
-    const supabase = createClient(supabaseUrl, serviceKey);
 
     const { data: requesterRole, error: requesterRoleError } = await supabase
       .from("user_roles")
