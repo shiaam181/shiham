@@ -1102,7 +1102,7 @@ export default function CompanyManagement() {
         </AlertDialog>
 
         {/* Delete Employee - First Confirmation */}
-        <AlertDialog open={deleteEmpStep === 1} onOpenChange={(o) => { if (!o) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
+        <AlertDialog open={deleteEmpStep === 1}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -1114,16 +1114,16 @@ export default function CompanyManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => setDeleteEmpStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <Button variant="outline" onClick={() => { setDeleteEmpStep(0); setDeleteEmployee(null); }}>Cancel</Button>
+              <Button variant="destructive" onClick={() => setDeleteEmpStep(2)}>
                 Continue
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
         {/* Delete Employee - Second Confirmation */}
-        <AlertDialog open={deleteEmpStep === 2} onOpenChange={(o) => { if (!o && !isDeletingEmp) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
+        <AlertDialog open={deleteEmpStep === 2}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -1135,7 +1135,7 @@ export default function CompanyManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeletingEmp}>Cancel</AlertDialogCancel>
+              <Button variant="outline" onClick={() => { setDeleteEmpStep(0); setDeleteEmployee(null); }} disabled={isDeletingEmp}>Cancel</Button>
               <Button
                 variant="destructive"
                 onClick={handleDeleteEmployee}
