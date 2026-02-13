@@ -136,22 +136,24 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user is a developer or owner
+    // Verify user via getClaims (works with signing-keys)
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
     
-    if (authError || !user) {
+    if (authError || !claimsData?.claims) {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const userId = claimsData.claims.sub as string;
+
     // Check if user has developer or owner role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (!roleData || !["developer", "owner"].includes(roleData.role)) {
