@@ -18,6 +18,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -38,7 +48,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Building2, Users, Crown, Loader2, MoreHorizontal, Shield, User, ChevronDown, Scan, AlertTriangle, MapPin } from 'lucide-react';
+import { Building2, Users, Crown, Loader2, MoreHorizontal, Shield, User, ChevronDown, Scan, AlertTriangle, MapPin, Trash2 } from 'lucide-react';
 import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -81,6 +91,9 @@ export default function OwnerDashboard() {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<CompanyEmployee | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('employee');
+  const [deleteEmployee, setDeleteEmployee] = useState<CompanyEmployee | null>(null);
+  const [deleteStep, setDeleteStep] = useState(0);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch all companies for developers
   useEffect(() => {
@@ -301,6 +314,26 @@ export default function OwnerDashboard() {
         return 'secondary';
       default:
         return 'outline';
+    }
+  };
+
+  const handleDeleteEmployee = async () => {
+    if (!deleteEmployee) return;
+    setDeleting(true);
+    try {
+      const res = await supabase.functions.invoke('delete-employee', {
+        body: { target_user_id: deleteEmployee.user_id },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+      toast({ title: 'Employee Deleted', description: `${deleteEmployee.full_name} has been removed.` });
+      refreshEmployees();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to delete employee', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+      setDeleteStep(0);
+      setDeleteEmployee(null);
     }
   };
 
@@ -554,6 +587,13 @@ export default function OwnerDashboard() {
                                     <Shield className="w-4 h-4 mr-2" />
                                     Change Role
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => { setDeleteEmployee(emp); setDeleteStep(1); }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Employee
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
@@ -622,6 +662,49 @@ export default function OwnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Employee - First Confirmation */}
+      <AlertDialog open={deleteStep === 1} onOpenChange={(o) => { if (!o) { setDeleteStep(0); setDeleteEmployee(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Delete {deleteEmployee?.full_name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this employee and all their data including attendance records, leave requests, and face verification data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setDeleteStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Employee - Second Confirmation */}
+      <AlertDialog open={deleteStep === 2} onOpenChange={(o) => { if (!o) { setDeleteStep(0); setDeleteEmployee(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" />
+              Are you ABSOLUTELY sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. {deleteEmployee?.full_name}'s account and all associated data will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEmployee} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              {deleting ? 'Deleting...' : 'Delete Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <MobileBottomNav />
     </div>
