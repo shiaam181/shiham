@@ -43,9 +43,9 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
     
-    if (authError || !user) {
+    if (authError || !claimsData?.claims) {
       console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -53,7 +53,7 @@ serve(async (req) => {
       });
     }
 
-    const requesterUserId = user.id;
+    const requesterUserId = claimsData.claims.sub as string;
     console.log(`Authenticated user: ${requesterUserId}`);
 
     if (requesterUserId === employeeUserId) {

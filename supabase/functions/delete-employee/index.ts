@@ -19,21 +19,18 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } }
-    })
-    const { data: { user }, error: userError } = await userClient.auth.getUser(token)
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
+    const { data: claimsData, error: userError } = await adminClient.auth.getClaims(token)
+    if (userError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const userId = claimsData.claims.sub as string
+
     // Get caller's role and company
-    const { data: callerRole } = await adminClient.from('user_roles').select('role').eq('user_id', user.id).single()
-    const { data: callerProfile } = await adminClient.from('profiles').select('company_id').eq('user_id', user.id).single()
+    const { data: callerRole } = await adminClient.from('user_roles').select('role').eq('user_id', userId).single()
+    const { data: callerProfile } = await adminClient.from('profiles').select('company_id').eq('user_id', userId).single()
 
     const isDev = callerRole?.role === 'developer'
     const isOwner = callerRole?.role === 'owner'

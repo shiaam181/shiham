@@ -195,14 +195,15 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Verify the token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
       console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+    const user = { id: claimsData.claims.sub as string };
 
     const awsAccessKey = Deno.env.get("AWS_ACCESS_KEY_ID");
     const awsSecretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
