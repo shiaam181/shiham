@@ -42,18 +42,18 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify JWT and get user
+    // Verify JWT using getClaims (works with signing-keys)
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: authError } = await supabase.auth.getUser(token);
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
     
-    if (authError || !claims.user) {
+    if (authError || !claimsData?.claims) {
       return new Response(
         JSON.stringify({ success: false, error: "Your session has expired. Please sign in again", code: "INVALID_TOKEN" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claims.user.id;
+    const userId = claimsData.claims.sub as string;
 
     // Check user role
     const { data: roleData } = await supabase
