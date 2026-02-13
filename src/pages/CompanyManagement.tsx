@@ -106,6 +106,11 @@ export default function CompanyManagement() {
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Delete employee state (double confirmation)
+  const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
+  const [deleteEmpStep, setDeleteEmpStep] = useState(0);
+  const [isDeletingEmp, setIsDeletingEmp] = useState(false);
+
   useEffect(() => {
     if (!isDeveloper) {
       navigate('/dashboard');
@@ -114,6 +119,25 @@ export default function CompanyManagement() {
     fetchCompanies();
   }, [isDeveloper, navigate]);
 
+  const handleDeleteEmployee = async () => {
+    if (!deleteEmployee) return;
+    setIsDeletingEmp(true);
+    try {
+      const res = await supabase.functions.invoke('delete-employee', {
+        body: { target_user_id: deleteEmployee.user_id },
+      });
+      if (res.error) throw res.error;
+      if (res.data?.error) throw new Error(res.data.error);
+      toast({ title: 'Employee Deleted', description: `${deleteEmployee.full_name} has been removed.` });
+      if (selectedCompany) fetchCompanyUsers(selectedCompany.id);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to delete employee', variant: 'destructive' });
+    } finally {
+      setIsDeletingEmp(false);
+      setDeleteEmpStep(0);
+      setDeleteEmployee(null);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -892,6 +916,7 @@ export default function CompanyManagement() {
                           <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
+                          <TableHead className="w-10"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -906,6 +931,18 @@ export default function CompanyManagement() {
                                 {u.role === 'owner' && <Crown className="w-3 h-3 mr-1" />}
                                 {u.role}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {u.role !== 'developer' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                  onClick={() => { setDeleteEmployee(u); setDeleteEmpStep(1); }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1059,6 +1096,49 @@ export default function CompanyManagement() {
               >
                 {isDeleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Employee - First Confirmation */}
+        <AlertDialog open={deleteEmpStep === 1} onOpenChange={(o) => { if (!o) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                Delete {deleteEmployee?.full_name}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove this employee's account and all associated data (attendance, leave requests, face data, etc.).
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => setDeleteEmpStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Employee - Second Confirmation */}
+        <AlertDialog open={deleteEmpStep === 2} onOpenChange={(o) => { if (!o) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                Are you absolutely sure?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This cannot be undone. {deleteEmployee?.full_name}'s account and all associated data will be permanently deleted.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteEmployee} disabled={isDeletingEmp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {isDeletingEmp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                {isDeletingEmp ? 'Deleting...' : 'Delete Permanently'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
