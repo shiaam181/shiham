@@ -37,9 +37,21 @@ import {
   PlayCircle,
   Loader2,
   XCircle,
-  Smartphone
+  Smartphone,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import RoleManagement from '@/components/RoleManagement';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import NotificationBell from '@/components/NotificationBell';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
@@ -66,6 +78,8 @@ export default function DeveloperDashboard() {
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
   const [testingModeEnabled, setTestingModeEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [clearDataStep, setClearDataStep] = useState(0); // 0=none, 1=first confirm, 2=second confirm
+  const [clearingData, setClearingData] = useState(false);
   
   // EmailJS configuration state
   const [emailServiceId, setEmailServiceId] = useState('');
@@ -751,6 +765,23 @@ export default function DeveloperDashboard() {
   const toggleTestingMode = (enabled: boolean) => 
     updateSetting('testing_mode_enabled', enabled, setTestingModeEnabled, 
       enabled ? 'Testing mode ON — OTP verification bypassed for signup/login' : 'Testing mode OFF — OTP verification required');
+
+  const handleClearData = async () => {
+    setClearingData(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('clear-test-data', {
+        body: { action: 'clear_all_data' },
+      });
+      if (res.error) throw res.error;
+      toast({ title: 'Data Cleared', description: 'All test data has been removed successfully.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to clear data', variant: 'destructive' });
+    } finally {
+      setClearingData(false);
+      setClearDataStep(0);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -2017,13 +2048,80 @@ export default function DeveloperDashboard() {
                       <p>• <strong>Step 3:</strong> Note the map name and set it as AWS_LOCATION_MAP_NAME secret</p>
                       <p>• <strong>Required Policy:</strong> AmazonLocationServiceReadOnlyAccess</p>
                     </div>
-                  </CardContent>
-                </Card>
               </CardContent>
             </Card>
+
+            {/* Danger Zone - Clear Data */}
+            <Card className="mt-6 border-destructive/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-destructive">
+                  <Trash2 className="w-5 h-5" />
+                  Danger Zone
+                </CardTitle>
+                <CardDescription>
+                  Clear all test data before publishing to production
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 rounded-lg border-2 border-dashed border-destructive/30 bg-destructive/5">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This will delete all attendance records, leave requests, face data, audit logs, invite history, and notifications. User accounts and companies will remain intact.
+                  </p>
+                  <Button variant="destructive" onClick={() => setClearDataStep(1)} disabled={clearingData}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All Test Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </CardContent>
+        </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Clear Data - First Confirmation */}
+      <AlertDialog open={clearDataStep === 1} onOpenChange={(o) => !o && setClearDataStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Clear All Test Data?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all attendance records, leave requests, face data, audit logs, and other test data. Company and user accounts will NOT be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setClearDataStep(2)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear Data - Second Confirmation */}
+      <AlertDialog open={clearDataStep === 2} onOpenChange={(o) => !o && setClearDataStep(0)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Are you ABSOLUTELY sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All attendance, leave, face verification, notification, and audit data will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearData} disabled={clearingData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {clearingData ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              {clearingData ? 'Clearing...' : 'Delete Everything'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <MobileBottomNav />
       <div className="h-16 sm:hidden" />
