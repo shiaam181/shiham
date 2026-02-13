@@ -45,8 +45,14 @@ Deno.serve(async (req) => {
     }
 
     // Can't delete yourself
-    if (target_user_id === user.id) {
+    if (target_user_id === userId) {
       return new Response(JSON.stringify({ error: 'Cannot delete yourself' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Check target's role - no one can delete owners or developers
+    const { data: targetRole } = await adminClient.from('user_roles').select('role').eq('user_id', target_user_id).single()
+    if (targetRole?.role === 'owner' || targetRole?.role === 'developer') {
+      return new Response(JSON.stringify({ error: 'Cannot delete owners or developers' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Get target profile
@@ -56,11 +62,6 @@ Deno.serve(async (req) => {
     if (isOwner && !isDev) {
       if (!callerProfile?.company_id || callerProfile.company_id !== targetProfile?.company_id) {
         return new Response(JSON.stringify({ error: 'Can only delete employees in your company' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      // Owner can't delete other owners or developers
-      const { data: targetRole } = await adminClient.from('user_roles').select('role').eq('user_id', target_user_id).single()
-      if (targetRole?.role === 'owner' || targetRole?.role === 'developer') {
-        return new Response(JSON.stringify({ error: 'Cannot delete owners or developers' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
     }
 

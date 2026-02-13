@@ -933,7 +933,7 @@ export default function CompanyManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {u.role !== 'developer' && (
+                              {u.role !== 'developer' && u.role !== 'owner' && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
