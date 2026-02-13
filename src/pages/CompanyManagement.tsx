@@ -1123,7 +1123,7 @@ export default function CompanyManagement() {
         </AlertDialog>
 
         {/* Delete Employee - Second Confirmation */}
-        <AlertDialog open={deleteEmpStep === 2} onOpenChange={(o) => { if (!o) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
+        <AlertDialog open={deleteEmpStep === 2} onOpenChange={(o) => { if (!o && !isDeletingEmp) { setDeleteEmpStep(0); setDeleteEmployee(null); } }}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -1135,11 +1135,15 @@ export default function CompanyManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteEmployee} disabled={isDeletingEmp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogCancel disabled={isDeletingEmp}>Cancel</AlertDialogCancel>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteEmployee}
+                disabled={isDeletingEmp}
+              >
                 {isDeletingEmp ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                 {isDeletingEmp ? 'Deleting...' : 'Delete Permanently'}
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
