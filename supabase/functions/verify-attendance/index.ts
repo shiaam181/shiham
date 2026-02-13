@@ -284,15 +284,16 @@ serve(async (req: Request): Promise<Response> => {
 
     // Auth verification
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const { data: claimsData, error: authError } = await supabaseAuth.auth.getClaims(token);
     
-    if (authError || !user) {
+    if (authError || !claimsData?.claims) {
       console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized", code: "INVALID_TOKEN" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const user = { id: claimsData.claims.sub as string };
 
     const body: VerifyAttendanceRequest = await req.json();
     const { challenge_token, captured_image, latitude, longitude, gps_timestamp, action } = body;
