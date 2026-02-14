@@ -6,12 +6,14 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
+  console.log('delete-employee function called, method:', req.method)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader)
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'No auth' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
