@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface EmployeeMapViewProps {
   locations: EmployeeLocation[];
-  isLoading: boolean;
+  isLoading?: boolean;
   onEmployeeClick: (employee: EmployeeLocation) => void;
 }
 
