@@ -25,14 +25,24 @@ function getEmployeeColor(name: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
+// Sanitize string for safe HTML insertion
+function sanitizeHtml(str: string): string {
+  return str.replace(/[<>"'&]/g, (char) => {
+    const map: Record<string, string> = { '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '&': '&amp;' };
+    return map[char] || char;
+  });
+}
+
 // Get initials from full name
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  return sanitizeHtml(
+    name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  );
 }
 
 // Get location freshness color
@@ -338,9 +348,9 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
 
         const popup = new maplibregl.Popup({ offset: 25, closeButton: false }).setHTML(`
           <div style="text-align:center;min-width:140px;padding:4px;">
-            <p style="font-weight:600;font-size:14px;margin:0 0 4px 0;">${emp.full_name}</p>
+            <p style="font-weight:600;font-size:14px;margin:0 0 4px 0;">${sanitizeHtml(emp.full_name)}</p>
             <p style="font-size:12px;color:#6b7280;margin:0 0 4px 0;">
-              ${emp.department || 'No dept'} • ${emp.position || 'No position'}
+              ${sanitizeHtml(emp.department || 'No dept')} • ${sanitizeHtml(emp.position || 'No position')}
             </p>
             <p style="font-size:11px;color:#9ca3af;margin:0;">
               ${formatDistanceToNow(new Date(emp.recorded_at), { addSuffix: true })}
@@ -367,7 +377,7 @@ export function EmployeeMapView({ locations, isLoading, onEmployeeClick }: Emplo
               display:flex;align-items:center;justify-content:center;
               color:white;font-size:8px;font-weight:700;flex-shrink:0;
             ">${getInitials(emp.full_name)}</div>
-            <span style="font-size:12px;font-weight:500;">${emp.full_name}</span>
+            <span style="font-size:12px;font-weight:500;">${sanitizeHtml(emp.full_name)}</span>
           </div>
         `).join('');
 
