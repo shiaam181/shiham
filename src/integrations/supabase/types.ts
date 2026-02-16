@@ -373,6 +373,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_live_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       face_reference_images: {
@@ -475,6 +482,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invite_usage_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
             referencedColumns: ["id"]
           },
         ]
@@ -675,6 +689,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_shift_id_fkey"
             columns: ["shift_id"]
             isOneToOne: false
@@ -810,7 +831,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      companies_public: {
+        Row: {
+          brand_color: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          tagline: string | null
+        }
+        Insert: {
+          brand_color?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          tagline?: string | null
+        }
+        Update: {
+          brand_color?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          tagline?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_challenges: { Args: never; Returns: undefined }

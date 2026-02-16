@@ -9,8 +9,12 @@ const corsHeaders = {
 interface GetCompanyByInviteRequest {
   inviteCode?: string;
   invite?: string;
-  incrementUsage?: boolean; // Set to true when actually signing up
+  incrementUsage?: boolean;
 }
+
+// Rate limiting: 20 requests per IP per hour
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -18,10 +22,43 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // --- Rate limiting by IP ---
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("cf-connecting-ip") || "unknown";
+    const rateLimitKey = `invite_lookup_${clientIp}`;
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
+
+    const { data: rlData } = await supabase
+      .from("otp_rate_limits")
+      .select("request_count, first_request_at")
+      .eq("phone", rateLimitKey)
+      .gte("first_request_at", windowStart.toISOString())
+      .maybeSingle();
+
+    const currentCount = rlData?.request_count || 0;
+    if (currentCount >= RATE_LIMIT_MAX) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    await supabase.from("otp_rate_limits").upsert({
+      phone: rateLimitKey,
+      ip_address: clientIp,
+      request_count: currentCount + 1,
+      first_request_at: rlData ? rlData.first_request_at : now.toISOString(),
+      last_request_at: now.toISOString(),
+    }, { onConflict: "phone" });
+
+    // --- Main logic ---
     const body: GetCompanyByInviteRequest = await req.json().catch(() => ({}));
 
-    // Some apps/chat clients can mangle links (trailing punctuation, etc.).
-    // Extract a safe invite token so valid invites don't get rejected.
     const rawInvite = String(body.inviteCode ?? body.invite ?? "").trim();
     const inviteCode = rawInvite.match(/[A-Za-z0-9_-]{6,64}/)?.[0] || "";
 
@@ -34,17 +71,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Extra guardrail: keep the token size bounded.
     if (inviteCode.length < 6 || inviteCode.length > 64) {
       return new Response(JSON.stringify({ error: "Invalid invite code" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const candidateCodes = Array.from(
       new Set([inviteCode, inviteCode.toLowerCase(), inviteCode.toUpperCase()])
@@ -72,7 +104,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Check if invite has expired
     if (data.invite_expires_at) {
       const expiryDate = new Date(data.invite_expires_at);
       if (expiryDate < new Date()) {
@@ -83,9 +114,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Check if invite has reached max uses
     const currentUses = data.invite_uses_count ?? 0;
-    const maxUses = data.invite_max_uses; // null = unlimited
+    const maxUses = data.invite_max_uses;
     if (maxUses !== null && currentUses >= maxUses) {
       return new Response(JSON.stringify({ error: "This invite link has reached its usage limit" }), {
         status: 410,
@@ -93,7 +123,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Increment usage if requested (during actual signup)
     if (incrementUsage) {
       const { error: updateError } = await supabase
         .from("companies")
@@ -105,7 +134,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Calculate remaining uses
     const remainingUses = maxUses === null ? null : maxUses - currentUses;
 
     return new Response(
@@ -126,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in get-company-by-invite:", error);
-    return new Response(JSON.stringify({ error: error?.message || "An error occurred" }), {
+    return new Response(JSON.stringify({ error: "An error occurred" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
