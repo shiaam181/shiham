@@ -8,6 +8,7 @@ import { useFaceVerificationSetting } from "@/hooks/useFaceVerificationSetting";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { hasFaceEmbedding } from "@/lib/faceEmbedding";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 // Invite flow removed - employees now search for company during signup
 import Auth from "./pages/Auth";
@@ -251,6 +252,7 @@ function AppRoutes() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <PWAInstallPrompt />
+      <PWAUpdatePrompt />
       <UpdateNotification />
     </>
   );
