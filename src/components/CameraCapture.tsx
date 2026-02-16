@@ -48,6 +48,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
   const animationFrameRef = useRef<number | null>(null);
   const captureTriggeredRef = useRef(false);
   const faceFrameCountRef = useRef(0);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,6 +93,28 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
       });
   }, []);
 
+  const stopCamera = useCallback(() => {
+    // Stop all tracks via ref (always current)
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    // Also clean state-based stream
+    setStream(prev => {
+      if (prev) prev.getTracks().forEach(track => track.stop());
+      return null;
+    });
+    // Cancel any pending detection frames
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    // Detach video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
   // Start camera when models are ready
   useEffect(() => {
     if (!modelsLoading) {
@@ -99,9 +122,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
     return () => {
       stopCamera();
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
     };
   }, [modelsLoading]);
 
@@ -115,6 +135,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         audio: false
       });
       
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       
       if (videoRef.current) {
@@ -122,7 +143,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play();
           setIsLoading(false);
-          // Start face detection loop
           startFaceDetection();
         };
       }
@@ -130,13 +150,6 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
       console.error('Camera error:', err);
       setError('Unable to access camera. Please grant permission.');
       setIsLoading(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
     }
   };
 
@@ -206,12 +219,9 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
     }
     
     const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
-    stopCamera();
     
-    // Cancel detection loop
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
+    // Immediately stop camera - detection is done
+    stopCamera();
 
     // Verify face if reference exists
     if (requiresFaceVerification && validReferenceEmbedding) {
