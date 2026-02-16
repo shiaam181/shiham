@@ -90,47 +90,39 @@ function clusterLocations(locations: EmployeeLocation[]): Cluster[] {
   return clusters;
 }
 
-// Create a single employee marker
+// Create a single employee marker (WhatsApp-style circle with initial)
 function createSingleMarkerElement(employee: EmployeeLocation): HTMLDivElement {
   const color = getEmployeeColor(employee.full_name);
-  const initials = getInitials(employee.full_name);
+  const initial = sanitizeHtml(employee.full_name.charAt(0).toUpperCase());
   const statusColor = getStatusColor(employee.recorded_at);
 
   const el = document.createElement('div');
   el.className = 'employee-map-marker';
   el.style.cursor = 'pointer';
   el.innerHTML = `
-    <div style="position:relative;width:44px;height:52px;">
+    <div style="position:relative;width:48px;height:56px;">
       <div style="
-        width:40px;height:40px;border-radius:50%;
+        width:46px;height:46px;border-radius:50%;
         background:${color};
         border:3px solid white;
-        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        box-shadow:0 2px 10px rgba(0,0,0,0.3);
         display:flex;align-items:center;justify-content:center;
-        color:white;font-weight:700;font-size:14px;
+        color:white;font-weight:700;font-size:20px;
         font-family:system-ui,-apple-system,sans-serif;
         position:relative;z-index:2;
-      ">${initials}</div>
+      ">${initial}</div>
       <div style="
-        width:12px;height:12px;border-radius:50%;
+        width:14px;height:14px;border-radius:50%;
         background:${statusColor};
-        border:2px solid white;
-        position:absolute;bottom:10px;right:-2px;z-index:3;
+        border:2.5px solid white;
+        position:absolute;bottom:12px;right:-1px;z-index:3;
       "></div>
       <div style="
         width:0;height:0;
-        border-left:8px solid transparent;
-        border-right:8px solid transparent;
-        border-top:10px solid white;
-        position:absolute;bottom:-6px;left:50%;
-        transform:translateX(-50%);z-index:1;
-      "></div>
-      <div style="
-        width:0;height:0;
-        border-left:6px solid transparent;
-        border-right:6px solid transparent;
-        border-top:8px solid ${color};
-        position:absolute;bottom:-3px;left:50%;
+        border-left:7px solid transparent;
+        border-right:7px solid transparent;
+        border-top:9px solid white;
+        position:absolute;bottom:-5px;left:50%;
         transform:translateX(-50%);z-index:1;
       "></div>
     </div>
@@ -138,65 +130,64 @@ function createSingleMarkerElement(employee: EmployeeLocation): HTMLDivElement {
   return el;
 }
 
-// Create a cluster marker showing multiple employees in a ring
+// Create a WhatsApp-style cluster marker with stacked overlapping avatars
 function createClusterMarkerElement(employees: EmployeeLocation[]): HTMLDivElement {
   const count = employees.length;
-  // Outer ring size scales with count
-  const size = Math.min(64 + count * 4, 90);
-  const innerCircleSize = 28;
-  const radius = (size - innerCircleSize) / 2 - 2;
+  const shown = Math.min(count, 3);
+  const avatarSize = 38;
+  const overlap = 14;
+  const stackWidth = avatarSize + (shown - 1) * (avatarSize - overlap);
+  const totalWidth = stackWidth + 30;
 
   const el = document.createElement('div');
   el.className = 'employee-map-cluster';
   el.style.cursor = 'pointer';
   el.style.position = 'relative';
-  el.style.width = `${size}px`;
-  el.style.height = `${size + 10}px`;
+  el.style.width = `${totalWidth}px`;
+  el.style.height = `${avatarSize + 14}px`;
 
-  // Build mini avatars arranged in a circle
-  const avatars = employees.slice(0, 8).map((emp, i) => {
-    const angle = (2 * Math.PI * i) / Math.min(count, 8) - Math.PI / 2;
-    const x = size / 2 + radius * Math.cos(angle) - 12;
-    const y = size / 2 + radius * Math.sin(angle) - 12;
+  // Stacked avatars overlapping left-to-right
+  const avatars = employees.slice(0, shown).map((emp, i) => {
     const color = getEmployeeColor(emp.full_name);
-    const initials = getInitials(emp.full_name);
+    const initial = sanitizeHtml(emp.full_name.charAt(0).toUpperCase());
+    const left = i * (avatarSize - overlap);
+    const zIndex = shown - i;
     return `<div style="
-      position:absolute;left:${x}px;top:${y}px;
-      width:24px;height:24px;border-radius:50%;
-      background:${color};border:2px solid white;
-      box-shadow:0 1px 4px rgba(0,0,0,0.2);
+      position:absolute;left:${left}px;top:0;
+      width:${avatarSize}px;height:${avatarSize}px;border-radius:50%;
+      background:${color};border:3px solid white;
+      box-shadow:0 2px 6px rgba(0,0,0,0.25);
       display:flex;align-items:center;justify-content:center;
-      color:white;font-weight:700;font-size:9px;
+      color:white;font-weight:700;font-size:16px;
       font-family:system-ui,-apple-system,sans-serif;
-      z-index:3;
-    ">${initials}</div>`;
+      z-index:${zIndex};
+    ">${initial}</div>`;
   }).join('');
 
-  // Center count badge
+  const badgeLeft = stackWidth - 4;
   el.innerHTML = `
-    <div style="position:relative;width:${size}px;height:${size}px;">
+    <div style="position:relative;width:${totalWidth}px;height:${avatarSize}px;">
       ${avatars}
       <div style="
-        position:absolute;
-        left:50%;top:50%;
-        transform:translate(-50%,-50%);
-        width:${innerCircleSize}px;height:${innerCircleSize}px;
-        border-radius:50%;
-        background:hsl(var(--primary));
-        border:3px solid white;
-        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        position:absolute;left:${badgeLeft}px;top:50%;
+        transform:translateY(-50%);
+        min-width:26px;height:26px;border-radius:13px;
+        background:#25D366;
+        border:2.5px solid white;
+        box-shadow:0 2px 6px rgba(0,0,0,0.3);
         display:flex;align-items:center;justify-content:center;
         color:white;font-weight:800;font-size:12px;
         font-family:system-ui,-apple-system,sans-serif;
-        z-index:4;
+        padding:0 4px;
+        z-index:${shown + 1};
       ">${count}</div>
     </div>
     <div style="
       width:0;height:0;
-      border-left:8px solid transparent;
-      border-right:8px solid transparent;
-      border-top:10px solid white;
-      position:absolute;bottom:-2px;left:50%;
+      border-left:7px solid transparent;
+      border-right:7px solid transparent;
+      border-top:9px solid white;
+      position:absolute;bottom:-5px;left:50%;
       transform:translateX(-50%);z-index:1;
     "></div>
   `;
