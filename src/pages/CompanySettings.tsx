@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Building2, Save, Mail, Phone, MapPin, Clock } from 'lucide-react';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import DataExportImport from '@/components/DataExportImport';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CompanySettings {
   id: string;
@@ -40,6 +42,7 @@ export default function CompanySettings() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { profile } = useAuth();
   
   // Check if user came from developer panel
   const fromDeveloper = location.state?.from === 'developer';
@@ -342,6 +345,11 @@ export default function CompanySettings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Data Backup & Restore */}
+        {profile?.company_id && (
+          <DataExportImport companyId={profile.company_id} companyName={companyName || 'company'} />
+        )}
 
         {/* Save Button */}
         <div className="flex justify-end">
