@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          priority: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_updates: {
         Row: {
           created_at: string
@@ -298,6 +334,36 @@ export type Database = {
           },
         ]
       }
+      employee_awards: {
+        Row: {
+          award_date: string
+          award_title: string
+          awarded_by: string
+          created_at: string
+          description: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          award_date?: string
+          award_title: string
+          awarded_by: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          award_date?: string
+          award_title?: string
+          awarded_by?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_consent: {
         Row: {
           consented_at: string | null
@@ -324,6 +390,51 @@ export type Database = {
           location_tracking_consented?: boolean | null
           revoked_at?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_feedback: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          id: string
+          is_anonymous: boolean | null
+          message: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          is_anonymous?: boolean | null
+          message: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          is_anonymous?: boolean | null
+          message?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -595,6 +706,63 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_runs: {
+        Row: {
+          created_at: string
+          gross_salary: number | null
+          id: string
+          leave_days: number | null
+          month: number
+          net_salary: number | null
+          overtime_hours: number | null
+          present_days: number | null
+          processed_at: string | null
+          processed_by: string | null
+          status: string
+          total_deductions: number | null
+          updated_at: string
+          user_id: string
+          working_days: number | null
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          gross_salary?: number | null
+          id?: string
+          leave_days?: number | null
+          month: number
+          net_salary?: number | null
+          overtime_hours?: number | null
+          present_days?: number | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          total_deductions?: number | null
+          updated_at?: string
+          user_id: string
+          working_days?: number | null
+          year: number
+        }
+        Update: {
+          created_at?: string
+          gross_salary?: number | null
+          id?: string
+          leave_days?: number | null
+          month?: number
+          net_salary?: number | null
+          overtime_hours?: number | null
+          present_days?: number | null
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: string
+          total_deductions?: number | null
+          updated_at?: string
+          user_id?: string
+          working_days?: number | null
+          year?: number
+        }
+        Relationships: []
+      }
       phone_otps: {
         Row: {
           attempts: number | null
@@ -703,6 +871,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      salary_structures: {
+        Row: {
+          basic_salary: number
+          created_at: string
+          da: number | null
+          effective_from: string
+          hra: number | null
+          id: string
+          is_active: boolean | null
+          other_allowances: number | null
+          other_deductions: number | null
+          pf_deduction: number | null
+          special_allowance: number | null
+          tax_deduction: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          basic_salary?: number
+          created_at?: string
+          da?: number | null
+          effective_from?: string
+          hra?: number | null
+          id?: string
+          is_active?: boolean | null
+          other_allowances?: number | null
+          other_deductions?: number | null
+          pf_deduction?: number | null
+          special_allowance?: number | null
+          tax_deduction?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          basic_salary?: number
+          created_at?: string
+          da?: number | null
+          effective_from?: string
+          hra?: number | null
+          id?: string
+          is_active?: boolean | null
+          other_allowances?: number | null
+          other_deductions?: number | null
+          pf_deduction?: number | null
+          special_allowance?: number | null
+          tax_deduction?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       shifts: {
         Row: {
