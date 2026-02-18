@@ -58,6 +58,8 @@ import RoleBasedHeader from '@/components/RoleBasedHeader';
 import { LiveTrackingSettings } from '@/components/LiveTrackingSettings';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
 import DataExportImport from '@/components/DataExportImport';
+import CompensationPayroll from '@/components/CompensationPayroll';
+import EmployeeEngagement from '@/components/EmployeeEngagement';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -807,11 +809,13 @@ export default function DeveloperDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Overview</TabsTrigger>
-            <TabsTrigger value="roles" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Roles</TabsTrigger>
-            <TabsTrigger value="tracking" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Tracking</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Settings</TabsTrigger>
+          <TabsList className="flex w-full h-auto p-1 overflow-x-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Overview</TabsTrigger>
+            <TabsTrigger value="roles" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Roles</TabsTrigger>
+            <TabsTrigger value="tracking" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Tracking</TabsTrigger>
+            <TabsTrigger value="payroll" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Payroll</TabsTrigger>
+            <TabsTrigger value="engagement" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Engagement</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs sm:text-sm py-2 px-2 sm:px-3 flex-shrink-0">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 sm:space-y-6">
@@ -1037,6 +1041,14 @@ export default function DeveloperDashboard() {
           <TabsContent value="tracking" className="space-y-6">
             <LiveTrackingSettings />
             <LiveLocationMap isDeveloper={true} />
+          </TabsContent>
+
+          <TabsContent value="payroll" className="space-y-6">
+            <CompensationPayroll />
+          </TabsContent>
+
+          <TabsContent value="engagement" className="space-y-6">
+            <EmployeeEngagement />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
