@@ -57,6 +57,7 @@ import NotificationBell from '@/components/NotificationBell';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import { LiveTrackingSettings } from '@/components/LiveTrackingSettings';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
+import DataExportImport from '@/components/DataExportImport';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -2050,6 +2051,11 @@ export default function DeveloperDashboard() {
                     </div>
               </CardContent>
             </Card>
+
+            {/* Data Backup & Restore */}
+            <div className="mt-6">
+              <DataExportImport />
+            </div>
 
             {/* Danger Zone - Clear Data */}
             <Card className="mt-6 border-destructive/50">
