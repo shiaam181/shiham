@@ -35,6 +35,7 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import PendingApproval from "./pages/PendingApproval";
 import EmployeeAttendance from "./pages/EmployeeAttendance";
 import NotFound from "./pages/NotFound";
+import PayrollTeamDashboard from "./pages/PayrollTeamDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import UpdateNotification from "./components/UpdateNotification";
@@ -247,6 +248,7 @@ function AppRoutes() {
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
+        <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<NotFound />} />

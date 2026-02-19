@@ -29,14 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Shield, User, Code, Save, AlertTriangle } from 'lucide-react';
+import { Search, Shield, User, Code, Save, AlertTriangle, Building, Calculator } from 'lucide-react';
 
 interface UserWithRole {
   user_id: string;
   full_name: string;
   email: string;
   department: string | null;
-  role: 'admin' | 'employee' | 'developer';
+  role: 'admin' | 'employee' | 'developer' | 'owner' | 'payroll_team';
   is_active: boolean;
 }
 
@@ -74,7 +74,7 @@ export default function RoleManagement() {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
         return {
           ...profile,
-          role: (userRole?.role as 'admin' | 'employee' | 'developer') || 'employee',
+          role: (userRole?.role as UserWithRole['role']) || 'employee',
         };
       });
 
@@ -111,7 +111,7 @@ export default function RoleManagement() {
       // Update the role
       const { error } = await supabase
         .from('user_roles')
-        .update({ role: newRole as 'admin' | 'developer' | 'employee' })
+        .update({ role: newRole as any })
         .eq('user_id', selectedUser.user_id);
 
       if (error) throw error;
@@ -149,6 +149,20 @@ export default function RoleManagement() {
           <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30">
             <Shield className="w-3 h-3 mr-1" />
             Admin
+          </Badge>
+        );
+      case 'owner':
+        return (
+          <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30">
+            <Building className="w-3 h-3 mr-1" />
+            Owner
+          </Badge>
+        );
+      case 'payroll_team':
+        return (
+          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
+            <Calculator className="w-3 h-3 mr-1" />
+            Payroll Team
           </Badge>
         );
       default:
@@ -266,6 +280,8 @@ export default function RoleManagement() {
                           <SelectContent>
                             <SelectItem value="employee">Employee</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="owner">Owner</SelectItem>
+                            <SelectItem value="payroll_team">Payroll Team</SelectItem>
                             <SelectItem value="developer">Developer</SelectItem>
                           </SelectContent>
                         </Select>
@@ -310,6 +326,18 @@ export default function RoleManagement() {
                 <>
                   <strong>Note:</strong> Admin role grants access to the admin panel for
                   managing employees, attendance, leaves, and reports.
+                </>
+              )}
+              {newRole === 'owner' && (
+                <>
+                  <strong>Note:</strong> Owner role grants management access for their assigned company,
+                  including employee approvals and attendance oversight.
+                </>
+              )}
+              {newRole === 'payroll_team' && (
+                <>
+                  <strong>Note:</strong> Payroll Team role grants access to the Payroll Processing dashboard
+                  to review and process approved payroll entries.
                 </>
               )}
               {newRole === 'employee' && (
