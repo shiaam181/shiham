@@ -6,29 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { DollarSign, Users, FileText, Plus, Loader2, Calculator, TrendingUp, IndianRupee } from 'lucide-react';
+import { Users, FileText, Plus, Loader2, Calculator, TrendingUp, IndianRupee, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -62,7 +48,15 @@ interface PayrollRun {
   net_salary: number;
   status: string;
   processed_at: string | null;
-  profile?: { full_name: string; email: string };
+  profile?: { full_name: string; email: string; department: string | null };
+}
+
+interface AttendanceSummary {
+  presentDays: number;
+  leaveDays: number;
+  absentDays: number;
+  overtimeMinutes: number;
+  totalWorkingDays: number;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -76,6 +70,8 @@ export default function CompensationPayroll() {
   const [loading, setLoading] = useState(true);
   const [showSalaryDialog, setShowSalaryDialog] = useState(false);
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
+  const [showSalaryDetailDialog, setShowSalaryDetailDialog] = useState(false);
+  const [selectedSalaryDetail, setSelectedSalaryDetail] = useState<SalaryStructure | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Salary form
@@ -89,6 +85,10 @@ export default function CompensationPayroll() {
   const [taxDeduction, setTaxDeduction] = useState('');
   const [otherDeductions, setOtherDeductions] = useState('');
 
+  // Auto attendance detection
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+
   // Payroll form
   const [payrollMonth, setPayrollMonth] = useState(String(new Date().getMonth() + 1));
   const [payrollYear, setPayrollYear] = useState(String(new Date().getFullYear()));
@@ -96,6 +96,38 @@ export default function CompensationPayroll() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Auto-detect attendance when employee is selected
+  useEffect(() => {
+    if (selectedEmployee) {
+      fetchAttendanceSummary(selectedEmployee);
+    } else {
+      setAttendanceSummary(null);
+    }
+  }, [selectedEmployee]);
+
+  const fetchAttendanceSummary = async (userId: string) => {
+    setLoadingAttendance(true);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
+    const { data } = await supabase.from('attendance').select('status, overtime_minutes')
+      .eq('user_id', userId).gte('date', startDate).lt('date', endDate);
+
+    if (data) {
+      setAttendanceSummary({
+        presentDays: data.filter(a => a.status === 'present').length,
+        leaveDays: data.filter(a => a.status === 'leave').length,
+        absentDays: data.filter(a => a.status === 'absent').length,
+        overtimeMinutes: data.reduce((sum, a) => sum + (a.overtime_minutes || 0), 0),
+        totalWorkingDays: data.length,
+      });
+    }
+    setLoadingAttendance(false);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -107,7 +139,6 @@ export default function CompensationPayroll() {
 
     if (empRes.data) setEmployees(empRes.data);
 
-    // Map profile data to salary structures
     if (salaryRes.data && empRes.data) {
       const mapped = salaryRes.data.map(s => ({
         ...s,
@@ -134,7 +165,6 @@ export default function CompensationPayroll() {
     }
     setSaving(true);
 
-    // Deactivate existing salary for this employee
     await supabase.from('salary_structures').update({ is_active: false }).eq('user_id', selectedEmployee);
 
     const { error } = await supabase.from('salary_structures').insert({
@@ -170,6 +200,7 @@ export default function CompensationPayroll() {
     setPfDeduction('');
     setTaxDeduction('');
     setOtherDeductions('');
+    setAttendanceSummary(null);
   };
 
   const runPayroll = async () => {
@@ -177,7 +208,6 @@ export default function CompensationPayroll() {
     const month = parseInt(payrollMonth);
     const year = parseInt(payrollYear);
 
-    // Get all active salary structures
     const { data: salaries } = await supabase.from('salary_structures').select('*').eq('is_active', true);
 
     if (!salaries || salaries.length === 0) {
@@ -186,7 +216,6 @@ export default function CompensationPayroll() {
       return;
     }
 
-    // Get attendance data for the month
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
@@ -204,8 +233,7 @@ export default function CompensationPayroll() {
       const netSalary = grossSalary - totalDeductions;
 
       return {
-        month,
-        year,
+        month, year,
         user_id: salary.user_id,
         working_days: presentDays + leaveDays,
         present_days: presentDays,
@@ -218,7 +246,6 @@ export default function CompensationPayroll() {
       };
     });
 
-    // Delete existing draft payroll for same month/year
     await supabase.from('payroll_runs').delete().eq('month', month).eq('year', year).eq('status', 'draft');
 
     const { error } = await supabase.from('payroll_runs').insert(payrollEntries);
@@ -234,15 +261,15 @@ export default function CompensationPayroll() {
   };
 
   const approvePayroll = async (id: string) => {
-    const { error } = await supabase.from('payroll_runs').update({ 
-      status: 'approved', 
-      processed_at: new Date().toISOString() 
+    const { error } = await supabase.from('payroll_runs').update({
+      status: 'approved',
+      processed_at: new Date().toISOString()
     }).eq('id', id);
 
     if (error) {
       toast({ title: 'Error', description: 'Failed to approve', variant: 'destructive' });
     } else {
-      toast({ title: 'Approved', description: 'Payroll entry approved' });
+      toast({ title: 'Approved', description: 'Payroll approved and sent to Payroll Team' });
       fetchData();
     }
   };
@@ -262,60 +289,62 @@ export default function CompensationPayroll() {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
+      {/* Summary Cards - Professional blue theme */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-              <IndianRupee className="w-4 h-4 text-emerald-500" />
+        <Card className="p-4 border-l-4 border-l-[hsl(210,80%,50%)] bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[hsl(210,80%,50%)]/10 flex items-center justify-center">
+              <IndianRupee className="w-5 h-5 text-[hsl(210,80%,50%)]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Monthly Gross</p>
-              <p className="text-sm font-bold">{formatCurrency(totalGross)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Monthly Gross</p>
+              <p className="text-base font-bold">{formatCurrency(totalGross)}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-blue-500" />
+        <Card className="p-4 border-l-4 border-l-[hsl(150,60%,40%)] bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[hsl(150,60%,40%)]/10 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-[hsl(150,60%,40%)]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Net Payable</p>
-              <p className="text-sm font-bold">{formatCurrency(totalNet)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Payable</p>
+              <p className="text-base font-bold">{formatCurrency(totalNet)}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Users className="w-4 h-4 text-purple-500" />
+        <Card className="p-4 border-l-4 border-l-[hsl(260,60%,55%)] bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[hsl(260,60%,55%)]/10 flex items-center justify-center">
+              <Users className="w-5 h-5 text-[hsl(260,60%,55%)]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">On Payroll</p>
-              <p className="text-sm font-bold">{salaryStructures.length}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">On Payroll</p>
+              <p className="text-base font-bold">{salaryStructures.length}</p>
             </div>
           </div>
         </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-orange-500" />
+        <Card className="p-4 border-l-4 border-l-[hsl(30,80%,55%)] bg-card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[hsl(30,80%,55%)]/10 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-[hsl(30,80%,55%)]" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Payroll Runs</p>
-              <p className="text-sm font-bold">{payrollRuns.length}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Payroll Runs</p>
+              <p className="text-base font-bold">{payrollRuns.length}</p>
             </div>
           </div>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="salary">Salary Structures</TabsTrigger>
           <TabsTrigger value="payroll">Payroll Runs</TabsTrigger>
+          <TabsTrigger value="statement">Salary Statement</TabsTrigger>
         </TabsList>
 
+        {/* Salary Structures Tab */}
         <TabsContent value="salary" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">Employee Salary Structures</h3>
@@ -336,13 +365,14 @@ export default function CompensationPayroll() {
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-[hsl(210,80%,50%)]/5">
                     <TableHead>Employee</TableHead>
                     <TableHead className="text-right">Basic</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">HRA</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">DA</TableHead>
                     <TableHead className="text-right">Gross</TableHead>
                     <TableHead className="text-right">Net</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -350,7 +380,7 @@ export default function CompensationPayroll() {
                     const gross = Number(s.basic_salary) + Number(s.hra) + Number(s.da) + Number(s.special_allowance) + Number(s.other_allowances);
                     const ded = Number(s.pf_deduction) + Number(s.tax_deduction) + Number(s.other_deductions);
                     return (
-                      <TableRow key={s.id}>
+                      <TableRow key={s.id} className="hover:bg-muted/30">
                         <TableCell>
                           <p className="font-medium text-sm">{s.profile?.full_name || 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground">{s.profile?.department || ''}</p>
@@ -359,7 +389,12 @@ export default function CompensationPayroll() {
                         <TableCell className="text-right text-sm hidden sm:table-cell">{formatCurrency(Number(s.hra))}</TableCell>
                         <TableCell className="text-right text-sm hidden sm:table-cell">{formatCurrency(Number(s.da))}</TableCell>
                         <TableCell className="text-right text-sm font-medium">{formatCurrency(gross)}</TableCell>
-                        <TableCell className="text-right text-sm font-medium text-emerald-600">{formatCurrency(gross - ded)}</TableCell>
+                        <TableCell className="text-right text-sm font-medium text-[hsl(150,60%,40%)]">{formatCurrency(gross - ded)}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => { setSelectedSalaryDetail(s); setShowSalaryDetailDialog(true); }}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -369,6 +404,7 @@ export default function CompensationPayroll() {
           )}
         </TabsContent>
 
+        {/* Payroll Runs Tab */}
         <TabsContent value="payroll" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-semibold">Monthly Payroll</h3>
@@ -389,10 +425,11 @@ export default function CompensationPayroll() {
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-[hsl(210,80%,50%)]/5">
                     <TableHead>Employee</TableHead>
                     <TableHead>Period</TableHead>
                     <TableHead className="text-right hidden sm:table-cell">Present</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">OT (hrs)</TableHead>
                     <TableHead className="text-right">Net Salary</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead></TableHead>
@@ -400,19 +437,24 @@ export default function CompensationPayroll() {
                 </TableHeader>
                 <TableBody>
                   {payrollRuns.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium text-sm">{p.profile?.full_name || 'Unknown'}</TableCell>
+                    <TableRow key={p.id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <p className="font-medium text-sm">{p.profile?.full_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{p.profile?.department || ''}</p>
+                      </TableCell>
                       <TableCell className="text-sm">{MONTHS[p.month - 1]} {p.year}</TableCell>
                       <TableCell className="text-right text-sm hidden sm:table-cell">{p.present_days}/{p.working_days}</TableCell>
-                      <TableCell className="text-right text-sm font-medium text-emerald-600">{formatCurrency(Number(p.net_salary))}</TableCell>
+                      <TableCell className="text-right text-sm hidden sm:table-cell">{p.overtime_hours}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-[hsl(150,60%,40%)]">{formatCurrency(Number(p.net_salary))}</TableCell>
                       <TableCell>
-                        <Badge variant={p.status === 'approved' ? 'default' : 'secondary'} className="text-xs">
+                        <Badge variant={p.status === 'approved' ? 'default' : p.status === 'processed' ? 'outline' : 'secondary'}
+                          className={`text-xs ${p.status === 'approved' ? 'bg-[hsl(210,80%,50%)] text-white' : p.status === 'processed' ? 'border-[hsl(150,60%,40%)] text-[hsl(150,60%,40%)]' : ''}`}>
                           {p.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {p.status === 'draft' && (
-                          <Button size="sm" variant="outline" onClick={() => approvePayroll(p.id)}>
+                          <Button size="sm" variant="outline" onClick={() => approvePayroll(p.id)} className="text-xs">
                             Approve
                           </Button>
                         )}
@@ -424,9 +466,124 @@ export default function CompensationPayroll() {
             </div>
           )}
         </TabsContent>
+
+        {/* Salary Statement Tab - Inspired by reference */}
+        <TabsContent value="statement" className="space-y-4">
+          <Card>
+            <CardHeader className="bg-[hsl(210,80%,50%)]/5 rounded-t-lg border-b">
+              <CardTitle className="text-lg">Salary Statement</CardTitle>
+              <CardDescription>Monthly salary breakdown for all employees</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {salaryStructures.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  No salary structures to display
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[hsl(210,80%,50%)]/5">
+                        <TableHead className="font-semibold">Component</TableHead>
+                        {salaryStructures.map(s => (
+                          <TableHead key={s.id} className="text-right font-semibold min-w-[120px]">
+                            {s.profile?.full_name || 'Unknown'}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Earnings Section */}
+                      <TableRow className="bg-[hsl(150,60%,40%)]/5">
+                        <TableCell colSpan={salaryStructures.length + 1} className="font-semibold text-[hsl(150,60%,40%)]">Earnings</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Basic Salary</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.basic_salary))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">House Rent Allowance</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.hra))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Dearness Allowance</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.da))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Special Allowance</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.special_allowance))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Other Allowances</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.other_allowances))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow className="font-semibold border-t-2">
+                        <TableCell>Gross Earnings</TableCell>
+                        {salaryStructures.map(s => {
+                          const gross = Number(s.basic_salary) + Number(s.hra) + Number(s.da) + Number(s.special_allowance) + Number(s.other_allowances);
+                          return <TableCell key={s.id} className="text-right">{formatCurrency(gross)}</TableCell>;
+                        })}
+                      </TableRow>
+
+                      {/* Deductions Section */}
+                      <TableRow className="bg-destructive/5">
+                        <TableCell colSpan={salaryStructures.length + 1} className="font-semibold text-destructive">Deductions</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">PF</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.pf_deduction))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Income Tax</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.tax_deduction))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="text-sm">Others</TableCell>
+                        {salaryStructures.map(s => (
+                          <TableCell key={s.id} className="text-right text-sm">{formatCurrency(Number(s.other_deductions))}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow className="font-semibold border-t-2">
+                        <TableCell>Total Deductions</TableCell>
+                        {salaryStructures.map(s => {
+                          const ded = Number(s.pf_deduction) + Number(s.tax_deduction) + Number(s.other_deductions);
+                          return <TableCell key={s.id} className="text-right text-destructive">{formatCurrency(ded)}</TableCell>;
+                        })}
+                      </TableRow>
+
+                      {/* Net Pay */}
+                      <TableRow className="bg-[hsl(210,80%,50%)]/5 font-bold text-base">
+                        <TableCell>Net Pay</TableCell>
+                        {salaryStructures.map(s => {
+                          const gross = Number(s.basic_salary) + Number(s.hra) + Number(s.da) + Number(s.special_allowance) + Number(s.other_allowances);
+                          const ded = Number(s.pf_deduction) + Number(s.tax_deduction) + Number(s.other_deductions);
+                          return <TableCell key={s.id} className="text-right text-[hsl(150,60%,40%)]">{formatCurrency(gross - ded)}</TableCell>;
+                        })}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
-      {/* Add Salary Dialog */}
+      {/* Add Salary Dialog - with attendance auto-detection */}
       <Dialog open={showSalaryDialog} onOpenChange={setShowSalaryDialog}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -445,6 +602,38 @@ export default function CompensationPayroll() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Auto-detected attendance summary */}
+            {selectedEmployee && (
+              <div className="p-3 rounded-lg bg-[hsl(210,80%,50%)]/5 border border-[hsl(210,80%,50%)]/20">
+                <p className="text-xs font-semibold text-[hsl(210,80%,50%)] mb-2">Current Month Attendance</p>
+                {loadingAttendance ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : attendanceSummary ? (
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <p className="text-lg font-bold text-[hsl(150,60%,40%)]">{attendanceSummary.presentDays}</p>
+                      <p className="text-[9px] text-muted-foreground">Present</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-amber-500">{attendanceSummary.leaveDays}</p>
+                      <p className="text-[9px] text-muted-foreground">Leave</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-destructive">{attendanceSummary.absentDays}</p>
+                      <p className="text-[9px] text-muted-foreground">Absent</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-[hsl(260,60%,55%)]">{Math.round(attendanceSummary.overtimeMinutes / 60)}h</p>
+                      <p className="text-[9px] text-muted-foreground">Overtime</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No attendance data this month</p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Basic Salary (₹)</Label>
@@ -489,12 +678,65 @@ export default function CompensationPayroll() {
         </DialogContent>
       </Dialog>
 
+      {/* Salary Detail Dialog */}
+      <Dialog open={showSalaryDetailDialog} onOpenChange={setShowSalaryDetailDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{selectedSalaryDetail?.profile?.full_name || 'Salary Details'}</DialogTitle>
+            <DialogDescription>{selectedSalaryDetail?.profile?.department || 'Employee'}</DialogDescription>
+          </DialogHeader>
+          {selectedSalaryDetail && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-[hsl(150,60%,40%)] uppercase tracking-wider">Earnings</p>
+                {[
+                  ['Basic Salary', selectedSalaryDetail.basic_salary],
+                  ['HRA', selectedSalaryDetail.hra],
+                  ['DA', selectedSalaryDetail.da],
+                  ['Special Allowance', selectedSalaryDetail.special_allowance],
+                  ['Other Allowances', selectedSalaryDetail.other_allowances],
+                ].map(([label, val]) => (
+                  <div key={label as string} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{label as string}</span>
+                    <span>{formatCurrency(Number(val))}</span>
+                  </div>
+                ))}
+              </div>
+              <hr />
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-destructive uppercase tracking-wider">Deductions</p>
+                {[
+                  ['PF', selectedSalaryDetail.pf_deduction],
+                  ['Tax', selectedSalaryDetail.tax_deduction],
+                  ['Others', selectedSalaryDetail.other_deductions],
+                ].map(([label, val]) => (
+                  <div key={label as string} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{label as string}</span>
+                    <span className="text-destructive">{formatCurrency(Number(val))}</span>
+                  </div>
+                ))}
+              </div>
+              <hr />
+              <div className="flex justify-between font-semibold">
+                <span>Net Pay</span>
+                <span className="text-[hsl(150,60%,40%)]">
+                  {formatCurrency(
+                    Number(selectedSalaryDetail.basic_salary) + Number(selectedSalaryDetail.hra) + Number(selectedSalaryDetail.da) + Number(selectedSalaryDetail.special_allowance) + Number(selectedSalaryDetail.other_allowances) -
+                    Number(selectedSalaryDetail.pf_deduction) - Number(selectedSalaryDetail.tax_deduction) - Number(selectedSalaryDetail.other_deductions)
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Run Payroll Dialog */}
       <Dialog open={showPayrollDialog} onOpenChange={setShowPayrollDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Run Monthly Payroll</DialogTitle>
-            <DialogDescription>Generate payroll based on attendance and salary structures</DialogDescription>
+            <DialogDescription>Generate payroll based on attendance and salary structures. Approved payroll will be sent to Payroll Team for processing.</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div>

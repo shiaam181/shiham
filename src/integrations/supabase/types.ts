@@ -1092,6 +1092,7 @@ export type Database = {
       }
       is_developer: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_payroll_team: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "employee" | "developer" | "owner"
