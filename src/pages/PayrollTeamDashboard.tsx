@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,11 +12,12 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { IndianRupee, Users, CheckCircle2, Clock, Loader2, FileText, LogOut, CreditCard } from 'lucide-react';
+import { IndianRupee, Users, CheckCircle2, Clock, Loader2, FileText, CreditCard, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import RoleBasedHeader from '@/components/RoleBasedHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import SalarySlipPDF from '@/components/SalarySlipPDF';
 
 interface PayrollEntry {
   id: string;
@@ -48,6 +49,12 @@ export default function PayrollTeamDashboard() {
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<PayrollEntry | null>(null);
   const [processNotes, setProcessNotes] = useState('');
+  const [companyName, setCompanyName] = useState('Company');
+
+  // Salary slip
+  const [showSalarySlip, setShowSalarySlip] = useState(false);
+  const [salarySlipData, setSalarySlipData] = useState<any>(null);
+  const [salaryStructures, setSalaryStructures] = useState<any[]>([]);
 
   useEffect(() => {
     fetchPayroll();
@@ -55,10 +62,15 @@ export default function PayrollTeamDashboard() {
 
   const fetchPayroll = async () => {
     setLoading(true);
-    const [payrollRes, empRes] = await Promise.all([
+    const [payrollRes, empRes, companyRes, salaryRes] = await Promise.all([
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }),
       supabase.from('profiles').select('user_id, full_name, email, department'),
+      supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
+      supabase.from('salary_structures').select('*').eq('is_active', true),
     ]);
+
+    if (companyRes.data) setCompanyName(companyRes.data.company_name);
+    if (salaryRes.data) setSalaryStructures(salaryRes.data);
 
     if (payrollRes.data && empRes.data) {
       const mapped = payrollRes.data.map(p => ({
@@ -90,6 +102,35 @@ export default function PayrollTeamDashboard() {
     setProcessingId(null);
   };
 
+  const openSalarySlip = (p: PayrollEntry) => {
+    const salary = salaryStructures.find((s: any) => s.user_id === p.user_id);
+    setSalarySlipData({
+      employeeName: p.profile?.full_name || 'Unknown',
+      department: p.profile?.department,
+      email: p.profile?.email || '',
+      month: p.month,
+      year: p.year,
+      workingDays: p.working_days,
+      presentDays: p.present_days,
+      leaveDays: p.leave_days,
+      overtimeHours: p.overtime_hours,
+      basicSalary: salary ? Number(salary.basic_salary) : 0,
+      hra: salary ? Number(salary.hra) : 0,
+      da: salary ? Number(salary.da) : 0,
+      specialAllowance: salary ? Number(salary.special_allowance) : 0,
+      otherAllowances: salary ? Number(salary.other_allowances) : 0,
+      pfDeduction: salary ? Number(salary.pf_deduction) : 0,
+      taxDeduction: salary ? Number(salary.tax_deduction) : 0,
+      otherDeductions: salary ? Number(salary.other_deductions) : 0,
+      grossSalary: Number(p.gross_salary),
+      totalDeductions: Number(p.total_deductions),
+      netSalary: Number(p.net_salary),
+      status: p.status,
+      companyName,
+    });
+    setShowSalarySlip(true);
+  };
+
   const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
 
   const approvedEntries = payrollRuns.filter(p => p.status === 'approved');
@@ -119,36 +160,36 @@ export default function PayrollTeamDashboard() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <Card className="p-3 border-l-4 border-l-amber-500">
+          <Card className="p-3 border-l-4 border-l-warning">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-500" />
+              <Clock className="w-5 h-5 text-warning" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pending</p>
                 <p className="text-lg font-bold">{approvedEntries.length}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-3 border-l-4 border-l-emerald-500">
+          <Card className="p-3 border-l-4 border-l-success">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              <CheckCircle2 className="w-5 h-5 text-success" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Processed</p>
                 <p className="text-lg font-bold">{processedEntries.length}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-3 border-l-4 border-l-blue-500">
+          <Card className="p-3 border-l-4 border-l-primary">
             <div className="flex items-center gap-2">
-              <IndianRupee className="w-5 h-5 text-blue-500" />
+              <IndianRupee className="w-5 h-5 text-primary" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pending Amount</p>
                 <p className="text-sm font-bold">{formatCurrency(totalPending)}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-3 border-l-4 border-l-purple-500">
+          <Card className="p-3 border-l-4 border-l-info">
             <div className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-purple-500" />
+              <CreditCard className="w-5 h-5 text-info" />
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Processed</p>
                 <p className="text-sm font-bold">{formatCurrency(totalProcessed)}</p>
@@ -177,7 +218,7 @@ export default function PayrollTeamDashboard() {
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-primary/5">
                       <TableHead>Employee</TableHead>
                       <TableHead>Period</TableHead>
                       <TableHead className="text-right hidden sm:table-cell">Gross</TableHead>
@@ -196,11 +237,16 @@ export default function PayrollTeamDashboard() {
                         <TableCell className="text-sm">{MONTHS[p.month - 1]} {p.year}</TableCell>
                         <TableCell className="text-right text-sm hidden sm:table-cell">{formatCurrency(Number(p.gross_salary))}</TableCell>
                         <TableCell className="text-right text-sm hidden sm:table-cell text-destructive">{formatCurrency(Number(p.total_deductions))}</TableCell>
-                        <TableCell className="text-right text-sm font-semibold text-emerald-600">{formatCurrency(Number(p.net_salary))}</TableCell>
+                        <TableCell className="text-right text-sm font-semibold text-success">{formatCurrency(Number(p.net_salary))}</TableCell>
                         <TableCell>
-                          <Button size="sm" onClick={() => { setSelectedEntry(p); setShowProcessDialog(true); }}>
-                            <CreditCard className="w-3 h-3 mr-1" /> Process
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button size="sm" onClick={() => { setSelectedEntry(p); setShowProcessDialog(true); }}>
+                              <CreditCard className="w-3 h-3 mr-1" /> Process
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => openSalarySlip(p)}>
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -220,11 +266,12 @@ export default function PayrollTeamDashboard() {
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-primary/5">
                       <TableHead>Employee</TableHead>
                       <TableHead>Period</TableHead>
                       <TableHead className="text-right">Net Pay</TableHead>
                       <TableHead>Processed</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -232,9 +279,14 @@ export default function PayrollTeamDashboard() {
                       <TableRow key={p.id}>
                         <TableCell className="font-medium text-sm">{p.profile?.full_name || 'Unknown'}</TableCell>
                         <TableCell className="text-sm">{MONTHS[p.month - 1]} {p.year}</TableCell>
-                        <TableCell className="text-right text-sm font-semibold text-emerald-600">{formatCurrency(Number(p.net_salary))}</TableCell>
+                        <TableCell className="text-right text-sm font-semibold text-success">{formatCurrency(Number(p.net_salary))}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {p.processed_at ? new Date(p.processed_at).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="ghost" onClick={() => openSalarySlip(p)}>
+                            <Download className="w-3 h-3 mr-1" /> Slip
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -268,7 +320,7 @@ export default function PayrollTeamDashboard() {
               <hr />
               <div className="flex justify-between text-sm font-semibold">
                 <span>Net Pay</span>
-                <span className="text-emerald-600">{selectedEntry ? formatCurrency(Number(selectedEntry.net_salary)) : ''}</span>
+                <span className="text-success">{selectedEntry ? formatCurrency(Number(selectedEntry.net_salary)) : ''}</span>
               </div>
             </div>
             <Textarea
@@ -286,6 +338,8 @@ export default function PayrollTeamDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SalarySlipPDF data={salarySlipData} open={showSalarySlip} onOpenChange={setShowSalarySlip} />
 
       <MobileBottomNav />
       <div className="h-16 sm:hidden" />
