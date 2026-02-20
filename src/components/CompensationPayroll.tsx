@@ -14,9 +14,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Users, FileText, Plus, Loader2, Calculator, TrendingUp, IndianRupee, Eye } from 'lucide-react';
+import { Users, FileText, Plus, Loader2, Calculator, TrendingUp, IndianRupee, Eye, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import SalarySlipPDF from '@/components/SalarySlipPDF';
 
 interface SalaryStructure {
   id: string;
@@ -73,6 +74,9 @@ export default function CompensationPayroll() {
   const [showSalaryDetailDialog, setShowSalaryDetailDialog] = useState(false);
   const [selectedSalaryDetail, setSelectedSalaryDetail] = useState<SalaryStructure | null>(null);
   const [saving, setSaving] = useState(false);
+  const [companyName, setCompanyName] = useState('Company');
+  const [showSalarySlip, setShowSalarySlip] = useState(false);
+  const [salarySlipData, setSalarySlipData] = useState<any>(null);
 
   // Salary form
   const [selectedEmployee, setSelectedEmployee] = useState('');
@@ -131,11 +135,14 @@ export default function CompensationPayroll() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [salaryRes, payrollRes, empRes] = await Promise.all([
+    const [salaryRes, payrollRes, empRes, companyRes] = await Promise.all([
       supabase.from('salary_structures').select('*').eq('is_active', true).order('created_at', { ascending: false }),
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(50),
       supabase.from('profiles').select('user_id, full_name, email, department').eq('is_active', true),
+      supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
     ]);
+
+    if (companyRes.data) setCompanyName(companyRes.data.company_name);
 
     if (empRes.data) setEmployees(empRes.data);
 
@@ -272,6 +279,35 @@ export default function CompensationPayroll() {
       toast({ title: 'Approved', description: 'Payroll approved and sent to Payroll Team' });
       fetchData();
     }
+  };
+
+  const openSalarySlip = (p: PayrollRun) => {
+    const salary = salaryStructures.find(s => s.user_id === p.user_id);
+    setSalarySlipData({
+      employeeName: p.profile?.full_name || 'Unknown',
+      department: p.profile?.department,
+      email: p.profile?.email || '',
+      month: p.month,
+      year: p.year,
+      workingDays: p.working_days,
+      presentDays: p.present_days,
+      leaveDays: p.leave_days,
+      overtimeHours: p.overtime_hours,
+      basicSalary: salary ? Number(salary.basic_salary) : 0,
+      hra: salary ? Number(salary.hra) : 0,
+      da: salary ? Number(salary.da) : 0,
+      specialAllowance: salary ? Number(salary.special_allowance) : 0,
+      otherAllowances: salary ? Number(salary.other_allowances) : 0,
+      pfDeduction: salary ? Number(salary.pf_deduction) : 0,
+      taxDeduction: salary ? Number(salary.tax_deduction) : 0,
+      otherDeductions: salary ? Number(salary.other_deductions) : 0,
+      grossSalary: Number(p.gross_salary),
+      totalDeductions: Number(p.total_deductions),
+      netSalary: Number(p.net_salary),
+      status: p.status,
+      companyName,
+    });
+    setShowSalarySlip(true);
   };
 
   const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
@@ -452,13 +488,20 @@ export default function CompensationPayroll() {
                           {p.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {p.status === 'draft' && (
-                          <Button size="sm" variant="outline" onClick={() => approvePayroll(p.id)} className="text-xs">
-                            Approve
-                          </Button>
-                        )}
-                      </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {p.status === 'draft' && (
+                              <Button size="sm" variant="outline" onClick={() => approvePayroll(p.id)} className="text-xs">
+                                Approve
+                              </Button>
+                            )}
+                            {(p.status === 'approved' || p.status === 'processed') && (
+                              <Button size="sm" variant="ghost" onClick={() => openSalarySlip(p)} className="text-xs">
+                                <Download className="w-3 h-3 mr-1" /> Slip
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -763,6 +806,8 @@ export default function CompensationPayroll() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SalarySlipPDF data={salarySlipData} open={showSalarySlip} onOpenChange={setShowSalarySlip} />
     </div>
   );
 }
