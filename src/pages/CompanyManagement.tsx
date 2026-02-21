@@ -188,8 +188,7 @@ export default function CompanyManagement() {
   };
 
   const handleSelectCompany = (company: Company) => {
-    setSelectedCompany(company);
-    fetchCompanyUsers(company.id);
+    navigate(`/developer/companies/${company.id}`);
   };
 
   const slugifyCompanyName = (name: string) =>
