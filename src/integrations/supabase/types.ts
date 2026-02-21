@@ -230,6 +230,7 @@ export type Database = {
       companies: {
         Row: {
           brand_color: string | null
+          brand_color_secondary: string | null
           created_at: string
           face_verification_disabled: boolean
           id: string
@@ -248,6 +249,7 @@ export type Database = {
         }
         Insert: {
           brand_color?: string | null
+          brand_color_secondary?: string | null
           created_at?: string
           face_verification_disabled?: boolean
           id?: string
@@ -266,6 +268,7 @@ export type Database = {
         }
         Update: {
           brand_color?: string | null
+          brand_color_secondary?: string | null
           created_at?: string
           face_verification_disabled?: boolean
           id?: string

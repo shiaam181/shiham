@@ -31,6 +31,7 @@ import Notifications from "./pages/Notifications";
 import Install from "./pages/Install";
 import Updates from "./pages/Updates";
 import CompanyManagement from "./pages/CompanyManagement";
+import CompanyDetail from "./pages/CompanyDetail";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import PendingApproval from "./pages/PendingApproval";
 import EmployeeAttendance from "./pages/EmployeeAttendance";
@@ -244,6 +245,7 @@ function AppRoutes() {
         <Route path="/admin/attendance/:id" element={<AdminRoute><EmployeeAttendance /></AdminRoute>} />
         <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
+        <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
