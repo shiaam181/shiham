@@ -226,23 +226,55 @@ export default function CompensationPayroll() {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-    const { data: attendance } = await supabase.from('attendance').select('user_id, status, overtime_minutes')
-      .gte('date', startDate).lt('date', endDate);
+    // Fetch attendance, holidays, and week-offs in parallel for accurate pro-rating
+    const [attendanceRes, holidaysRes, weekOffsRes] = await Promise.all([
+      supabase.from('attendance').select('user_id, status, overtime_minutes')
+        .gte('date', startDate).lt('date', endDate),
+      supabase.from('holidays').select('date')
+        .gte('date', startDate).lt('date', endDate),
+      supabase.from('week_offs').select('day_of_week')
+        .eq('is_global', true),
+    ]);
+
+    const attendance = attendanceRes.data || [];
+    const holidayDates = new Set((holidaysRes.data || []).map(h => h.date));
+    const weekOffDays = new Set((weekOffsRes.data || []).map(w => w.day_of_week));
+
+    // Calculate total working days in the month (exclude weekoffs & holidays)
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let totalWorkingDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayOfWeek = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
+      if (!weekOffDays.has(dayOfWeek) && !holidayDates.has(dateStr)) {
+        totalWorkingDays++;
+      }
+    }
+    // Fallback: if no week-offs configured, use calendar days
+    if (totalWorkingDays === 0) totalWorkingDays = daysInMonth;
 
     const payrollEntries = salaries.map(salary => {
-      const userAttendance = attendance?.filter(a => a.user_id === salary.user_id) || [];
+      const userAttendance = attendance.filter(a => a.user_id === salary.user_id);
       const presentDays = userAttendance.filter(a => a.status === 'present').length;
       const leaveDays = userAttendance.filter(a => a.status === 'leave').length;
       const totalOvertimeMin = userAttendance.reduce((sum, a) => sum + (a.overtime_minutes || 0), 0);
 
-      const grossSalary = Number(salary.basic_salary) + Number(salary.hra) + Number(salary.da) + Number(salary.special_allowance) + Number(salary.other_allowances);
-      const totalDeductions = Number(salary.pf_deduction) + Number(salary.tax_deduction) + Number(salary.other_deductions);
-      const netSalary = grossSalary - totalDeductions;
+      // Full month CTC components
+      const fullGross = Number(salary.basic_salary) + Number(salary.hra) + Number(salary.da) + Number(salary.special_allowance) + Number(salary.other_allowances);
+      const fullDeductions = Number(salary.pf_deduction) + Number(salary.tax_deduction) + Number(salary.other_deductions);
+
+      // Pro-rate: payable days = present + paid leave days
+      const payableDays = presentDays + leaveDays;
+      const proRateRatio = totalWorkingDays > 0 ? payableDays / totalWorkingDays : 0;
+
+      const grossSalary = Math.round(fullGross * proRateRatio * 100) / 100;
+      const totalDeductions = Math.round(fullDeductions * proRateRatio * 100) / 100;
+      const netSalary = Math.round((grossSalary - totalDeductions) * 100) / 100;
 
       return {
         month, year,
         user_id: salary.user_id,
-        working_days: presentDays + leaveDays,
+        working_days: totalWorkingDays,
         present_days: presentDays,
         leave_days: leaveDays,
         overtime_hours: Math.round((totalOvertimeMin / 60) * 100) / 100,
