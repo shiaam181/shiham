@@ -970,30 +970,34 @@ export default function Auth() {
     <div className="min-h-screen flex">
       {/* Left Side - Hero */}
       <div className="hidden lg:flex lg:w-1/2 gradient-hero p-12 flex-col justify-between relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/[0.02] rounded-full translate-y-1/3 -translate-x-1/4" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,_hsl(217_91%_50%/0.15)_0%,_transparent_60%)]" />
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-              <Clock className="w-7 h-7 text-white" />
+            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
+              <Clock className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl font-display font-bold text-white">AttendanceHub</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-tight">AttendanceHub</h1>
           </div>
-          <p className="text-white/80 text-lg mt-4 max-w-md">
+          <p className="text-white/70 text-base mt-4 max-w-md leading-relaxed">
             Professional employee attendance management with real-time tracking, GPS verification, and face recognition.
           </p>
         </div>
 
-        <div className="relative z-10 grid grid-cols-2 gap-4">
+        <div className="relative z-10 grid grid-cols-2 gap-3">
           {features.map((feature, i) => (
             <div 
               key={i} 
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
-              style={{ animationDelay: `${i * 100}ms` }}
+              className="bg-white/[0.07] backdrop-blur-sm rounded-xl p-4 border border-white/[0.08] hover:bg-white/[0.1] transition-colors duration-300"
             >
-              <feature.icon className="w-6 h-6 text-white mb-2" />
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-3">
+                <feature.icon className="w-4.5 h-4.5 text-white" />
+              </div>
               <h3 className="text-white font-semibold text-sm">{feature.title}</h3>
-              <p className="text-white/70 text-xs mt-1">{feature.desc}</p>
+              <p className="text-white/50 text-xs mt-1 leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
@@ -1001,12 +1005,12 @@ export default function Auth() {
         <div className="relative z-10 flex items-center gap-4">
           <div className="flex -space-x-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border-2 border-white/30 flex items-center justify-center">
-                <Users className="w-5 h-5 text-white/80" />
+              <div key={i} className="w-9 h-9 rounded-full bg-white/10 backdrop-blur border-2 border-white/20 flex items-center justify-center">
+                <Users className="w-4 h-4 text-white/70" />
               </div>
             ))}
           </div>
-          <p className="text-white/80 text-sm">
+          <p className="text-white/60 text-sm">
             Trusted by <span className="text-white font-semibold">1,000+</span> companies
           </p>
         </div>

@@ -16,171 +16,111 @@ interface RoleBasedHeaderProps {
   currentView: 'employee' | 'admin' | 'developer' | 'owner';
 }
 
-export default function RoleBasedHeader({
-  currentView
-}: RoleBasedHeaderProps) {
-  const {
-    profile,
-    role,
-    isDeveloper,
-    isAdmin,
-    isOwner,
-    signOut
-  } = useAuth();
+export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
+  const { profile, role, isDeveloper, isAdmin, isOwner, signOut } = useAuth();
   const navigate = useNavigate();
 
   const getHeaderStyles = () => {
     switch (currentView) {
       case 'developer':
-        return 'bg-gradient-to-r from-purple-900 to-purple-800 text-white';
+        return 'header-gradient-developer text-white';
       case 'owner':
-        return 'bg-gradient-to-r from-emerald-900 to-emerald-800 text-white';
+        return 'header-gradient-owner text-white';
       case 'admin':
-        return 'bg-card text-foreground';
+        return 'header-gradient text-white';
       default:
-        return 'bg-card text-foreground';
+        return 'header-gradient text-white';
     }
   };
 
   const getIcon = () => {
     switch (currentView) {
-      case 'developer':
-        return <Code className="w-5 h-5" />;
-      case 'owner':
-        return <Building2 className="w-5 h-5" />;
-      case 'admin':
-        return <Shield className="w-5 h-5" />;
-      default:
-        return <User className="w-5 h-5" />;
+      case 'developer': return <Code className="w-4 h-4" />;
+      case 'owner': return <Building2 className="w-4 h-4" />;
+      case 'admin': return <Shield className="w-4 h-4" />;
+      default: return <User className="w-4 h-4" />;
     }
   };
 
   const getTitle = () => {
     switch (currentView) {
-      case 'developer':
-        return {
-          main: 'Developer Panel',
-          sub: 'Full System Access'
-        };
-      case 'owner':
-        return {
-          main: 'Owner Dashboard',
-          sub: 'Company Management'
-        };
-      case 'admin':
-        return {
-          main: 'Admin Dashboard',
-          sub: 'AttendanceHub Management'
-        };
-      default:
-        return {
-          main: 'Employee Dashboard',
-          sub: 'AttendanceHub'
-        };
+      case 'developer': return { main: 'Developer Panel', sub: 'Full System Access' };
+      case 'owner': return { main: 'Owner Dashboard', sub: 'Company Management' };
+      case 'admin': return { main: 'Admin Dashboard', sub: 'Team Management' };
+      default: return { main: 'Dashboard', sub: 'AttendanceHub' };
     }
   };
 
   const getCurrentViewLabel = () => {
     switch (currentView) {
-      case 'developer':
-        return 'Developer';
-      case 'owner':
-        return 'Owner';
-      case 'admin':
-        return 'Admin';
-      default:
-        return 'Employee';
+      case 'developer': return 'Developer';
+      case 'owner': return 'Owner';
+      case 'admin': return 'Admin';
+      default: return 'Employee';
     }
   };
 
   const getRoleLabel = () => {
     switch (role) {
-      case 'developer':
-        return 'Developer';
-      case 'owner':
-        return 'Owner';
-      case 'admin':
-        return 'Administrator';
-      default:
-        return 'Employee';
+      case 'developer': return 'Developer';
+      case 'owner': return 'Owner';
+      case 'admin': return 'Administrator';
+      default: return 'Employee';
     }
-  };
-
-  const getButtonStyles = () => {
-    if (currentView === 'developer' || currentView === 'owner') {
-      return 'text-white hover:bg-white/10';
-    }
-    return 'text-foreground hover:bg-accent';
   };
 
   const title = getTitle();
-  const isDark = currentView === 'developer' || currentView === 'owner';
 
   return (
-    <header className={`sticky top-0 z-50 border-b border-border/50 ${getHeaderStyles()}`}>
-      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <header className={`sticky top-0 z-50 ${getHeaderStyles()}`}>
+      {/* Subtle top accent line */}
+      <div className="h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-3.5">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-white/20 text-white' : 'bg-primary text-primary-foreground'}`}>
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0 border border-white/10">
               {getIcon()}
             </div>
             <div className="min-w-0">
-              <h1 className="font-display font-bold text-sm sm:text-lg truncate">{title.main}</h1>
-              <p className={`text-[10px] sm:text-xs truncate ${isDark ? 'text-white/70' : 'text-muted-foreground'}`}>
-                {title.sub}
-              </p>
+              <h1 className="font-display font-bold text-sm sm:text-base truncate tracking-tight">{title.main}</h1>
+              <p className="text-[10px] sm:text-xs truncate text-white/60">{title.sub}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Role Switcher Dropdown - only show if user has multiple roles */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Role Switcher */}
             {(isDeveloper || isAdmin || isOwner) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={`px-2 sm:px-3 gap-1 ${getButtonStyles()}`}
-                  >
+                  <Button variant="ghost" size="sm" className="px-2 sm:px-2.5 gap-1 text-white hover:bg-white/10 h-8">
                     {getIcon()}
-                    <span className="hidden sm:inline">{getCurrentViewLabel()}</span>
-                    <ChevronDown className="w-3 h-3" />
+                    <span className="hidden sm:inline text-xs">{getCurrentViewLabel()}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Switch View</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Switch View</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {isDeveloper && (
-                    <DropdownMenuItem 
-                      onClick={() => navigate('/developer')}
-                      className={currentView === 'developer' ? 'bg-muted' : ''}
-                    >
+                    <DropdownMenuItem onClick={() => navigate('/developer')} className={currentView === 'developer' ? 'bg-accent' : ''}>
                       <Code className="w-4 h-4 mr-2 text-purple-500" />
                       Developer Panel
                     </DropdownMenuItem>
                   )}
                   {isOwner && !isDeveloper && (
-                    <DropdownMenuItem 
-                      onClick={() => navigate('/owner')}
-                      className={currentView === 'owner' ? 'bg-muted' : ''}
-                    >
+                    <DropdownMenuItem onClick={() => navigate('/owner')} className={currentView === 'owner' ? 'bg-accent' : ''}>
                       <Building2 className="w-4 h-4 mr-2 text-emerald-500" />
                       Owner Dashboard
                     </DropdownMenuItem>
                   )}
                   {(isAdmin || isDeveloper) && (
-                    <DropdownMenuItem 
-                      onClick={() => navigate('/admin')}
-                      className={currentView === 'admin' ? 'bg-muted' : ''}
-                    >
+                    <DropdownMenuItem onClick={() => navigate('/admin')} className={currentView === 'admin' ? 'bg-accent' : ''}>
                       <Shield className="w-4 h-4 mr-2 text-primary" />
                       Admin Dashboard
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/dashboard')}
-                    className={currentView === 'employee' ? 'bg-muted' : ''}
-                  >
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')} className={currentView === 'employee' ? 'bg-accent' : ''}>
                     <User className="w-4 h-4 mr-2" />
                     Employee View
                   </DropdownMenuItem>
@@ -188,27 +128,25 @@ export default function RoleBasedHeader({
               </DropdownMenu>
             )}
 
-            {/* Settings button */}
-            <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className={`px-2 sm:px-3 ${getButtonStyles()}`}>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="px-2 text-white hover:bg-white/10 h-8 w-8">
               <Settings className="w-4 h-4" />
             </Button>
             
             <NotificationBell />
             
-            <div className="hidden sm:flex items-center gap-2 ml-2">
-              <div className="">
-                {role === 'developer' ? <UserCheck className="w-5 h-5" /> : role === 'owner' ? <Building2 className="w-5 h-5" /> : role === 'admin' ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />}
+            {/* Desktop user info */}
+            <div className="hidden sm:flex items-center gap-2 ml-1.5 pl-2 border-l border-white/15">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                {role === 'developer' ? <UserCheck className="w-4 h-4" /> : role === 'owner' ? <Building2 className="w-4 h-4" /> : role === 'admin' ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
               <div>
-                <p className="text-sm font-medium">{profile?.full_name}</p>
-                <p className={`text-xs ${isDark ? 'text-white/70' : 'text-muted-foreground'}`}>
-                  {getRoleLabel()}
-                </p>
+                <p className="text-xs font-medium leading-tight">{profile?.full_name}</p>
+                <p className="text-[10px] text-white/50">{getRoleLabel()}</p>
               </div>
             </div>
             
-            <Button variant="ghost" size="icon" onClick={signOut} className={`w-8 h-8 sm:w-9 sm:h-9 ${getButtonStyles()}`}>
-              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Button variant="ghost" size="icon" onClick={signOut} className="w-8 h-8 text-white hover:bg-white/10">
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
