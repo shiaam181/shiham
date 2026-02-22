@@ -601,25 +601,25 @@ export default function EmployeeDashboard() {
       {/* Header */}
       <RoleBasedHeader currentView="employee" />
 
-      <main className="container mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 sm:pb-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5 pb-20 sm:pb-6">
         {/* Greeting & Time */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <greeting.icon className="w-5 h-5" />
-              <span className="text-sm">{greeting.text}</span>
+            <div className="flex items-center gap-2 text-muted-foreground mb-0.5">
+              <greeting.icon className="w-4 h-4" />
+              <span className="text-xs font-medium uppercase tracking-wider">{greeting.text}</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-display font-bold">
+            <h2 className="text-xl sm:text-2xl font-display font-bold tracking-tight">
               {profile?.full_name?.split(' ')[0] || 'User'}!
             </h2>
           </div>
           
           <div className="text-right">
-            <p className="text-4xl font-display font-bold text-primary">
+            <p className="text-3xl sm:text-4xl font-display font-bold text-primary tabular-nums">
               {format(currentTime, 'hh:mm')}
-              <span className="text-lg text-muted-foreground ml-1">{format(currentTime, 'a')}</span>
+              <span className="text-base text-muted-foreground ml-1">{format(currentTime, 'a')}</span>
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {format(currentTime, 'EEEE, MMMM d, yyyy')}
             </p>
           </div>
@@ -664,64 +664,70 @@ export default function EmployeeDashboard() {
         )}
 
         {/* Check In/Out Card */}
-        <Card variant="elevated" className="overflow-hidden">
-          <div className="gradient-hero p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-display font-semibold text-lg">Today's Attendance</h3>
-                <p className="text-white/80 text-sm">{format(new Date(), 'MMMM d, yyyy')}</p>
+        <Card variant="elevated" className="overflow-hidden border-0 shadow-xl">
+          <div className="gradient-hero p-5 sm:p-6 text-white relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="absolute bottom-0 left-0 w-28 h-28 bg-white/[0.02] rounded-full translate-y-1/3 -translate-x-1/4" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-display font-semibold text-base">Today's Attendance</h3>
+                  <p className="text-white/50 text-xs">{format(new Date(), 'MMMM d, yyyy')}</p>
+                </div>
+                
+                {todayAttendance && (
+                  <Badge 
+                    variant={hasCheckedOut ? 'success' : hasCheckedIn ? 'warning' : 'secondary'}
+                    className="text-xs"
+                  >
+                    {hasCheckedOut ? 'Completed' : hasCheckedIn ? 'In Progress' : 'Not Started'}
+                  </Badge>
+                )}
               </div>
-              
-              {todayAttendance && (
-                <Badge 
-                  variant={hasCheckedOut ? 'success' : hasCheckedIn ? 'warning' : 'secondary'}
-                  className="text-sm"
-                >
-                  {hasCheckedOut ? 'Completed' : hasCheckedIn ? 'In Progress' : 'Not Started'}
-                </Badge>
+
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                <div className="bg-white/[0.08] backdrop-blur-sm rounded-xl p-3.5 border border-white/[0.06]">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <LogIn className="w-3.5 h-3.5 text-white/60" />
+                    <span className="text-[11px] text-white/60 font-medium">Check In</span>
+                  </div>
+                  {hasCheckedIn ? (
+                    <p className="text-xl font-display font-bold tabular-nums">
+                      {format(new Date(todayAttendance!.check_in_time!), 'hh:mm a')}
+                    </p>
+                  ) : (
+                    <p className="text-base text-white/40">Not yet</p>
+                  )}
+                </div>
+                
+                <div className="bg-white/[0.08] backdrop-blur-sm rounded-xl p-3.5 border border-white/[0.06]">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <LogOut className="w-3.5 h-3.5 text-white/60" />
+                    <span className="text-[11px] text-white/60 font-medium">Check Out</span>
+                  </div>
+                  {hasCheckedOut ? (
+                    <p className="text-xl font-display font-bold tabular-nums">
+                      {format(new Date(todayAttendance!.check_out_time!), 'hh:mm a')}
+                    </p>
+                  ) : (
+                    <p className="text-base text-white/40">Not yet</p>
+                  )}
+                </div>
+              </div>
+
+              {systemSettings.gpsTrackingEnabled && location && location.lat !== 0 && (
+                <div className="text-white/50 text-xs mb-3">
+                  <LocationDisplay 
+                    latitude={location.lat} 
+                    longitude={location.lng} 
+                    showCoordinates={false}
+                    className="text-white/50"
+                  />
+                </div>
               )}
             </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <LogIn className="w-4 h-4" />
-                  <span className="text-sm text-white/80">Check In</span>
-                </div>
-                {hasCheckedIn ? (
-                  <p className="text-2xl font-display font-bold">
-                    {format(new Date(todayAttendance!.check_in_time!), 'hh:mm a')}
-                  </p>
-                ) : (
-                  <p className="text-lg text-white/60">Not yet</p>
-                )}
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <LogOut className="w-4 h-4" />
-                  <span className="text-sm text-white/80">Check Out</span>
-                </div>
-                {hasCheckedOut ? (
-                  <p className="text-2xl font-display font-bold">
-                    {format(new Date(todayAttendance!.check_out_time!), 'hh:mm a')}
-                  </p>
-                ) : (
-                  <p className="text-lg text-white/60">Not yet</p>
-                )}
-              </div>
-            </div>
-
-            {systemSettings.gpsTrackingEnabled && location && location.lat !== 0 && (
-              <div className="text-white/80 text-sm mb-4">
-                <LocationDisplay 
-                  latitude={location.lat} 
-                  longitude={location.lng} 
-                  showCoordinates={false}
-                  className="text-white/80"
-                />
-              </div>
-            )}
           </div>
 
           <CardContent className="p-6">
@@ -768,56 +774,56 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
-        {/* Monthly Stats - 2x2 grid on mobile */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <Card className="p-3 sm:p-4">
+        {/* Monthly Stats */}
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <Card className="p-3 sm:p-4 stat-card">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-success-soft flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.present}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Present</p>
+                <p className="text-lg sm:text-xl font-display font-bold">{monthlyStats.present}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Present</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-3 sm:p-4">
+          <Card className="p-3 sm:p-4 stat-card">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-destructive-soft flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
                 <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.absent}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Absent</p>
+                <p className="text-lg sm:text-xl font-display font-bold">{monthlyStats.absent}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Absent</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-3 sm:p-4">
+          <Card className="p-3 sm:p-4 stat-card">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-info-soft flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-info/10 flex items-center justify-center shrink-0">
                 <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-display font-bold">{monthlyStats.leave}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Leave</p>
+                <p className="text-lg sm:text-xl font-display font-bold">{monthlyStats.leave}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Leave</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-3 sm:p-4">
+          <Card className="p-3 sm:p-4 stat-card">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-accent-foreground" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-display font-bold">
+                <p className="text-lg sm:text-xl font-display font-bold">
                   {monthlyStats.total > 0 
                     ? Math.round((monthlyStats.present / monthlyStats.total) * 100) 
                     : 0}%
                 </p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Attendance</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Rate</p>
               </div>
             </div>
           </Card>

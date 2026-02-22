@@ -1,14 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Home, 
-  Calendar, 
-  User, 
-  Shield,
-  FileText,
-  Code,
-  ClipboardList
-} from 'lucide-react';
+import { Home, Calendar, User, Shield, FileText, Code, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -46,15 +38,12 @@ export default function MobileBottomNav() {
   const isAdminRoute = location.pathname.startsWith('/admin');
   
   let items = employeeNavItems;
-  if (isDeveloperRoute) {
-    items = developerNavItems;
-  } else if (isAdminRoute) {
-    items = adminNavItems;
-  }
+  if (isDeveloperRoute) items = developerNavItems;
+  else if (isAdminRoute) items = adminNavItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border sm:hidden safe-area-bottom">
-      <div className="flex items-center justify-around h-16 px-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/60 sm:hidden safe-area-bottom shadow-[0_-4px_20px_-4px_hsl(0_0%_0%/0.08)]">
+      <div className="flex items-center justify-around h-[60px] px-1">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -64,20 +53,24 @@ export default function MobileBottomNav() {
               key={item.path + item.label}
               onClick={() => navigate(item.path)}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95",
+                "relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[64px] min-h-[48px] rounded-xl transition-all duration-200 active:scale-95",
                 isActive 
                   ? "text-primary" 
-                  : "text-muted-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {/* Active indicator pill */}
               {isActive && (
-                <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-full" />
+                <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-primary rounded-full" />
               )}
-              <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
+              <div className={cn(
+                "transition-all duration-200",
+                isActive && "scale-110"
+              )}>
+                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+              </div>
               <span className={cn(
-                "text-[10px] font-medium",
-                isActive && "text-primary"
+                "text-[10px] transition-all",
+                isActive ? "font-semibold text-primary" : "font-medium"
               )}>
                 {item.label}
               </span>
@@ -85,33 +78,30 @@ export default function MobileBottomNav() {
           );
         })}
         
-        {/* Developer panel toggle for non-developer routes */}
         {!isDeveloperRoute && isDeveloper && (
           <button
             onClick={() => navigate('/developer')}
-            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-purple-500"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[64px] min-h-[48px] rounded-xl transition-all active:scale-95 text-purple-500"
           >
             <Code className="w-5 h-5" />
             <span className="text-[10px] font-medium">Dev</span>
           </button>
         )}
         
-        {/* Admin toggle for non-admin routes (only if not developer) */}
         {!isAdminRoute && !isDeveloperRoute && isAdmin && !isDeveloper && (
           <button
             onClick={() => navigate('/admin')}
-            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[64px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
           >
             <Shield className="w-5 h-5" />
             <span className="text-[10px] font-medium">Admin</span>
           </button>
         )}
         
-        {/* Employee view toggle for admin/developer routes */}
         {(isAdminRoute || isDeveloperRoute) && (
           <button
             onClick={() => navigate('/dashboard')}
-            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[72px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
+            className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-w-[64px] min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
           >
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-medium">My View</span>
