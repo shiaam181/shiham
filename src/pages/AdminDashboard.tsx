@@ -48,11 +48,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import NotificationBell from '@/components/NotificationBell';
+import AppLayout from '@/components/AppLayout';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import EmployeeAttendanceList from '@/components/EmployeeAttendanceList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -276,11 +274,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <RoleBasedHeader currentView="admin" />
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 sm:pb-6">
+    <AppLayout>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <Card className="p-3 sm:p-6">
@@ -661,11 +656,6 @@ export default function AdminDashboard() {
         onUpdate={fetchData}
       />
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-      
-      {/* Bottom padding for mobile nav */}
-      <div className="h-16 sm:hidden" />
-    </div>
+    </AppLayout>
   );
 }

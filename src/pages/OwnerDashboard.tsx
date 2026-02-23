@@ -50,8 +50,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Building2, Users, Crown, Loader2, MoreHorizontal, Shield, User, ChevronDown, Scan, AlertTriangle, MapPin, Trash2 } from 'lucide-react';
 import { PendingEmployeesList } from '@/components/PendingEmployeesList';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
 
 interface CompanyEmployee {
@@ -351,8 +350,7 @@ export default function OwnerDashboard() {
   // For developers with no companies yet
   if (isDeveloper && allCompanies.length === 0) {
     return (
-      <div className="min-h-screen bg-background pb-20 sm:pb-6">
-        <RoleBasedHeader currentView="owner" />
+      <AppLayout>
         <main className="container mx-auto px-4 py-6">
           <Card className="text-center p-8">
             <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -365,16 +363,14 @@ export default function OwnerDashboard() {
             </Button>
           </Card>
         </main>
-        <MobileBottomNav />
-      </div>
+      </AppLayout>
     );
   }
 
   // For non-developers with no company assigned
   if (!isDeveloper && !company) {
     return (
-      <div className="min-h-screen bg-background pb-20 sm:pb-6">
-        <RoleBasedHeader currentView="owner" />
+      <AppLayout>
         <main className="container mx-auto px-4 py-6">
           <Card className="text-center p-8">
             <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -384,15 +380,12 @@ export default function OwnerDashboard() {
             </p>
           </Card>
         </main>
-        <MobileBottomNav />
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      <RoleBasedHeader currentView="owner" />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Developer Company Selector */}
         {isDeveloper && allCompanies.length > 0 && (
@@ -706,7 +699,6 @@ export default function OwnerDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }
