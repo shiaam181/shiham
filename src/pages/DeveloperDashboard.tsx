@@ -52,9 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import NotificationBell from '@/components/NotificationBell';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
+import AppLayout from '@/components/AppLayout';
 import { LiveTrackingSettings } from '@/components/LiveTrackingSettings';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
 import DataExportImport from '@/components/DataExportImport';
@@ -803,10 +801,7 @@ export default function DeveloperDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <RoleBasedHeader currentView="developer" />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex w-full h-auto p-1 overflow-x-auto">
@@ -2140,9 +2135,6 @@ export default function DeveloperDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <MobileBottomNav />
-      <div className="h-16 sm:hidden" />
-    </div>
+    </AppLayout>
   );
 }

@@ -15,8 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { IndianRupee, Users, CheckCircle2, Clock, Loader2, FileText, CreditCard, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import SalarySlipPDF from '@/components/SalarySlipPDF';
 
 interface PayrollEntry {
@@ -147,8 +146,7 @@ export default function PayrollTeamDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <RoleBasedHeader currentView="employee" />
+    <AppLayout>
 
       <main className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="flex items-center justify-between mb-6">
@@ -341,8 +339,6 @@ export default function PayrollTeamDashboard() {
 
       <SalarySlipPDF data={salarySlipData} open={showSalarySlip} onOpenChange={setShowSalarySlip} />
 
-      <MobileBottomNav />
-      <div className="h-16 sm:hidden" />
-    </div>
+    </AppLayout>
   );
 }

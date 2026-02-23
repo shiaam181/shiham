@@ -31,12 +31,10 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
 import CameraCapture from '@/components/CameraCapture';
 import LeaveRequestForm from '@/components/LeaveRequestForm';
-import MobileBottomNav from '@/components/MobileBottomNav';
 import LeaveNotifications from '@/components/LeaveNotifications';
-import NotificationBell from '@/components/NotificationBell';
 import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
+import AppLayout from '@/components/AppLayout';
 import LocationDisplay from '@/components/LocationDisplay';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
@@ -586,7 +584,7 @@ export default function EmployeeDashboard() {
   const hasCheckedOut = !!todayAttendance?.check_out_time;
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppLayout>
       {/* Verification Overlay */}
       {isVerifying && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
@@ -598,10 +596,7 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      {/* Header */}
-      <RoleBasedHeader currentView="employee" />
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5 pb-20 sm:pb-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5 pb-6">
         {/* Greeting & Time */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -876,9 +871,6 @@ export default function EmployeeDashboard() {
         )}
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-
       {/* Leave Notifications (realtime) */}
       <LeaveNotifications onLeaveUpdate={fetchLeaveRequests} />
 
@@ -894,8 +886,6 @@ export default function EmployeeDashboard() {
           referenceEmbedding={systemSettings.faceVerificationEnabled ? profile?.face_embedding : null}
         />
       )}
-
-      {/* Bottom safe area for mobile nav - removed duplicate padding */}
-    </div>
+    </AppLayout>
   );
 }

@@ -40,7 +40,7 @@ import {
   Clock,
   User
 } from 'lucide-react';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
+import AppLayout from '@/components/AppLayout';
 
 interface LeaveRequest {
   id: string;
@@ -229,10 +229,7 @@ export default function LeaveManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      {/* Header */}
-      <RoleBasedHeader currentView={fromDeveloper ? 'developer' : 'admin'} />
-
+    <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
@@ -473,6 +470,6 @@ export default function LeaveManagement() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 }

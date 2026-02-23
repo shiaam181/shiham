@@ -46,8 +46,7 @@ import {
   isToday,
   isFuture,
 } from 'date-fns';
-import RoleBasedHeader from '@/components/RoleBasedHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import type { Json } from '@/integrations/supabase/types';
 
 interface Employee {
@@ -398,10 +397,8 @@ export default function EmployeeAttendance() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <RoleBasedHeader currentView="admin" />
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 pb-20 sm:pb-6">
+    <AppLayout>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 pb-6">
         {/* Back Button & Employee Info */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
@@ -568,8 +565,6 @@ export default function EmployeeAttendance() {
         </div>
       </main>
 
-      <MobileBottomNav />
-
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-md">
@@ -650,6 +645,6 @@ export default function EmployeeAttendance() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 }
