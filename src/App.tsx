@@ -40,6 +40,9 @@ import PayrollTeamDashboard from "./pages/PayrollTeamDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import UpdateNotification from "./components/UpdateNotification";
+import StatutoryCompliance from "./pages/StatutoryCompliance";
+import LeavePolicies from "./pages/LeavePolicies";
+import SetupGuide from "./pages/SetupGuide";
 
 const queryClient = new QueryClient();
 
@@ -251,6 +254,9 @@ function AppRoutes() {
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
         <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
+        <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
+        <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
+        <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<NotFound />} />

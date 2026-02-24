@@ -232,18 +232,28 @@ export type Database = {
           brand_color: string | null
           brand_color_secondary: string | null
           created_at: string
+          esi_registration_number: string | null
           face_verification_disabled: boolean
+          gst_number: string | null
           id: string
           invite_code: string | null
           invite_expires_at: string | null
           invite_max_uses: number | null
           invite_uses_count: number | null
           is_active: boolean | null
+          legal_name: string | null
           live_tracking_enabled: boolean | null
           logo_url: string | null
           name: string
+          pan_number: string | null
+          pay_cycle: string | null
+          pay_day: number | null
+          pf_registration_number: string | null
+          pt_registration_number: string | null
+          registered_address: string | null
           slug: string
           tagline: string | null
+          tan_number: string | null
           tracking_interval_seconds: number | null
           updated_at: string
         }
@@ -251,18 +261,28 @@ export type Database = {
           brand_color?: string | null
           brand_color_secondary?: string | null
           created_at?: string
+          esi_registration_number?: string | null
           face_verification_disabled?: boolean
+          gst_number?: string | null
           id?: string
           invite_code?: string | null
           invite_expires_at?: string | null
           invite_max_uses?: number | null
           invite_uses_count?: number | null
           is_active?: boolean | null
+          legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
           name: string
+          pan_number?: string | null
+          pay_cycle?: string | null
+          pay_day?: number | null
+          pf_registration_number?: string | null
+          pt_registration_number?: string | null
+          registered_address?: string | null
           slug: string
           tagline?: string | null
+          tan_number?: string | null
           tracking_interval_seconds?: number | null
           updated_at?: string
         }
@@ -270,18 +290,28 @@ export type Database = {
           brand_color?: string | null
           brand_color_secondary?: string | null
           created_at?: string
+          esi_registration_number?: string | null
           face_verification_disabled?: boolean
+          gst_number?: string | null
           id?: string
           invite_code?: string | null
           invite_expires_at?: string | null
           invite_max_uses?: number | null
           invite_uses_count?: number | null
           is_active?: boolean | null
+          legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
           name?: string
+          pan_number?: string | null
+          pay_cycle?: string | null
+          pay_day?: number | null
+          pf_registration_number?: string | null
+          pt_registration_number?: string | null
+          registered_address?: string | null
           slug?: string
           tagline?: string | null
+          tan_number?: string | null
           tracking_interval_seconds?: number | null
           updated_at?: string
         }
@@ -607,6 +637,120 @@ export type Database = {
           },
         ]
       }
+      leave_balances: {
+        Row: {
+          accrued: number
+          carry_forward: number
+          company_id: string | null
+          created_at: string
+          id: string
+          leave_type: string
+          opening_balance: number
+          updated_at: string
+          used: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          accrued?: number
+          carry_forward?: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          leave_type?: string
+          opening_balance?: number
+          updated_at?: string
+          used?: number
+          user_id: string
+          year?: number
+        }
+        Update: {
+          accrued?: number
+          carry_forward?: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          leave_type?: string
+          opening_balance?: number
+          updated_at?: string
+          used?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_policies: {
+        Row: {
+          annual_quota: number
+          carry_forward_limit: number | null
+          company_id: string | null
+          created_at: string
+          encashment_allowed: boolean | null
+          id: string
+          is_active: boolean | null
+          is_paid: boolean | null
+          leave_type: string
+          monthly_accrual: number
+          updated_at: string
+        }
+        Insert: {
+          annual_quota?: number
+          carry_forward_limit?: number | null
+          company_id?: string | null
+          created_at?: string
+          encashment_allowed?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          leave_type: string
+          monthly_accrual?: number
+          updated_at?: string
+        }
+        Update: {
+          annual_quota?: number
+          carry_forward_limit?: number | null
+          company_id?: string | null
+          created_at?: string
+          encashment_allowed?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          leave_type?: string
+          monthly_accrual?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           admin_notes: string | null
@@ -711,17 +855,32 @@ export type Database = {
       }
       payroll_runs: {
         Row: {
+          basic_salary: number | null
           created_at: string
+          esi_employee: number | null
+          esi_employer: number | null
           gross_salary: number | null
+          hra: number | null
           id: string
           leave_days: number | null
+          locked: boolean | null
+          locked_at: string | null
+          locked_by: string | null
+          lop_days: number | null
           month: number
           net_salary: number | null
+          other_allowances: number | null
+          other_deductions_detail: Json | null
           overtime_hours: number | null
+          pf_employee: number | null
+          pf_employer: number | null
           present_days: number | null
           processed_at: string | null
           processed_by: string | null
+          professional_tax: number | null
+          special_allowance: number | null
           status: string
+          tds: number | null
           total_deductions: number | null
           updated_at: string
           user_id: string
@@ -729,17 +888,32 @@ export type Database = {
           year: number
         }
         Insert: {
+          basic_salary?: number | null
           created_at?: string
+          esi_employee?: number | null
+          esi_employer?: number | null
           gross_salary?: number | null
+          hra?: number | null
           id?: string
           leave_days?: number | null
+          locked?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          lop_days?: number | null
           month: number
           net_salary?: number | null
+          other_allowances?: number | null
+          other_deductions_detail?: Json | null
           overtime_hours?: number | null
+          pf_employee?: number | null
+          pf_employer?: number | null
           present_days?: number | null
           processed_at?: string | null
           processed_by?: string | null
+          professional_tax?: number | null
+          special_allowance?: number | null
           status?: string
+          tds?: number | null
           total_deductions?: number | null
           updated_at?: string
           user_id: string
@@ -747,17 +921,32 @@ export type Database = {
           year: number
         }
         Update: {
+          basic_salary?: number | null
           created_at?: string
+          esi_employee?: number | null
+          esi_employer?: number | null
           gross_salary?: number | null
+          hra?: number | null
           id?: string
           leave_days?: number | null
+          locked?: boolean | null
+          locked_at?: string | null
+          locked_by?: string | null
+          lop_days?: number | null
           month?: number
           net_salary?: number | null
+          other_allowances?: number | null
+          other_deductions_detail?: Json | null
           overtime_hours?: number | null
+          pf_employee?: number | null
+          pf_employer?: number | null
           present_days?: number | null
           processed_at?: string | null
           processed_by?: string | null
+          professional_tax?: number | null
+          special_allowance?: number | null
           status?: string
+          tds?: number | null
           total_deductions?: number | null
           updated_at?: string
           user_id?: string
@@ -793,18 +982,56 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_tax_slabs: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          max_salary: number | null
+          min_salary: number
+          monthly_tax: number
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_salary?: number | null
+          min_salary?: number
+          monthly_tax?: number
+          state: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_salary?: number | null
+          min_salary?: number
+          monthly_tax?: number
+          state?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bank_account_number: string | null
+          bank_branch: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
           company_id: string | null
           created_at: string
+          date_of_joining: string | null
           department: string | null
+          designation: string | null
           email: string
+          employee_code: string | null
           face_embedding: Json | null
           face_reference_url: string | null
           full_name: string
           id: string
           is_active: boolean
+          manager_id: string | null
           phone: string | null
           phone_verified: boolean
           position: string | null
@@ -812,18 +1039,27 @@ export type Database = {
           shift_id: string | null
           updated_at: string
           user_id: string
+          work_location: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
           company_id?: string | null
           created_at?: string
+          date_of_joining?: string | null
           department?: string | null
+          designation?: string | null
           email: string
+          employee_code?: string | null
           face_embedding?: Json | null
           face_reference_url?: string | null
           full_name: string
           id?: string
           is_active?: boolean
+          manager_id?: string | null
           phone?: string | null
           phone_verified?: boolean
           position?: string | null
@@ -831,18 +1067,27 @@ export type Database = {
           shift_id?: string | null
           updated_at?: string
           user_id: string
+          work_location?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
           company_id?: string | null
           created_at?: string
+          date_of_joining?: string | null
           department?: string | null
+          designation?: string | null
           email?: string
+          employee_code?: string | null
           face_embedding?: Json | null
           face_reference_url?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
+          manager_id?: string | null
           phone?: string | null
           phone_verified?: boolean
           position?: string | null
@@ -850,6 +1095,7 @@ export type Database = {
           shift_id?: string | null
           updated_at?: string
           user_id?: string
+          work_location?: string | null
         }
         Relationships: [
           {
@@ -871,6 +1117,69 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regularization_requests: {
+        Row: {
+          admin_notes: string | null
+          attendance_date: string
+          company_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          requested_check_in: string | null
+          requested_check_out: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          attendance_date: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          requested_check_in?: string | null
+          requested_check_out?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          attendance_date?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          requested_check_in?: string | null
+          requested_check_out?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regularization_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regularization_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
             referencedColumns: ["id"]
           },
         ]
@@ -955,6 +1264,96 @@ export type Database = {
           start_time?: string
         }
         Relationships: []
+      }
+      statutory_profiles: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          edli_rate: number | null
+          eps_rate: number | null
+          esi_applicable: boolean
+          esi_employee_rate: number | null
+          esi_employer_rate: number | null
+          esi_number: string | null
+          esi_wage_ceiling: number | null
+          id: string
+          lwf_applicable: boolean
+          pf_admin_charges_rate: number | null
+          pf_applicable: boolean
+          pf_employee_rate: number | null
+          pf_employer_rate: number | null
+          pf_number: string | null
+          pf_wage_ceiling: number | null
+          pt_applicable: boolean
+          pt_state: string | null
+          uan_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          edli_rate?: number | null
+          eps_rate?: number | null
+          esi_applicable?: boolean
+          esi_employee_rate?: number | null
+          esi_employer_rate?: number | null
+          esi_number?: string | null
+          esi_wage_ceiling?: number | null
+          id?: string
+          lwf_applicable?: boolean
+          pf_admin_charges_rate?: number | null
+          pf_applicable?: boolean
+          pf_employee_rate?: number | null
+          pf_employer_rate?: number | null
+          pf_number?: string | null
+          pf_wage_ceiling?: number | null
+          pt_applicable?: boolean
+          pt_state?: string | null
+          uan_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          edli_rate?: number | null
+          eps_rate?: number | null
+          esi_applicable?: boolean
+          esi_employee_rate?: number | null
+          esi_employer_rate?: number | null
+          esi_number?: string | null
+          esi_wage_ceiling?: number | null
+          id?: string
+          lwf_applicable?: boolean
+          pf_admin_charges_rate?: number | null
+          pf_applicable?: boolean
+          pf_employee_rate?: number | null
+          pf_employer_rate?: number | null
+          pf_number?: string | null
+          pf_wage_ceiling?: number | null
+          pt_applicable?: boolean
+          pt_state?: string | null
+          uan_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statutory_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "statutory_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
@@ -1094,11 +1493,13 @@ export type Database = {
         Returns: boolean
       }
       is_developer: { Args: never; Returns: boolean }
+      is_hr: { Args: never; Returns: boolean }
+      is_manager: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_payroll_team: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "employee" | "developer" | "owner"
+      app_role: "admin" | "employee" | "developer" | "owner" | "hr" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1226,7 +1627,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "employee", "developer", "owner"],
+      app_role: ["admin", "employee", "developer", "owner", "hr", "manager"],
     },
   },
 } as const
