@@ -19,7 +19,7 @@ interface Profile {
   company_id: string | null;
 }
 
-type UserRole = 'admin' | 'employee' | 'developer' | 'owner' | 'payroll_team';
+type UserRole = 'admin' | 'employee' | 'developer' | 'owner' | 'payroll_team' | 'hr' | 'manager';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +30,8 @@ interface AuthContextType {
   isDeveloper: boolean;
   isOwner: boolean;
   isPayrollTeam: boolean;
+  isHR: boolean;
+  isManager: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
@@ -52,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isDeveloper = role === 'developer';
   const isOwner = role === 'owner' || role === 'developer';
   const isPayrollTeam = role === 'payroll_team' || role === 'developer';
+  const isHR = role === 'hr' || role === 'admin' || role === 'developer';
+  const isManager = role === 'manager' || role === 'admin' || role === 'developer';
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -273,6 +277,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isDeveloper,
         isOwner,
         isPayrollTeam,
+        isHR,
+        isManager,
         isLoading,
         signIn,
         signUp,

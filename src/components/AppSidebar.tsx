@@ -21,6 +21,11 @@ import {
   CalendarOff,
   LogOut,
   X,
+  BookOpen,
+  Scale,
+  Receipt,
+  UserCheck,
+  Briefcase,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -50,7 +55,7 @@ interface NavItem {
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, isAdmin, isDeveloper, isOwner, signOut } = useAuth();
+  const { profile, role, isAdmin, isDeveloper, isOwner, isHR, isManager, isPayrollTeam, signOut } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
 
   const handleNav = (path?: string) => {
@@ -71,6 +76,33 @@ export default function AppSidebar() {
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
+  // HR items - visible to HR role
+  const hrItems: NavItem[] = [
+    { icon: Users, label: 'Employee Management', path: '/admin/employees' },
+    { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
+    {
+      icon: Wallet, label: 'Payroll', children: [
+        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
+        { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
+      ]
+    },
+    {
+      icon: Clock, label: 'Scheduling', children: [
+        { icon: Clock, label: 'Shifts', path: '/admin/shifts' },
+        { icon: CalendarOff, label: 'Week Offs', path: '/admin/weekoffs' },
+        { icon: Calendar, label: 'Holidays', path: '/admin/holidays' },
+      ]
+    },
+    { icon: FileText, label: 'Reports', path: '/admin/reports' },
+  ];
+
+  // Manager items
+  const managerItems: NavItem[] = [
+    { icon: Users, label: 'My Team', path: '/manager/team' },
+    { icon: UserCheck, label: 'Approvals', path: '/manager/approvals' },
+  ];
+
   // Admin items - visible to admins and above
   const adminItems: NavItem[] = [
     { icon: Home, label: 'Admin Dashboard', path: '/admin' },
@@ -82,6 +114,13 @@ export default function AppSidebar() {
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
+      icon: Wallet, label: 'Payroll & Compliance', children: [
+        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
+        { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
+      ]
+    },
+    {
       icon: Clock, label: 'Scheduling', children: [
         { icon: Clock, label: 'Shift Management', path: '/admin/shifts' },
         { icon: CalendarOff, label: 'Week Offs', path: '/admin/weekoffs' },
@@ -89,6 +128,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
+    { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 
   // Developer items - visible to developers only
@@ -104,6 +144,13 @@ export default function AppSidebar() {
       ]
     },
     {
+      icon: Wallet, label: 'Payroll & Compliance', children: [
+        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
+        { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
+      ]
+    },
+    {
       icon: Settings, label: 'Configuration', children: [
         { icon: Clock, label: 'Shifts', path: '/admin/shifts' },
         { icon: CalendarOff, label: 'Week Offs', path: '/admin/weekoffs' },
@@ -112,8 +159,12 @@ export default function AppSidebar() {
       ]
     },
     { icon: MapPin, label: 'Live Tracking', path: '/developer' },
-    { icon: Wallet, label: 'Payroll', path: '/payroll' },
-    { icon: MessageSquare, label: 'Engagement', path: '/developer' },
+    { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
+  ];
+
+  // Payroll team items
+  const payrollItems: NavItem[] = [
+    { icon: Wallet, label: 'Payroll Processing', path: '/payroll' },
   ];
 
   const isActive = (path?: string) => path ? location.pathname === path : false;
@@ -180,10 +231,10 @@ export default function AppSidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <ClipboardList className="w-4 h-4 text-white" />
+              <Briefcase className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">AttendanceHub</h2>
+              <h2 className="font-display font-bold text-sm text-sidebar-foreground">HRMS</h2>
               <p className="text-[10px] text-sidebar-foreground/50">Workforce Platform</p>
             </div>
           </div>
@@ -208,8 +259,50 @@ export default function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Manager Section */}
+        {(isManager && !isAdmin && !isDeveloper) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
+              Manager
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {managerItems.map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* HR Section */}
+        {(role === 'hr') && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
+              HR
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {hrItems.map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Payroll Team Section */}
+        {(role === 'payroll_team') && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
+              Payroll
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {payrollItems.map(item => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Admin Section - visible to admin, owner, developer */}
-        {(isAdmin || isOwner || isDeveloper) && (
+        {(isAdmin || isOwner) && !isDeveloper && role !== 'hr' && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
               Admin
@@ -244,7 +337,7 @@ export default function AppSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-sidebar-foreground truncate">{profile?.full_name}</p>
-            <p className="text-[10px] text-sidebar-foreground/40 truncate">{profile?.email}</p>
+            <p className="text-[10px] text-sidebar-foreground/40 truncate">{role || 'employee'}</p>
           </div>
           <Button variant="ghost" size="icon" className="w-7 h-7 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0" onClick={signOut}>
             <LogOut className="w-3.5 h-3.5" />
