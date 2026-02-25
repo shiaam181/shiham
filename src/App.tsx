@@ -43,6 +43,10 @@ import UpdateNotification from "./components/UpdateNotification";
 import StatutoryCompliance from "./pages/StatutoryCompliance";
 import LeavePolicies from "./pages/LeavePolicies";
 import SetupGuide from "./pages/SetupGuide";
+import MyAttendance from "./pages/MyAttendance";
+import ManagerTeam from "./pages/ManagerTeam";
+import ManagerApprovals from "./pages/ManagerApprovals";
+import ComplianceReports from "./pages/ComplianceReports";
 
 const queryClient = new QueryClient();
 
@@ -257,6 +261,10 @@ function AppRoutes() {
         <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
         <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
         <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
+        <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
+        <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
+        <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
+        <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="*" element={<NotFound />} />

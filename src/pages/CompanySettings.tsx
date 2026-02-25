@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Building2, Save, Mail, Phone, MapPin, Clock } from 'lucide-react';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import DataExportImport from '@/components/DataExportImport';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -186,28 +186,8 @@ export default function CompanySettings() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-6">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-display font-bold text-lg">Company Settings</h1>
-                <p className="text-xs text-muted-foreground">Configure company information</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 space-y-6">
+    <AppLayout>
+      <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
         {/* Company Information */}
         <Card>
           <CardHeader>
@@ -359,8 +339,6 @@ export default function CompanySettings() {
           </Button>
         </div>
       </main>
-
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }

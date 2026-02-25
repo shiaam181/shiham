@@ -215,7 +215,16 @@ export default function CompensationPayroll() {
     const month = parseInt(payrollMonth);
     const year = parseInt(payrollYear);
 
-    const { data: salaries } = await supabase.from('salary_structures').select('*').eq('is_active', true);
+    // Fetch salaries, statutory profiles, and PT slabs in parallel
+    const [salaryRes, statutoryRes, ptSlabRes] = await Promise.all([
+      supabase.from('salary_structures').select('*').eq('is_active', true),
+      supabase.from('statutory_profiles').select('*'),
+      supabase.from('professional_tax_slabs').select('*').eq('is_active', true),
+    ]);
+
+    const salaries = salaryRes.data;
+    const statutoryProfiles = statutoryRes.data || [];
+    const ptSlabs = ptSlabRes.data || [];
 
     if (!salaries || salaries.length === 0) {
       toast({ title: 'No salary structures', description: 'Set up salary structures first', variant: 'destructive' });
@@ -245,30 +254,78 @@ export default function CompensationPayroll() {
     let totalWorkingDays = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayOfWeek = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
+      const dayOfWeek = new Date(year, month - 1, d).getDay();
       if (!weekOffDays.has(dayOfWeek) && !holidayDates.has(dateStr)) {
         totalWorkingDays++;
       }
     }
-    // Fallback: if no week-offs configured, use calendar days
     if (totalWorkingDays === 0) totalWorkingDays = daysInMonth;
+
+    // Helper: calculate PT from slabs
+    const calculatePT = (grossMonthly: number, state: string | null): number => {
+      if (!state) return 0;
+      const stateSlabs = ptSlabs.filter(s => s.state === state);
+      for (const slab of stateSlabs) {
+        const min = Number(slab.min_salary);
+        const max = slab.max_salary ? Number(slab.max_salary) : Infinity;
+        if (grossMonthly >= min && grossMonthly <= max) {
+          return Number(slab.monthly_tax);
+        }
+      }
+      return 0;
+    };
 
     const payrollEntries = salaries.map(salary => {
       const userAttendance = attendance.filter(a => a.user_id === salary.user_id);
       const presentDays = userAttendance.filter(a => a.status === 'present').length;
       const leaveDays = userAttendance.filter(a => a.status === 'leave').length;
       const totalOvertimeMin = userAttendance.reduce((sum, a) => sum + (a.overtime_minutes || 0), 0);
+      const lopDays = Math.max(0, totalWorkingDays - presentDays - leaveDays);
 
       // Full month CTC components
-      const fullGross = Number(salary.basic_salary) + Number(salary.hra) + Number(salary.da) + Number(salary.special_allowance) + Number(salary.other_allowances);
-      const fullDeductions = Number(salary.pf_deduction) + Number(salary.tax_deduction) + Number(salary.other_deductions);
+      const basicSalary = Number(salary.basic_salary);
+      const hraAmt = Number(salary.hra);
+      const specialAllowance = Number(salary.special_allowance);
+      const otherAllowancesAmt = Number(salary.other_allowances);
+      const fullGross = basicSalary + hraAmt + Number(salary.da) + specialAllowance + otherAllowancesAmt;
 
       // Pro-rate: payable days = present + paid leave days
       const payableDays = presentDays + leaveDays;
       const proRateRatio = totalWorkingDays > 0 ? payableDays / totalWorkingDays : 0;
 
+      const proratedBasic = Math.round(basicSalary * proRateRatio * 100) / 100;
+      const proratedHRA = Math.round(hraAmt * proRateRatio * 100) / 100;
+      const proratedSpecial = Math.round(specialAllowance * proRateRatio * 100) / 100;
+      const proratedOther = Math.round(otherAllowancesAmt * proRateRatio * 100) / 100;
       const grossSalary = Math.round(fullGross * proRateRatio * 100) / 100;
-      const totalDeductions = Math.round(fullDeductions * proRateRatio * 100) / 100;
+
+      // Statutory deductions from statutory_profiles
+      const statProfile = statutoryProfiles.find(sp => sp.user_id === salary.user_id);
+      let pfEmployee = 0, pfEmployer = 0, esiEmployee = 0, esiEmployer = 0, professionalTax = 0;
+
+      if (statProfile) {
+        // PF calculation
+        if (statProfile.pf_applicable) {
+          const pfWage = Math.min(proratedBasic, Number(statProfile.pf_wage_ceiling || 15000));
+          pfEmployee = Math.round(pfWage * Number(statProfile.pf_employee_rate || 12) / 100);
+          pfEmployer = Math.round(pfWage * Number(statProfile.pf_employer_rate || 12) / 100);
+        }
+        // ESI calculation
+        if (statProfile.esi_applicable && grossSalary <= Number(statProfile.esi_wage_ceiling || 21000)) {
+          esiEmployee = Math.round(grossSalary * Number(statProfile.esi_employee_rate || 0.75) / 100);
+          esiEmployer = Math.round(grossSalary * Number(statProfile.esi_employer_rate || 3.25) / 100);
+        }
+        // PT calculation
+        if (statProfile.pt_applicable) {
+          professionalTax = calculatePT(grossSalary, statProfile.pt_state);
+        }
+      }
+
+      // TDS placeholder from salary structure
+      const tds = Math.round(Number(salary.tax_deduction) * proRateRatio * 100) / 100;
+      const otherDeductions = Math.round(Number(salary.other_deductions) * proRateRatio * 100) / 100;
+
+      const totalDeductions = pfEmployee + esiEmployee + professionalTax + tds + otherDeductions;
       const netSalary = Math.round((grossSalary - totalDeductions) * 100) / 100;
 
       return {
@@ -277,8 +334,20 @@ export default function CompensationPayroll() {
         working_days: totalWorkingDays,
         present_days: presentDays,
         leave_days: leaveDays,
+        lop_days: lopDays,
         overtime_hours: Math.round((totalOvertimeMin / 60) * 100) / 100,
+        basic_salary: proratedBasic,
+        hra: proratedHRA,
+        special_allowance: proratedSpecial,
+        other_allowances: proratedOther,
         gross_salary: grossSalary,
+        pf_employee: pfEmployee,
+        pf_employer: pfEmployer,
+        esi_employee: esiEmployee,
+        esi_employer: esiEmployer,
+        professional_tax: professionalTax,
+        tds,
+        other_deductions_detail: { other: otherDeductions },
         total_deductions: totalDeductions,
         net_salary: netSalary,
         status: 'draft',

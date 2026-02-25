@@ -246,7 +246,7 @@ export default function OwnerDashboard() {
     if (!selectedEmployee) return;
 
     // All valid app roles
-    const allValidRoles = ['employee', 'admin', 'owner', 'developer'] as const;
+    const allValidRoles = ['employee', 'admin', 'owner', 'developer', 'hr', 'manager', 'payroll_team'] as const;
     
     // Check if selected role is valid
     if (!allValidRoles.includes(selectedRole as typeof allValidRoles[number])) {
@@ -269,12 +269,12 @@ export default function OwnerDashboard() {
       if (existingRole) {
         await supabase
           .from('user_roles')
-          .update({ role: selectedRole as 'admin' | 'employee' | 'owner' | 'developer' })
+          .update({ role: selectedRole as any })
           .eq('user_id', selectedEmployee.user_id);
       } else {
         await supabase
           .from('user_roles')
-          .insert({ user_id: selectedEmployee.user_id, role: selectedRole as 'admin' | 'employee' | 'owner' | 'developer' });
+          .insert({ user_id: selectedEmployee.user_id, role: selectedRole as any });
       }
 
       toast({
@@ -296,23 +296,21 @@ export default function OwnerDashboard() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner':
-        return <Crown className="w-3 h-3" />;
-      case 'admin':
-        return <Shield className="w-3 h-3" />;
-      default:
-        return <User className="w-3 h-3" />;
+      case 'owner': return <Crown className="w-3 h-3" />;
+      case 'admin': return <Shield className="w-3 h-3" />;
+      case 'hr': return <Users className="w-3 h-3" />;
+      case 'manager': return <Users className="w-3 h-3" />;
+      case 'payroll_team': return <User className="w-3 h-3" />;
+      case 'developer': return <Shield className="w-3 h-3" />;
+      default: return <User className="w-3 h-3" />;
     }
   };
 
   const getRoleBadgeVariant = (role: string): "default" | "secondary" | "outline" => {
     switch (role) {
-      case 'owner':
-        return 'default';
-      case 'admin':
-        return 'secondary';
-      default:
-        return 'outline';
+      case 'owner': case 'developer': return 'default';
+      case 'admin': case 'hr': case 'manager': return 'secondary';
+      default: return 'outline';
     }
   };
 
@@ -618,24 +616,29 @@ export default function OwnerDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="employee">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Employee
-                  </div>
+                  <div className="flex items-center gap-2"><User className="w-4 h-4" /> Employee</div>
+                </SelectItem>
+                <SelectItem value="hr">
+                  <div className="flex items-center gap-2"><Users className="w-4 h-4" /> HR</div>
+                </SelectItem>
+                <SelectItem value="manager">
+                  <div className="flex items-center gap-2"><Users className="w-4 h-4" /> Manager</div>
+                </SelectItem>
+                <SelectItem value="payroll_team">
+                  <div className="flex items-center gap-2"><User className="w-4 h-4" /> Payroll Team</div>
                 </SelectItem>
                 <SelectItem value="admin">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Admin
-                  </div>
+                  <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Admin</div>
                 </SelectItem>
                 {isDeveloper && (
-                  <SelectItem value="owner">
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-4 h-4" />
-                      Owner
-                    </div>
-                  </SelectItem>
+                  <>
+                    <SelectItem value="owner">
+                      <div className="flex items-center gap-2"><Crown className="w-4 h-4" /> Owner</div>
+                    </SelectItem>
+                    <SelectItem value="developer">
+                      <div className="flex items-center gap-2"><Shield className="w-4 h-4" /> Developer</div>
+                    </SelectItem>
+                  </>
                 )}
               </SelectContent>
             </Select>
