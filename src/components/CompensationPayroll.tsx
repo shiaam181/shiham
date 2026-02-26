@@ -43,13 +43,27 @@ interface PayrollRun {
   working_days: number;
   present_days: number;
   leave_days: number;
+  lop_days: number;
   overtime_hours: number;
+  basic_salary: number;
+  hra: number;
+  special_allowance: number;
+  other_allowances: number;
   gross_salary: number;
+  pf_employee: number;
+  pf_employer: number;
+  esi_employee: number;
+  esi_employer: number;
+  professional_tax: number;
+  tds: number;
+  other_deductions_detail: any;
   total_deductions: number;
   net_salary: number;
   status: string;
+  locked: boolean;
+  locked_at: string | null;
   processed_at: string | null;
-  profile?: { full_name: string; email: string; department: string | null };
+  profile?: { full_name: string; email: string; department: string | null; bank_name?: string | null; bank_account_number?: string | null; bank_ifsc?: string | null };
 }
 
 interface AttendanceSummary {
@@ -138,7 +152,7 @@ export default function CompensationPayroll() {
     const [salaryRes, payrollRes, empRes, companyRes] = await Promise.all([
       supabase.from('salary_structures').select('*').eq('is_active', true).order('created_at', { ascending: false }),
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(50),
-      supabase.from('profiles').select('user_id, full_name, email, department').eq('is_active', true),
+      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
       supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
     ]);
 
@@ -383,7 +397,6 @@ export default function CompensationPayroll() {
   };
 
   const openSalarySlip = (p: PayrollRun) => {
-    const salary = salaryStructures.find(s => s.user_id === p.user_id);
     setSalarySlipData({
       employeeName: p.profile?.full_name || 'Unknown',
       department: p.profile?.department,
@@ -393,15 +406,20 @@ export default function CompensationPayroll() {
       workingDays: p.working_days,
       presentDays: p.present_days,
       leaveDays: p.leave_days,
+      lopDays: p.lop_days || 0,
       overtimeHours: p.overtime_hours,
-      basicSalary: salary ? Number(salary.basic_salary) : 0,
-      hra: salary ? Number(salary.hra) : 0,
-      da: salary ? Number(salary.da) : 0,
-      specialAllowance: salary ? Number(salary.special_allowance) : 0,
-      otherAllowances: salary ? Number(salary.other_allowances) : 0,
-      pfDeduction: salary ? Number(salary.pf_deduction) : 0,
-      taxDeduction: salary ? Number(salary.tax_deduction) : 0,
-      otherDeductions: salary ? Number(salary.other_deductions) : 0,
+      basicSalary: Number(p.basic_salary) || 0,
+      hra: Number(p.hra) || 0,
+      da: 0,
+      specialAllowance: Number(p.special_allowance) || 0,
+      otherAllowances: Number(p.other_allowances) || 0,
+      pfEmployee: Number(p.pf_employee) || 0,
+      pfEmployer: Number(p.pf_employer) || 0,
+      esiEmployee: Number(p.esi_employee) || 0,
+      esiEmployer: Number(p.esi_employer) || 0,
+      professionalTax: Number(p.professional_tax) || 0,
+      tds: Number(p.tds) || 0,
+      otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary),
       totalDeductions: Number(p.total_deductions),
       netSalary: Number(p.net_salary),
@@ -409,6 +427,38 @@ export default function CompensationPayroll() {
       companyName,
     });
     setShowSalarySlip(true);
+  };
+
+  const lockPayroll = async (id: string) => {
+    const { error } = await supabase.from('payroll_runs').update({
+      locked: true,
+      locked_at: new Date().toISOString(),
+    }).eq('id', id);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to lock payroll', variant: 'destructive' });
+    } else {
+      toast({ title: 'Locked', description: 'Payroll run locked — no further edits allowed' });
+      fetchData();
+    }
+  };
+
+  const exportBankCSV = (month: number, year: number) => {
+    const monthRuns = payrollRuns.filter(p => p.month === month && p.year === year && (p.status === 'approved' || p.status === 'processed'));
+    if (monthRuns.length === 0) {
+      toast({ title: 'No data', description: 'No approved payroll runs for this period', variant: 'destructive' });
+      return;
+    }
+    let csv = 'Employee Name,Bank Name,Account Number,IFSC Code,Net Salary\n';
+    monthRuns.forEach(p => {
+      csv += `"${p.profile?.full_name || 'Unknown'}","${p.profile?.bank_name || ''}","${p.profile?.bank_account_number || ''}","${p.profile?.bank_ifsc || ''}",${Number(p.net_salary)}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bank_transfer_${MONTHS[month - 1]}_${year}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const formatCurrency = (amount: number) => `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
@@ -543,11 +593,16 @@ export default function CompensationPayroll() {
 
         {/* Payroll Runs Tab */}
         <TabsContent value="payroll" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <h3 className="font-semibold">Monthly Payroll</h3>
-            <Button size="sm" onClick={() => setShowPayrollDialog(true)}>
-              <Calculator className="w-4 h-4 mr-1" /> Run Payroll
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportBankCSV(parseInt(payrollMonth), parseInt(payrollYear))}>
+                <Download className="w-4 h-4 mr-1" /> Bank CSV
+              </Button>
+              <Button size="sm" onClick={() => setShowPayrollDialog(true)}>
+                <Calculator className="w-4 h-4 mr-1" /> Run Payroll
+              </Button>
+            </div>
           </div>
 
           {payrollRuns.length === 0 ? (
@@ -597,9 +652,19 @@ export default function CompensationPayroll() {
                               </Button>
                             )}
                             {(p.status === 'approved' || p.status === 'processed') && (
-                              <Button size="sm" variant="ghost" onClick={() => openSalarySlip(p)} className="text-xs">
-                                <Download className="w-3 h-3 mr-1" /> Slip
-                              </Button>
+                              <>
+                                <Button size="sm" variant="ghost" onClick={() => openSalarySlip(p)} className="text-xs">
+                                  <Download className="w-3 h-3 mr-1" /> Slip
+                                </Button>
+                                {!p.locked && (
+                                  <Button size="sm" variant="outline" onClick={() => lockPayroll(p.id)} className="text-xs text-destructive border-destructive/30">
+                                    Lock
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                            {p.locked && (
+                              <Badge variant="outline" className="text-[10px] border-destructive/50 text-destructive">🔒 Locked</Badge>
                             )}
                           </div>
                         </TableCell>

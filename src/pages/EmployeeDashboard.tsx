@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { 
+import SalarySlipPDF from '@/components/SalarySlipPDF';
+import {
   Clock, 
   LogIn, 
   LogOut, 
@@ -25,7 +26,10 @@ import {
   FileText,
   Timer,
   Code,
-  Loader2
+  Loader2,
+  Download,
+  IndianRupee,
+  Wallet
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import AttendanceCalendar from '@/components/AttendanceCalendar';
@@ -84,6 +88,10 @@ export default function EmployeeDashboard() {
   const [monthlyStats, setMonthlyStats] = useState<AttendanceStats>({ present: 0, absent: 0, leave: 0, total: 0 });
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [myPayslips, setMyPayslips] = useState<any[]>([]);
+  const [leaveBalances, setLeaveBalances] = useState<{ leave_type: string; opening_balance: number; accrued: number; used: number; carry_forward: number }[]>([]);
+  const [showSalarySlip, setShowSalarySlip] = useState(false);
+  const [salarySlipData, setSalarySlipData] = useState<any>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [captureType, setCaptureType] = useState<'check-in' | 'check-out'>('check-in');
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -213,13 +221,65 @@ export default function EmployeeDashboard() {
     }
   }, [user]);
 
+  const fetchMyPayslips = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase.from('payroll_runs').select('*')
+      .eq('user_id', user.id).in('status', ['approved', 'processed'])
+      .order('year', { ascending: false }).order('month', { ascending: false }).limit(12);
+    setMyPayslips(data || []);
+  }, [user]);
+
+  const fetchLeaveBalances = useCallback(async () => {
+    if (!user) return;
+    const currentYear = new Date().getFullYear();
+    const { data } = await supabase.from('leave_balances').select('leave_type, opening_balance, accrued, used, carry_forward')
+      .eq('user_id', user.id).eq('year', currentYear);
+    setLeaveBalances(data || []);
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchTodayAttendance();
       fetchMonthlyStats();
       fetchLeaveRequests();
+      fetchMyPayslips();
+      fetchLeaveBalances();
     }
-  }, [user, fetchTodayAttendance, fetchMonthlyStats, fetchLeaveRequests]);
+  }, [user, fetchTodayAttendance, fetchMonthlyStats, fetchLeaveRequests, fetchMyPayslips, fetchLeaveBalances]);
+
+  const openMyPayslip = (p: any) => {
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    setSalarySlipData({
+      employeeName: profile?.full_name || 'Employee',
+      department: profile?.department || null,
+      email: profile?.email || '',
+      month: p.month,
+      year: p.year,
+      workingDays: p.working_days || 0,
+      presentDays: p.present_days || 0,
+      leaveDays: p.leave_days || 0,
+      lopDays: p.lop_days || 0,
+      overtimeHours: p.overtime_hours || 0,
+      basicSalary: Number(p.basic_salary) || 0,
+      hra: Number(p.hra) || 0,
+      da: 0,
+      specialAllowance: Number(p.special_allowance) || 0,
+      otherAllowances: Number(p.other_allowances) || 0,
+      pfEmployee: Number(p.pf_employee) || 0,
+      pfEmployer: Number(p.pf_employer) || 0,
+      esiEmployee: Number(p.esi_employee) || 0,
+      esiEmployer: Number(p.esi_employer) || 0,
+      professionalTax: Number(p.professional_tax) || 0,
+      tds: Number(p.tds) || 0,
+      otherDeductions: 0,
+      grossSalary: Number(p.gross_salary) || 0,
+      totalDeductions: Number(p.total_deductions) || 0,
+      netSalary: Number(p.net_salary) || 0,
+      status: p.status,
+      companyName: 'Company',
+    });
+    setShowSalarySlip(true);
+  };
 
   // Initiate check-in/check-out with production verification
   const initiateAttendance = async (type: 'check-in' | 'check-out') => {
@@ -846,6 +906,57 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
+        {/* Leave Balances */}
+        {leaveBalances.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Wallet className="w-5 h-5 text-primary" /> Leave Balances
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {leaveBalances.map(lb => {
+                  const available = lb.opening_balance + lb.accrued + lb.carry_forward - lb.used;
+                  return (
+                    <div key={lb.leave_type} className="p-3 rounded-lg border bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase font-medium">{lb.leave_type}</p>
+                      <p className="text-xl font-bold text-primary">{available}</p>
+                      <p className="text-[10px] text-muted-foreground">Used: {lb.used} / {lb.opening_balance + lb.accrued + lb.carry_forward}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* My Payslips */}
+        {myPayslips.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <IndianRupee className="w-5 h-5 text-primary" /> My Payslips
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {myPayslips.slice(0, 6).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][p.month - 1]} {p.year}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Net: ₹{Number(p.net_salary).toLocaleString('en-IN')}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => openMyPayslip(p)}>
+                    <Download className="w-4 h-4 mr-1" /> View
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Leave Requests - only show if leave management is enabled */}
         {systemSettings.leaveManagementEnabled && (
           <LeaveRequestForm leaveRequests={leaveRequests} onRefresh={fetchLeaveRequests} />
@@ -886,6 +997,7 @@ export default function EmployeeDashboard() {
           referenceEmbedding={systemSettings.faceVerificationEnabled ? profile?.face_embedding : null}
         />
       )}
+      <SalarySlipPDF data={salarySlipData} open={showSalarySlip} onOpenChange={setShowSalarySlip} />
     </AppLayout>
   );
 }
