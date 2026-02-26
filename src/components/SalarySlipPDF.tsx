@@ -8,19 +8,26 @@ interface SalarySlipData {
   employeeName: string;
   department: string | null;
   email: string;
+  employeeCode?: string | null;
   month: number;
   year: number;
   workingDays: number;
   presentDays: number;
   leaveDays: number;
+  lopDays?: number;
   overtimeHours: number;
   basicSalary: number;
   hra: number;
   da: number;
   specialAllowance: number;
   otherAllowances: number;
-  pfDeduction: number;
-  taxDeduction: number;
+  // Statutory deductions (from payroll run)
+  pfEmployee: number;
+  pfEmployer: number;
+  esiEmployee: number;
+  esiEmployer: number;
+  professionalTax: number;
+  tds: number;
   otherDeductions: number;
   grossSalary: number;
   totalDeductions: number;
@@ -69,6 +76,14 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
         throw new Error('Popup blocked');
       }
 
+      const deductionRows = [
+        ['Provident Fund (PF)', data.pfEmployee],
+        ['ESI', data.esiEmployee],
+        ['Professional Tax', data.professionalTax],
+        ['Income Tax (TDS)', data.tds],
+        ['Other Deductions', data.otherDeductions],
+      ].filter(([, val]) => Number(val) > 0);
+
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -91,9 +106,6 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
             .section-title.earnings { color: #15803d; border-left: 4px solid #16a34a; }
             .section-title.deductions { color: #dc2626; border-left: 4px solid #dc2626; }
             .row { display: flex; justify-content: space-between; padding: 8px 24px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
-            .row:hover { background: #fafafa; }
-            .row .label { color: #475569; }
-            .row .value { font-weight: 500; }
             .total-row { display: flex; justify-content: space-between; padding: 12px 24px; font-size: 14px; font-weight: 700; border-top: 2px solid #e2e8f0; background: #f8fafc; }
             .total-row.earnings .value { color: #15803d; }
             .total-row.deductions .value { color: #dc2626; }
@@ -101,6 +113,7 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
             .net-pay .label { font-size: 16px; font-weight: 700; }
             .net-pay .value { font-size: 22px; font-weight: 800; }
             .words { padding: 12px 24px; font-size: 12px; color: #64748b; font-style: italic; border-top: 1px solid #e2e8f0; }
+            .employer-note { padding: 8px 24px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
             .footer { padding: 20px 24px; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
             .signature { margin-top: 40px; padding: 0 24px 20px; display: flex; justify-content: space-between; }
             .sig-block { text-align: center; }
@@ -118,12 +131,10 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
             <div class="info-grid">
               <div class="info-item"><span class="info-label">Employee Name</span><span class="info-value">${data.employeeName}</span></div>
               <div class="info-item"><span class="info-label">Department</span><span class="info-value">${data.department || 'N/A'}</span></div>
-              <div class="info-item"><span class="info-label">Email</span><span class="info-value">${data.email}</span></div>
-              <div class="info-item"><span class="info-label">Pay Period</span><span class="info-value">${MONTHS[data.month - 1]} ${data.year}</span></div>
               <div class="info-item"><span class="info-label">Working Days</span><span class="info-value">${data.workingDays}</span></div>
               <div class="info-item"><span class="info-label">Present Days</span><span class="info-value">${data.presentDays}</span></div>
               <div class="info-item"><span class="info-label">Leave Days</span><span class="info-value">${data.leaveDays}</span></div>
-              <div class="info-item"><span class="info-label">Overtime Hours</span><span class="info-value">${data.overtimeHours}</span></div>
+              <div class="info-item"><span class="info-label">LOP Days</span><span class="info-value">${data.lopDays || 0}</span></div>
             </div>
             <div class="section-title earnings">Earnings</div>
             <div class="row"><span class="label">Basic Salary</span><span class="value">${formatCurrency(data.basicSalary)}</span></div>
@@ -133,12 +144,11 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
             <div class="row"><span class="label">Other Allowances</span><span class="value">${formatCurrency(data.otherAllowances)}</span></div>
             <div class="total-row earnings"><span class="label">Total Earnings</span><span class="value">${formatCurrency(data.grossSalary)}</span></div>
             <div class="section-title deductions">Deductions</div>
-            <div class="row"><span class="label">Provident Fund (PF)</span><span class="value">${formatCurrency(data.pfDeduction)}</span></div>
-            <div class="row"><span class="label">Income Tax (TDS)</span><span class="value">${formatCurrency(data.taxDeduction)}</span></div>
-            <div class="row"><span class="label">Other Deductions</span><span class="value">${formatCurrency(data.otherDeductions)}</span></div>
+            ${deductionRows.map(([label, val]) => `<div class="row"><span class="label">${label}</span><span class="value">${formatCurrency(Number(val))}</span></div>`).join('')}
             <div class="total-row deductions"><span class="label">Total Deductions</span><span class="value">${formatCurrency(data.totalDeductions)}</span></div>
             <div class="net-pay"><span class="label">Net Pay</span><span class="value">${formatCurrency(data.netSalary)}</span></div>
             <div class="words"><strong>In Words:</strong> ${numberToWords(data.netSalary)}</div>
+            ${(data.pfEmployer > 0 || data.esiEmployer > 0) ? `<div class="employer-note"><strong>Employer Contributions:</strong> PF: ${formatCurrency(data.pfEmployer)} | ESI: ${formatCurrency(data.esiEmployer)}</div>` : ''}
             <div class="signature">
               <div class="sig-block"><div class="sig-line">Employee Signature</div></div>
               <div class="sig-block"><div class="sig-line">Authorized Signatory</div></div>
@@ -160,6 +170,14 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
   };
 
   if (!data) return null;
+
+  const deductionItems = [
+    ['Provident Fund (PF)', data.pfEmployee],
+    ['ESI', data.esiEmployee],
+    ['Professional Tax', data.professionalTax],
+    ['Income Tax (TDS)', data.tds],
+    ['Other Deductions', data.otherDeductions],
+  ].filter(([, val]) => Number(val) > 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,7 +211,7 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
               ['Working Days', data.workingDays],
               ['Present Days', data.presentDays],
               ['Leave Days', data.leaveDays],
-              ['Overtime', `${data.overtimeHours} hrs`],
+              ['LOP Days', data.lopDays || 0],
             ].map(([label, val], i) => (
               <div key={i} className={`flex justify-between p-2 border-b border-border/50 ${i % 2 === 0 ? 'border-r' : ''}`}>
                 <span className="text-muted-foreground">{label as string}</span>
@@ -227,11 +245,7 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
           <div className="bg-destructive/5 px-4 py-2 text-xs font-bold uppercase tracking-wider text-destructive border-b border-l-4 border-l-destructive">
             Deductions
           </div>
-          {[
-            ['Provident Fund', data.pfDeduction],
-            ['Income Tax', data.taxDeduction],
-            ['Other Deductions', data.otherDeductions],
-          ].map(([label, val]) => (
+          {deductionItems.map(([label, val]) => (
             <div key={label as string} className="flex justify-between px-4 py-1.5 text-xs border-b border-border/30">
               <span className="text-muted-foreground">{label as string}</span>
               <span>{formatCurrency(Number(val))}</span>
@@ -251,6 +265,13 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
           <div className="px-4 py-2 text-[10px] text-muted-foreground italic border-t">
             <strong>In Words:</strong> {numberToWords(data.netSalary)}
           </div>
+
+          {/* Employer contributions note */}
+          {(data.pfEmployer > 0 || data.esiEmployer > 0) && (
+            <div className="px-4 py-1.5 text-[10px] text-muted-foreground border-t border-border/30">
+              <strong>Employer Contributions:</strong> PF: {formatCurrency(data.pfEmployer)} | ESI: {formatCurrency(data.esiEmployer)}
+            </div>
+          )}
 
           <div className="flex justify-between px-4 py-3 text-[10px] text-muted-foreground border-t">
             <span>Computer generated — no signature required</span>
