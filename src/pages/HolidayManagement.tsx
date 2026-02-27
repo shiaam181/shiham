@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
+import AppLayout from '@/components/AppLayout';
 import {
   Table,
   TableBody,

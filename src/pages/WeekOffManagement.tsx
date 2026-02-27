@@ -38,6 +38,7 @@ import {
   Globe,
   User
 } from 'lucide-react';
+import AppLayout from '@/components/AppLayout';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },

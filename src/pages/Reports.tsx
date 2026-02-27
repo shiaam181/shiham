@@ -23,6 +23,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, differenceInMinutes } from 'date-fns';
+import AppLayout from '@/components/AppLayout';
 import {
   Table,
   TableBody,

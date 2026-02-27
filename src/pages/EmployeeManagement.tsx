@@ -56,6 +56,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import EmployeeDetailDialog from '@/components/EmployeeDetailDialog';
+import AppLayout from '@/components/AppLayout';
 
 interface Employee {
   id: string;

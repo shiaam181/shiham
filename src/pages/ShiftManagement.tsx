@@ -39,6 +39,7 @@ import {
   Users,
   Star
 } from 'lucide-react';
+import AppLayout from '@/components/AppLayout';
 
 interface Shift {
   id: string;
