@@ -195,13 +195,30 @@ export default function AppSidebar() {
     );
   };
 
+  // Track open state for collapsible items by label
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    const allItems = [...employeeItems, ...hrItems, ...managerItems, ...adminItems, ...developerItems, ...payrollItems];
+    const findOpen = (items: NavItem[]) => {
+      items.forEach(item => {
+        if (item.children?.some(child => child.path && location.pathname === child.path)) {
+          initial[item.label] = true;
+        }
+      });
+    };
+    findOpen(allItems);
+    return initial;
+  });
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const CollapsibleNavItem = ({ item, depth }: { item: NavItem; depth: number }) => {
-    const [isOpen, setIsOpen] = useState(
-      item.children?.some(child => child.path && location.pathname === child.path) ?? false
-    );
+    const isOpen = openMenus[item.label] ?? false;
 
     return (
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Collapsible open={isOpen} onOpenChange={() => toggleMenu(item.label)}>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
             <SidebarMenuButton

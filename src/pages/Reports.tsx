@@ -417,25 +417,19 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
-                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="font-display font-bold text-sm sm:text-lg truncate">Attendance Reports</h1>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Monthly analytics & export</p>
-                </div>
-              </div>
+    <AppLayout>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-6">
+        {/* Page Header */}
+        <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
             </div>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-sm sm:text-lg truncate">Attendance Reports</h1>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Monthly analytics & export</p>
+            </div>
+          </div>
             
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Input
