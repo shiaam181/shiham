@@ -24,8 +24,7 @@ import {
   ArrowLeft, Building2, Users, Save, Loader2, Copy, Share2, Settings2,
   Trash2, Crown, Palette, Link2, User, Shield, MapPin, Eye, Pencil
 } from 'lucide-react';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import TopHeader from '@/components/TopHeader';
+import AppLayout from '@/components/AppLayout';
 
 interface Company {
   id: string;
