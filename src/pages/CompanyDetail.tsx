@@ -225,8 +225,7 @@ export default function CompanyDetail() {
   if (!company) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      <TopHeader currentView="developer" />
+    <AppLayout>
 
       {/* Company Hero Banner */}
       <div
