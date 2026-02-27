@@ -47,8 +47,7 @@ import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import TopHeader from '@/components/TopHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
 
 interface Company {
