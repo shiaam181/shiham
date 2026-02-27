@@ -265,11 +265,7 @@ export default function HolidayManagement() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Card>
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">Company Holidays</CardTitle>
