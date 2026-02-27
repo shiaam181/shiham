@@ -47,8 +47,7 @@ import { PendingEmployeesList } from '@/components/PendingEmployeesList';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import TopHeader from '@/components/TopHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 import { LiveLocationMap } from '@/components/LiveLocationMap';
 
 interface Company {
@@ -573,9 +572,7 @@ export default function CompanyManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      <TopHeader currentView="developer" />
-      
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1147,8 +1144,6 @@ export default function CompanyManagement() {
           </AlertDialogContent>
         </AlertDialog>
       </main>
-      
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }

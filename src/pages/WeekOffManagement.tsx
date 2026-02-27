@@ -38,6 +38,7 @@ import {
   Globe,
   User
 } from 'lucide-react';
+import AppLayout from '@/components/AppLayout';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },
@@ -244,30 +245,18 @@ export default function WeekOffManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="font-display font-bold text-lg">Weekly Off Management</h1>
-                  <p className="text-xs text-muted-foreground">Configure global and employee-specific week offs</p>
-                </div>
-              </div>
-            </div>
+    <AppLayout>
+      <main className="container mx-auto px-4 py-6 space-y-6 pb-6">
+        {/* Page Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Calendar className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-display font-bold text-lg">Weekly Off Management</h1>
+            <p className="text-xs text-muted-foreground">Configure global and employee-specific week offs</p>
           </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Global Week Offs */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -451,6 +440,6 @@ export default function WeekOffManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 }
