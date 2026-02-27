@@ -675,7 +675,6 @@ export default function CompanyDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }
