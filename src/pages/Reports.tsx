@@ -450,10 +450,6 @@ export default function Reports() {
               </div>
             </div>
           </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Summary Stats */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <Card className="p-3 sm:p-6">
