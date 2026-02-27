@@ -496,6 +496,6 @@ export default function ShiftManagement() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 }

@@ -1144,8 +1144,6 @@ export default function CompanyManagement() {
           </AlertDialogContent>
         </AlertDialog>
       </main>
-      
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }

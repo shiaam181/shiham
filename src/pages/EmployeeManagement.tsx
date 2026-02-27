@@ -622,6 +622,6 @@ export default function EmployeeManagement() {
           onUpdate={fetchEmployees}
         />
       </main>
-    </div>
+    </AppLayout>
   );
 }

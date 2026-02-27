@@ -581,6 +581,6 @@ export default function Reports() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppLayout>
   );
 }

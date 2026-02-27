@@ -344,6 +344,6 @@ export default function HolidayManagement() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppLayout>
   );
 }

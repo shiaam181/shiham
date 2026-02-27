@@ -439,6 +439,6 @@ export default function WeekOffManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 }
