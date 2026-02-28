@@ -16,6 +16,7 @@ import {
   Bell
 } from 'lucide-react';
 import { format } from 'date-fns';
+import AppLayout from '@/components/AppLayout';
 
 interface LeaveRequestDetail {
   id: string;
