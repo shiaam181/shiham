@@ -94,7 +94,7 @@ export default function DeveloperEmailSettings() {
       const cleanUrl = appBaseUrl.trim().replace(/\/$/, '');
       const { error } = await supabase
         .from('system_settings')
-        .upsert({ key: 'app_base_url', value: { url: cleanUrl, updated_at: new Date().toISOString(), updated_by: user?.id } }, { onConflict: 'key' });
+        .upsert({ key: 'app_base_url', value: { url: cleanUrl, mode: environmentMode, updated_at: new Date().toISOString(), updated_by: user?.id } }, { onConflict: 'key' });
       if (error) throw error;
       setAppBaseUrl(cleanUrl);
       toast({ title: 'Saved', description: 'App Base URL updated. All email links will now use this domain.' });
