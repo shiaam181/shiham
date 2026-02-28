@@ -290,7 +290,7 @@ export default function EmployeeEngagement() {
           ) : (
             <div className="space-y-3">
               {announcements.map(ann => (
-                <Card key={ann.id} className={`p-4 ${!ann.is_active ? 'opacity-50' : ''}`}>
+                <Card key={ann.id} className={`p-4 ${ann.status !== 'PUBLISHED' ? 'opacity-50' : ''}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
