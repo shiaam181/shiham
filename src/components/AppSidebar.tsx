@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
-  BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, IndianRupee, Calculator,
+  BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
 } from 'lucide-react';
 import {
   Sidebar,
