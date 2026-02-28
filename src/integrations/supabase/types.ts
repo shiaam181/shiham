@@ -441,6 +441,60 @@ export type Database = {
           },
         ]
       }
+      email_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          purpose: string
+          request_ip: string | null
+          tenant_id: string | null
+          token_hash: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          purpose: string
+          request_ip?: string | null
+          tenant_id?: string | null
+          token_hash: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          purpose?: string
+          request_ip?: string | null
+          tenant_id?: string | null
+          token_hash?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_awards: {
         Row: {
           award_date: string
@@ -1506,6 +1560,57 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      tenant_email_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          email_enabled: boolean
+          from_email: string | null
+          from_name: string | null
+          id: string
+          reply_to_email: string | null
+          updated_at: string
+          use_global_credentials: boolean
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email_enabled?: boolean
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          reply_to_email?: string | null
+          updated_at?: string
+          use_global_credentials?: boolean
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email_enabled?: boolean
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          reply_to_email?: string | null
+          updated_at?: string
+          use_global_credentials?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_email_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_email_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

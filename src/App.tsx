@@ -14,6 +14,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import FaceSetup from "./pages/FaceSetup";
 import ResetPassword from "./pages/ResetPassword";
+import ActivateAccount from "./pages/ActivateAccount";
 import PhoneVerification from "./pages/PhoneVerification";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -59,6 +60,7 @@ import DeveloperRoles from "./pages/DeveloperRoles";
 import DeveloperTracking from "./pages/DeveloperTracking";
 import DeveloperEngagement from "./pages/DeveloperEngagement";
 import DeveloperSettings from "./pages/DeveloperSettings";
+import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
 
 const queryClient = new QueryClient();
 
@@ -247,6 +249,7 @@ function AppRoutes() {
         {/* Invite links removed - employees now search for company during signup */}
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/activate" element={<ActivateAccount />} />
         <Route path="/install" element={<Install />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
@@ -267,6 +270,7 @@ function AppRoutes() {
         <Route path="/developer/tracking" element={<DeveloperRoute><DeveloperTracking /></DeveloperRoute>} />
         <Route path="/developer/engagement" element={<DeveloperRoute><DeveloperEngagement /></DeveloperRoute>} />
         <Route path="/developer/settings" element={<DeveloperRoute><DeveloperSettings /></DeveloperRoute>} />
+        <Route path="/developer/email-settings" element={<DeveloperRoute><DeveloperEmailSettings /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
