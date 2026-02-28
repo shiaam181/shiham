@@ -202,6 +202,32 @@ export default function EmployeeManagement() {
     fetchEmployees();
   }, [authLoading, isAdmin, isDeveloper, userCompanyId, navigate, fetchEmployees]);
 
+  const handleInviteEmployee = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !userCompanyId) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-email', {
+        body: {
+          employee_email: inviteEmail.trim(),
+          employee_name: inviteName.trim(),
+          tenant_id: userCompanyId,
+          invited_by: user?.id,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Invite Sent', description: `Invitation email sent to ${inviteEmail}` });
+      setInviteOpen(false);
+      setInviteName('');
+      setInviteEmail('');
+      fetchEmployees();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+    } finally {
+      setInviteSending(false);
+    }
+  };
+
   const handleOpenDetail = (employee: Employee) => {
     setSelectedEmployee(employee);
     setIsDetailOpen(true);
