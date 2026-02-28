@@ -154,9 +154,17 @@ const handler = async (req: Request): Promise<Response> => {
     const companyName = company?.name || "HRMS Platform";
     const brandColor = company?.brand_color || "#0284c7";
 
-    // Build activation link - use the origin from request headers or fallback
-    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://shiham.lovable.app";
-    const activationLink = `${origin}/activate?token=${tokenData.raw_token}`;
+    // Build activation link - use configurable APP_BASE_URL from system settings
+    const { data: baseUrlSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "app_base_url")
+      .maybeSingle();
+    
+    const appBaseUrl = (baseUrlSetting?.value as { url?: string })?.url
+      || req.headers.get("origin")
+      || "https://shiham.lovable.app";
+    const activationLink = `${appBaseUrl.replace(/\/$/, "")}/activate?token=${tokenData.raw_token}`;
 
     // Send email via Brevo
     const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-brevo-email`, {

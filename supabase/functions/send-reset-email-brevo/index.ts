@@ -122,9 +122,17 @@ const handler = async (req: Request): Promise<Response> => {
       return successResponse;
     }
 
-    // Build reset link
-    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://shiham.lovable.app";
-    const resetLink = `${origin}/reset-password?token=${tokenData.raw_token}`;
+    // Build reset link - use configurable APP_BASE_URL from system settings
+    const { data: baseUrlSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "app_base_url")
+      .maybeSingle();
+    
+    const appBaseUrl = (baseUrlSetting?.value as { url?: string })?.url
+      || req.headers.get("origin")
+      || "https://shiham.lovable.app";
+    const resetLink = `${appBaseUrl.replace(/\/$/, "")}/reset-password?token=${tokenData.raw_token}`;
 
     // Send email via Brevo
     await fetch(`${supabaseUrl}/functions/v1/send-brevo-email`, {
