@@ -4,10 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Sparkles, Check, AlertTriangle } from 'lucide-react';
+import { Sparkles, Check, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import TopHeader from '@/components/TopHeader';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import AppLayout from '@/components/AppLayout';
 
 interface AppUpdate {
   id: string;
