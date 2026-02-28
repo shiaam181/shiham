@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
-  BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, IndianRupee, Calculator,
+  BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -61,7 +61,7 @@ export default function AppSidebar() {
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll', children: [
-        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
@@ -97,7 +97,7 @@ export default function AppSidebar() {
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
-        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
@@ -138,7 +138,7 @@ export default function AppSidebar() {
     },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
-        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
