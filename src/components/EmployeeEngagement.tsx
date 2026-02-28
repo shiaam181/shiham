@@ -136,8 +136,10 @@ export default function EmployeeEngagement() {
     setSaving(true);
     const { error } = await supabase.from('announcements').insert({
       title: annTitle,
-      content: annContent,
-      priority: annPriority,
+      body: annContent,
+      priority: annPriority.toUpperCase(),
+      status: 'PUBLISHED',
+      scope: 'TENANT',
       created_by: user?.id || '',
     });
     if (error) {
