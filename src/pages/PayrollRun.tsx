@@ -345,7 +345,7 @@ export default function PayrollRun() {
       professionalTax: Number(p.professional_tax), tds: Number(p.tds),
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
-      status: p.status, companyName,
+      status: p.status, companyName, brandColor: companyBrandColor,
     });
     setShowSalarySlip(true);
   };
