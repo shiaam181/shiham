@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,8 +22,19 @@ import {
   Save,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  UserPlus,
+  Mail,
+  Loader2,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -111,6 +122,10 @@ export default function EmployeeManagement() {
   const [editFormData, setEditFormData] = useState({ department: '', position: '' });
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [userCompanyId, setUserCompanyId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
 
   // Check if current user is owner of a company
   useEffect(() => {
@@ -186,6 +201,32 @@ export default function EmployeeManagement() {
     }
     fetchEmployees();
   }, [authLoading, isAdmin, isDeveloper, userCompanyId, navigate, fetchEmployees]);
+
+  const handleInviteEmployee = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !userCompanyId) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-email', {
+        body: {
+          employee_email: inviteEmail.trim(),
+          employee_name: inviteName.trim(),
+          tenant_id: userCompanyId,
+          invited_by: user?.id,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Invite Sent', description: `Invitation email sent to ${inviteEmail}` });
+      setInviteOpen(false);
+      setInviteName('');
+      setInviteEmail('');
+      fetchEmployees();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+    } finally {
+      setInviteSending(false);
+    }
+  };
 
   const handleOpenDetail = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -326,14 +367,23 @@ export default function EmployeeManagement() {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-6">
         {/* Page Header */}
         <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-display font-bold text-sm sm:text-lg truncate">Employee Management</h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage employee profiles & attendance</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="font-display font-bold text-sm sm:text-lg truncate">Employee Management</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage employee profiles & attendance</p>
-            </div>
+            {userCompanyId && (
+              <Button size="sm" onClick={() => setInviteOpen(true)}>
+                <UserPlus className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Invite Employee</span>
+                <span className="sm:hidden">Invite</span>
+              </Button>
+            )}
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -622,6 +672,54 @@ export default function EmployeeManagement() {
           onOpenChange={setIsDetailOpen}
           onUpdate={fetchEmployees}
         />
+
+        {/* Invite Employee Dialog */}
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                Invite Employee
+              </DialogTitle>
+              <DialogDescription>
+                Send an activation email to a new employee. They'll set their own password.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="invite-name">Full Name</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="e.g. John Doe"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite-email">Email Address</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="e.g. john@company.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleInviteEmployee}
+                disabled={inviteSending || !inviteName.trim() || !inviteEmail.trim()}
+              >
+                {inviteSending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                Send Invite
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </AppLayout>
   );
