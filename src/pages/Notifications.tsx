@@ -155,16 +155,8 @@ export default function Notifications() {
   // Show detailed view for a specific notification
   if (leaveId && leaveRequest) {
     return (
-      <div className="min-h-screen bg-background">
+      <AppLayout>
         <div className="container max-w-2xl mx-auto py-6 px-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-6"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
 
           <Card className="border-border">
             <CardHeader className="space-y-4">
