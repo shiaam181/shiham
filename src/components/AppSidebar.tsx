@@ -26,6 +26,9 @@ import {
   Receipt,
   UserCheck,
   Briefcase,
+  Bell,
+  Sparkles,
+  CalendarDays,
 } from 'lucide-react';
 import {
   Sidebar,
