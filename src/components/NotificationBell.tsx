@@ -11,175 +11,88 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, CheckCircle2, XCircle, Clock, Calendar, Trash2, ExternalLink } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
-import {
-  addNotificationDismissed,
-  addNotificationRead,
-  getNotificationPrefs,
-  markAllNotificationsRead,
-  NotificationPrefs,
-} from '@/lib/notificationPrefs';
+import { Bell, Megaphone, Wallet, Calendar, ClipboardList, Settings, Trash2, ExternalLink } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
-interface Notification {
+interface NotificationItem {
   id: string;
-  type: 'leave_approved' | 'leave_rejected' | 'leave_pending';
+  type: string;
   title: string;
   message: string;
-  timestamp: Date;
-  read: boolean;
-  data?: {
-    leaveId?: string;
-    leaveType?: string;
-    startDate?: string;
-    endDate?: string;
-  };
+  link_url: string | null;
+  is_read: boolean;
+  created_at: string;
 }
 
-interface LeaveRequest {
-  id: string;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  admin_notes: string | null;
-  updated_at: string;
-}
+const typeIcons: Record<string, React.ElementType> = {
+  ANNOUNCEMENT: Megaphone,
+  PAYROLL: Wallet,
+  LEAVE: Calendar,
+  ATTENDANCE: ClipboardList,
+  SYSTEM: Settings,
+};
 
 export default function NotificationBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [prefs, setPrefs] = useState<NotificationPrefs>({ readIds: new Set(), dismissedIds: new Set() });
 
-  // Fetch prefs from backend on mount
-  useEffect(() => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
-    getNotificationPrefs(user.id).then(setPrefs);
-  }, [user]);
-
-  const fetchRecentLeaves = useCallback(async () => {
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
-        .from('leave_requests')
+        .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['approved', 'rejected'])
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-
-      const notifs: Notification[] = (data || [])
-        .map((leave: LeaveRequest) => ({
-          id: leave.id,
-          type: (leave.status === 'approved' ? 'leave_approved' : 'leave_rejected') as Notification['type'],
-          title: leave.status === 'approved' ? 'Leave Approved' : 'Leave Rejected',
-          message: `Your ${leave.leave_type} leave (${format(new Date(leave.start_date), 'MMM d')} - ${format(new Date(leave.end_date), 'MMM d')}) has been ${leave.status}${leave.admin_notes ? `. Note: ${leave.admin_notes}` : ''}`,
-          timestamp: new Date(leave.updated_at),
-          read: prefs.readIds.has(leave.id),
-          data: {
-            leaveId: leave.id,
-            leaveType: leave.leave_type,
-            startDate: leave.start_date,
-            endDate: leave.end_date,
-          },
-        }))
-        .filter((n) => !prefs.dismissedIds.has(n.id));
-
-      setNotifications(notifs);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
+      setNotifications(data || []);
+    } catch (e) {
+      console.error('Error fetching notifications:', e);
     }
-  }, [user, prefs]);
+  }, [user]);
 
-  useEffect(() => {
-    fetchRecentLeaves();
-  }, [fetchRecentLeaves]);
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-  // Subscribe to realtime leave updates
+  // Realtime subscription
   useEffect(() => {
     if (!user) return;
-
     const channel = supabase
-      .channel('notification-leave-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'leave_requests',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const leave = payload.new as LeaveRequest;
-          if (leave.status === 'approved' || leave.status === 'rejected') {
-            // If user dismissed it before, don't re-add it.
-            if (prefs.dismissedIds.has(leave.id)) return;
-
-            const newNotif: Notification = {
-              id: leave.id,
-              type: (leave.status === 'approved' ? 'leave_approved' : 'leave_rejected') as Notification['type'],
-              title: leave.status === 'approved' ? 'Leave Approved' : 'Leave Rejected',
-              message: `Your ${leave.leave_type} leave has been ${leave.status}`,
-              timestamp: new Date(),
-              read: prefs.readIds.has(leave.id),
-              data: {
-                leaveId: leave.id,
-                leaveType: leave.leave_type,
-                startDate: leave.start_date,
-                endDate: leave.end_date,
-              },
-            };
-            setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== leave.id)]);
-          }
-        }
-      )
+      .channel('bell-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setNotifications(prev => [payload.new as NotificationItem, ...prev.slice(0, 9)]);
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, prefs]);
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const markAsRead = async (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    setPrefs((prev) => ({ ...prev, readIds: new Set([...prev.readIds, id]) }));
-    if (user) await addNotificationRead(user.id, id);
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
   const markAllAsRead = async () => {
-    const ids = notifications.map((n) => n.id);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setPrefs((prev) => ({ ...prev, readIds: new Set([...prev.readIds, ...ids]) }));
-    if (user) await markAllNotificationsRead(user.id, ids);
+    if (!user) return;
+    const ids = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (ids.length === 0) return;
+    await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
   const clearNotification = async (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    setPrefs((prev) => ({
-      readIds: new Set([...prev.readIds, id]),
-      dismissedIds: new Set([...prev.dismissedIds, id]),
-    }));
-    if (user) await addNotificationDismissed(user.id, id);
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'leave_approved':
-        return <CheckCircle2 className="w-4 h-4 text-success" />;
-      case 'leave_rejected':
-        return <XCircle className="w-4 h-4 text-destructive" />;
-      case 'leave_pending':
-        return <Clock className="w-4 h-4 text-warning" />;
-      default:
-        return <Calendar className="w-4 h-4 text-info" />;
-    }
+    await supabase.from('notifications').delete().eq('id', id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   return (
@@ -198,20 +111,13 @@ export default function NotificationBell() {
         <DropdownMenuLabel className="flex items-center justify-between">
           <span className="font-display font-semibold">Notifications</span>
           {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                markAllAsRead();
-              }}
-              className="h-auto py-1 px-2 text-xs"
-            >
+            <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto py-1 px-2 text-xs">
               Mark all read
             </Button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {notifications.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
             <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -219,53 +125,58 @@ export default function NotificationBell() {
           </div>
         ) : (
           <div className="max-h-[300px] overflow-y-auto">
-            {notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className={`flex items-start gap-3 p-3 cursor-pointer ${
-                  !notification.read ? 'bg-accent/50' : ''
-                }`}
-                onClick={() => {
-                  markAsRead(notification.id);
-                  setIsOpen(false);
-                  navigate(`/notifications?id=${notification.id}`);
-                }}
-              >
-                <div className="flex-shrink-0 mt-0.5">
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-sm">{notification.title}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearNotification(notification.id);
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3 text-muted-foreground" />
-                    </Button>
+            {notifications.map(n => {
+              const Icon = typeIcons[n.type] || Bell;
+              return (
+                <DropdownMenuItem
+                  key={n.id}
+                  className={`flex items-start gap-3 p-3 cursor-pointer ${!n.is_read ? 'bg-accent/50' : ''}`}
+                  onClick={() => {
+                    markAsRead(n.id);
+                    setIsOpen(false);
+                    if (n.link_url) navigate(n.link_url);
+                    else navigate('/notifications');
+                  }}
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    <Icon className={`w-4 h-4 ${!n.is_read ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                    {notification.message}
-                  </p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-muted-foreground/70">
-                      {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
-                    </p>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground/50" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-sm">{n.title}</p>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={(e) => { e.stopPropagation(); clearNotification(n.id); }}
+                      >
+                        <Trash2 className="w-3 h-3 text-muted-foreground" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs text-muted-foreground/70">
+                        {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                      </p>
+                      {n.link_url && <ExternalLink className="w-3 h-3 text-muted-foreground/50" />}
+                    </div>
                   </div>
-                </div>
-                {!notification.read && (
-                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                )}
-              </DropdownMenuItem>
-            ))}
+                  {!n.is_read && (
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                  )}
+                </DropdownMenuItem>
+              );
+            })}
           </div>
         )}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-center justify-center text-xs text-primary cursor-pointer"
+          onClick={() => { setIsOpen(false); navigate('/notifications'); }}
+        >
+          View all notifications
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
