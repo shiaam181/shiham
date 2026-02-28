@@ -65,7 +65,7 @@ export default function PayrollRun() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companyName, setCompanyName] = useState('Company');
-
+  const [companyBrandColor, setCompanyBrandColor] = useState<string | null>(null);
   // Run wizard
   const [showRunDialog, setShowRunDialog] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
