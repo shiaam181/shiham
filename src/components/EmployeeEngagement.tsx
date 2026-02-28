@@ -39,9 +39,9 @@ import { format } from 'date-fns';
 interface Announcement {
   id: string;
   title: string;
-  content: string;
+  body: string;
   priority: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
   expires_at: string | null;
 }
