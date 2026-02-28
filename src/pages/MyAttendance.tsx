@@ -195,7 +195,7 @@ export default function MyAttendance() {
           </TabsContent>
 
           <TabsContent value="calendar" className="mt-4">
-            <AttendanceCalendar />
+            <AttendanceCalendar userId={user?.id} />
           </TabsContent>
 
           <TabsContent value="regularization" className="mt-4 space-y-3">
