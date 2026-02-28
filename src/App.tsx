@@ -47,6 +47,10 @@ import MyAttendance from "./pages/MyAttendance";
 import ManagerTeam from "./pages/ManagerTeam";
 import ManagerApprovals from "./pages/ManagerApprovals";
 import ComplianceReports from "./pages/ComplianceReports";
+import DeveloperRoles from "./pages/DeveloperRoles";
+import DeveloperTracking from "./pages/DeveloperTracking";
+import DeveloperEngagement from "./pages/DeveloperEngagement";
+import DeveloperSettings from "./pages/DeveloperSettings";
 
 const queryClient = new QueryClient();
 
