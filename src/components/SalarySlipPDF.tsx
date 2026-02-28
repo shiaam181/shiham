@@ -85,6 +85,9 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
         ['Other Deductions', data.otherDeductions],
       ].filter(([, val]) => Number(val) > 0);
 
+      const brandColor = data.brandColor || '#0369a1';
+      const brandGradient = `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`;
+
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
