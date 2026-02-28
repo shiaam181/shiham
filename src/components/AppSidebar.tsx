@@ -116,6 +116,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
+    { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 
