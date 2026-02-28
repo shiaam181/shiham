@@ -238,7 +238,7 @@ export default function EmployeeEngagement() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">Announcements</p>
-              <p className="text-sm font-bold">{announcements.filter(a => a.is_active).length} active</p>
+              <p className="text-sm font-bold">{announcements.filter(a => a.status === 'PUBLISHED').length} active</p>
             </div>
           </div>
         </Card>
