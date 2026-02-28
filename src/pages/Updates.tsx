@@ -156,8 +156,6 @@ export default function Updates() {
           )}
         </div>
       </main>
-      
-      <MobileBottomNav />
-    </div>
+    </AppLayout>
   );
 }

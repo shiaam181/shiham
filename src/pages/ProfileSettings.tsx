@@ -516,12 +516,7 @@ export default function ProfileSettings() {
           </CardContent>
         </Card>
         
-        {/* Add padding for bottom nav on mobile */}
-        {isMobile && <div className="h-20" />}
       </main>
-
-      {/* Mobile Bottom Nav */}
-      {isMobile && <MobileBottomNav />}
 
       {/* Phone Verification Dialog */}
       <PhoneVerificationDialog
@@ -530,6 +525,6 @@ export default function ProfileSettings() {
         newPhone={pendingPhone}
         onVerified={handlePhoneVerified}
       />
-    </div>
+    </AppLayout>
   );
 }
