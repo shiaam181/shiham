@@ -28,17 +28,26 @@ export default function MyPayslips() {
     if (user) fetchPayslips();
   }, [user]);
 
+  const [brandColor, setBrandColor] = useState<string | null>(null);
+
   const fetchPayslips = async () => {
     setLoading(true);
+    // Fetch payroll + actual company name from companies table via profile
+    const companyId = profile?.company_id;
     const [payrollRes, companyRes] = await Promise.all([
       supabase.from('payroll_runs').select('*')
         .eq('user_id', user!.id)
         .in('status', ['approved', 'processed'])
         .order('year', { ascending: false })
         .order('month', { ascending: false }),
-      supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
+      companyId
+        ? supabase.from('companies').select('name, brand_color').eq('id', companyId).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
-    if (companyRes.data) setCompanyName(companyRes.data.company_name);
+    if (companyRes.data) {
+      setCompanyName(companyRes.data.name);
+      setBrandColor(companyRes.data.brand_color);
+    }
     setPayslips(payrollRes.data || []);
     setLoading(false);
   };
@@ -55,7 +64,7 @@ export default function MyPayslips() {
       professionalTax: Number(p.professional_tax), tds: Number(p.tds),
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
-      status: p.status, companyName,
+      status: p.status, companyName, brandColor,
     });
     setShowSlip(true);
   };
