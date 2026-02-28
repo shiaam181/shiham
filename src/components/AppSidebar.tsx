@@ -136,6 +136,10 @@ export default function AppSidebar() {
   // Developer items - visible to developers only
   const developerItems: NavItem[] = [
     { icon: Code, label: 'Developer Panel', path: '/developer' },
+    { icon: Shield, label: 'Role Management', path: '/developer/roles' },
+    { icon: MapPin, label: 'Live Tracking', path: '/developer/tracking' },
+    { icon: MessageSquare, label: 'Engagement', path: '/developer/engagement' },
+    { icon: Settings, label: 'System Settings', path: '/developer/settings' },
     { icon: Building2, label: 'Company Management', path: '/developer/companies' },
     {
       icon: Shield, label: 'Administration', children: [
@@ -160,7 +164,6 @@ export default function AppSidebar() {
         { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
       ]
     },
-    { icon: MapPin, label: 'Live Tracking', path: '/developer' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 
