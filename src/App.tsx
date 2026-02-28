@@ -49,6 +49,7 @@ import LeavePolicies from "./pages/LeavePolicies";
 import SetupGuide from "./pages/SetupGuide";
 import MyAttendance from "./pages/MyAttendance";
 import MyPayslips from "./pages/MyPayslips";
+import MyLeaves from "./pages/MyLeaves";
 import Compensation from "./pages/Compensation";
 import PayrollRun from "./pages/PayrollRun";
 import ManagerTeam from "./pages/ManagerTeam";
@@ -284,6 +285,7 @@ function AppRoutes() {
         <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
         <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
         <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
+        <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
         <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
         <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
         <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />

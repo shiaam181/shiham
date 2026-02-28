@@ -49,7 +49,7 @@ export default function AppSidebar() {
   const employeeItems: NavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
-    { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
+    { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },

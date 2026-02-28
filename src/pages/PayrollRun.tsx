@@ -65,7 +65,7 @@ export default function PayrollRun() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companyName, setCompanyName] = useState('Company');
-
+  const [companyBrandColor, setCompanyBrandColor] = useState<string | null>(null);
   // Run wizard
   const [showRunDialog, setShowRunDialog] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
@@ -86,12 +86,14 @@ export default function PayrollRun() {
 
   const fetchPayroll = async () => {
     setLoading(true);
-    const [payrollRes, empRes, companyRes] = await Promise.all([
+    const [payrollRes, empRes, companyRes, brandRes] = await Promise.all([
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
       supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
       supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
+      supabase.from('companies').select('brand_color').limit(1).maybeSingle(),
     ]);
     if (companyRes.data) setCompanyName(companyRes.data.company_name);
+    if (brandRes.data) setCompanyBrandColor(brandRes.data.brand_color);
     if (payrollRes.data && empRes.data) {
       setPayrollRuns(payrollRes.data.map(p => ({
         ...p,
@@ -343,7 +345,7 @@ export default function PayrollRun() {
       professionalTax: Number(p.professional_tax), tds: Number(p.tds),
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
-      status: p.status, companyName,
+      status: p.status, companyName, brandColor: companyBrandColor,
     });
     setShowSalarySlip(true);
   };

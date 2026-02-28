@@ -21,7 +21,6 @@ interface SalarySlipData {
   da: number;
   specialAllowance: number;
   otherAllowances: number;
-  // Statutory deductions (from payroll run)
   pfEmployee: number;
   pfEmployer: number;
   esiEmployee: number;
@@ -34,6 +33,8 @@ interface SalarySlipData {
   netSalary: number;
   status: string;
   companyName?: string;
+  companyLogoUrl?: string | null;
+  brandColor?: string | null;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -84,6 +85,9 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
         ['Other Deductions', data.otherDeductions],
       ].filter(([, val]) => Number(val) > 0);
 
+      const brandColor = data.brandColor || '#0369a1';
+      const brandGradient = `linear-gradient(135deg, ${brandColor} 0%, ${brandColor}cc 100%)`;
+
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -93,7 +97,7 @@ export default function SalarySlipPDF({ data, open, onOpenChange }: {
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: white; padding: 20px; }
             .slip { max-width: 800px; margin: 0 auto; border: 2px solid #0369a1; }
-            .header { background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); color: white; padding: 24px; text-align: center; }
+            .header { background: ${brandGradient}; color: white; padding: 24px; text-align: center; }
             .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
             .header p { font-size: 13px; opacity: 0.9; }
             .period { background: #f0f9ff; padding: 12px 24px; text-align: center; font-weight: 600; color: #0369a1; border-bottom: 1px solid #bae6fd; font-size: 14px; }
