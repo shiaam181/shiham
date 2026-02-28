@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Building2, Save, Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Building2, Save, Mail, Phone, MapPin, Clock, PlayCircle, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import DataExportImport from '@/components/DataExportImport';
 import { useAuth } from '@/contexts/AuthContext';
