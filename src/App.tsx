@@ -44,6 +44,9 @@ import StatutoryCompliance from "./pages/StatutoryCompliance";
 import LeavePolicies from "./pages/LeavePolicies";
 import SetupGuide from "./pages/SetupGuide";
 import MyAttendance from "./pages/MyAttendance";
+import MyPayslips from "./pages/MyPayslips";
+import Compensation from "./pages/Compensation";
+import PayrollRun from "./pages/PayrollRun";
 import ManagerTeam from "./pages/ManagerTeam";
 import ManagerApprovals from "./pages/ManagerApprovals";
 import ComplianceReports from "./pages/ComplianceReports";
@@ -266,6 +269,9 @@ function AppRoutes() {
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
         <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
+        <Route path="/my-payslips" element={<ProtectedRoute><MyPayslips /></ProtectedRoute>} />
+        <Route path="/admin/compensation" element={<AdminRoute><Compensation /></AdminRoute>} />
+        <Route path="/admin/payroll-run" element={<AdminRoute><PayrollRun /></AdminRoute>} />
         <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
         <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
         <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />

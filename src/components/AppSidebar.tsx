@@ -2,33 +2,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
-  Home,
-  ClipboardList,
-  User,
-  Calendar,
-  Users,
-  FileText,
-  Clock,
-  Settings,
-  Shield,
-  Code,
-  Building2,
-  ChevronDown,
-  MapPin,
-  Wallet,
-  MessageSquare,
-  BarChart3,
-  CalendarOff,
-  LogOut,
-  X,
-  BookOpen,
-  Scale,
-  Receipt,
-  UserCheck,
-  Briefcase,
-  Bell,
-  Sparkles,
-  CalendarDays,
+  Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
+  Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
+  BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, IndianRupee, Calculator,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -73,7 +49,7 @@ export default function AppSidebar() {
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
-    { icon: Wallet, label: 'My Payslips', path: '/payroll' },
+    { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
@@ -85,7 +61,9 @@ export default function AppSidebar() {
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll', children: [
-        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
+        { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
@@ -119,7 +97,9 @@ export default function AppSidebar() {
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
-        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
+        { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
@@ -158,7 +138,9 @@ export default function AppSidebar() {
     },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
-        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
+        { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
