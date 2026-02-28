@@ -120,7 +120,7 @@ export default function DeveloperEmailSettings() {
         body: {
           to: testEmail,
           subject: 'Test Invite Link - Verify APP_BASE_URL',
-          html: `<h2>Test Invite Link</h2><p>This is a test to verify your email links point to the correct domain.</p><p><a href="${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER" style="display:inline-block;background-color:#0284c7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Test Activate Link</a></p><p style="color:#71717a;font-size:13px;">Link target: ${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER</p>`,
+          html: `<h2>Test Invite Link</h2><p>This is a test to verify your email links point to the correct domain.</p><p><a href="${appBaseUrl}/activate?token=TEST_TOKEN_PLACEHOLDER" style="display:inline-block;background-color:#0284c7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Test Activate Link</a></p><p style="color:#71717a;font-size:13px;">Link target: ${appBaseUrl}/activate?token=TEST_TOKEN_PLACEHOLDER</p>`,
           category: 'test',
         },
       });
