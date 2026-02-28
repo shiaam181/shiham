@@ -53,6 +53,16 @@ export default function CompanySettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Email settings state
+  const [emailFromName, setEmailFromName] = useState('');
+  const [emailFromEmail, setEmailFromEmail] = useState('');
+  const [emailReplyTo, setEmailReplyTo] = useState('');
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [emailSettingsSaving, setEmailSettingsSaving] = useState(false);
+  const [testEmailAddr, setTestEmailAddr] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [emailTestResult, setEmailTestResult] = useState<'success' | 'error' | null>(null);
+
   // Form state
   const [companyName, setCompanyName] = useState('');
   const [tagline, setTagline] = useState('');
