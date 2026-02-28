@@ -87,19 +87,11 @@ export default function Updates() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 sm:pb-6">
-      <TopHeader currentView="employee" />
-      
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-display font-bold">App Updates</h1>
-            <p className="text-sm text-muted-foreground">See what's new in AttendanceHub</p>
-          </div>
+        <div>
+          <h1 className="text-xl font-display font-bold">App Updates</h1>
+          <p className="text-sm text-muted-foreground">See what's new</p>
         </div>
 
         {/* Updates List */}
