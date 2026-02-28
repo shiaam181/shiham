@@ -23,8 +23,7 @@ import {
   Download,
   Smartphone
 } from 'lucide-react';
-import MobileBottomNav from '@/components/MobileBottomNav';
-import { useIsMobile } from '@/hooks/use-mobile';
+import AppLayout from '@/components/AppLayout';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // Install App Card Component
