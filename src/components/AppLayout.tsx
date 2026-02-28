@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/AppSidebar';
 import NotificationBell from '@/components/NotificationBell';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="overflow-x-hidden">
         {/* Top Header Bar */}
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 h-14">
           <div className="flex items-center gap-2">
@@ -45,9 +46,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1">
+        <div className="flex-1 pb-mobile-nav overflow-x-hidden">
           {children}
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
       </SidebarInset>
     </SidebarProvider>
   );
