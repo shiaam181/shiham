@@ -21,7 +21,6 @@ interface SalarySlipData {
   da: number;
   specialAllowance: number;
   otherAllowances: number;
-  // Statutory deductions (from payroll run)
   pfEmployee: number;
   pfEmployer: number;
   esiEmployee: number;
@@ -34,6 +33,8 @@ interface SalarySlipData {
   netSalary: number;
   status: string;
   companyName?: string;
+  companyLogoUrl?: string | null;
+  brandColor?: string | null;
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
