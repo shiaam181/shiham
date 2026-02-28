@@ -110,6 +110,10 @@ export default function DeveloperEmailSettings() {
       toast({ title: 'Email Required', description: 'Enter a test email address above first', variant: 'destructive' });
       return;
     }
+    if (!appBaseUrl.trim()) {
+      toast({ title: 'APP_BASE_URL required', description: 'Set and save App Base URL first so links use your custom domain.', variant: 'destructive' });
+      return;
+    }
     setIsSendingTestInvite(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-brevo-email', {
