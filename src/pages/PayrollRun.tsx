@@ -86,12 +86,14 @@ export default function PayrollRun() {
 
   const fetchPayroll = async () => {
     setLoading(true);
-    const [payrollRes, empRes, companyRes] = await Promise.all([
+    const [payrollRes, empRes, companyRes, brandRes] = await Promise.all([
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
       supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
       supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
+      supabase.from('companies').select('brand_color').limit(1).maybeSingle(),
     ]);
     if (companyRes.data) setCompanyName(companyRes.data.company_name);
+    if (brandRes.data) setCompanyBrandColor(brandRes.data.brand_color);
     if (payrollRes.data && empRes.data) {
       setPayrollRuns(payrollRes.data.map(p => ({
         ...p,
