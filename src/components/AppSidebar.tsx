@@ -138,7 +138,7 @@ export default function AppSidebar() {
     },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
-        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
