@@ -269,6 +269,9 @@ function AppRoutes() {
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
         <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
+        <Route path="/my-payslips" element={<ProtectedRoute><MyPayslips /></ProtectedRoute>} />
+        <Route path="/admin/compensation" element={<AdminRoute><Compensation /></AdminRoute>} />
+        <Route path="/admin/payroll-run" element={<AdminRoute><PayrollRun /></AdminRoute>} />
         <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
         <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
         <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
