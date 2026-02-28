@@ -71,12 +71,12 @@ export default function AppSidebar() {
   // Employee items - visible to all
   const employeeItems: NavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    {
-      icon: ClipboardList, label: 'Attendance', children: [
-        { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
-      ]
-    },
+    { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
+    { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
+    { icon: Wallet, label: 'My Payslips', path: '/payroll' },
     { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
 
   // HR items - visible to HR role
