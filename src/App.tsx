@@ -249,6 +249,7 @@ function AppRoutes() {
         {/* Invite links removed - employees now search for company during signup */}
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/activate" element={<ActivateAccount />} />
         <Route path="/install" element={<Install />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
