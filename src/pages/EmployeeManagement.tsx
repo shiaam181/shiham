@@ -122,6 +122,10 @@ export default function EmployeeManagement() {
   const [editFormData, setEditFormData] = useState({ department: '', position: '' });
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [userCompanyId, setUserCompanyId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteSending, setInviteSending] = useState(false);
 
   // Check if current user is owner of a company
   useEffect(() => {
