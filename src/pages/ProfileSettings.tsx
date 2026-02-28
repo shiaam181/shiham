@@ -100,6 +100,13 @@ export default function ProfileSettings() {
     full_name: '',
     phone: '',
   });
+  const [bankData, setBankData] = useState({
+    bank_name: '',
+    bank_account_number: '',
+    bank_ifsc: '',
+    bank_branch: '',
+  });
+  const [savingBank, setSavingBank] = useState(false);
 
   // Load signed URL for face preview image from storage
   useEffect(() => {
