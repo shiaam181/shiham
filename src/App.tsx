@@ -60,6 +60,7 @@ import DeveloperRoles from "./pages/DeveloperRoles";
 import DeveloperTracking from "./pages/DeveloperTracking";
 import DeveloperEngagement from "./pages/DeveloperEngagement";
 import DeveloperSettings from "./pages/DeveloperSettings";
+import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
 
 const queryClient = new QueryClient();
 
