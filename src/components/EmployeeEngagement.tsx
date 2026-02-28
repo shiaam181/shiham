@@ -299,7 +299,7 @@ export default function EmployeeEngagement() {
                           {ann.priority}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{ann.content}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{ann.body}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {format(new Date(ann.created_at), 'dd MMM yyyy, hh:mm a')}
                       </p>
