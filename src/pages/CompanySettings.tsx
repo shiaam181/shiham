@@ -116,8 +116,23 @@ export default function CompanySettings() {
     }
   };
 
+  const fetchEmailSettings = async () => {
+    if (!profile?.company_id) return;
+    const { data } = await supabase
+      .from('tenant_email_settings')
+      .select('*')
+      .eq('company_id', profile.company_id)
+      .maybeSingle();
+    if (data) {
+      setEmailFromName(data.from_name || '');
+      setEmailFromEmail(data.from_email || '');
+      setEmailReplyTo(data.reply_to_email || '');
+      setEmailEnabled(data.email_enabled ?? true);
+    }
+  };
+
   useEffect(() => {
-    Promise.all([fetchSettings(), fetchShifts()]).finally(() => setIsLoading(false));
+    Promise.all([fetchSettings(), fetchShifts(), fetchEmailSettings()]).finally(() => setIsLoading(false));
   }, []);
 
   const handleSave = async () => {
