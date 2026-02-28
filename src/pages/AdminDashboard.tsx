@@ -12,7 +12,7 @@ import {
   LogOut, 
   Users, 
   Calendar,
-  ChevronRight,
+  
   User,
   Shield,
   CheckCircle2,
