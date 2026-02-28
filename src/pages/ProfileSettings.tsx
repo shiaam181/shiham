@@ -84,7 +84,7 @@ export default function ProfileSettings() {
   const navigate = useNavigate();
   const { user, profile, refreshProfile, signOut } = useAuth();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
