@@ -352,6 +352,70 @@ export default function CompanySettings() {
           </CardContent>
         </Card>
 
+        {/* Email Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" /> Email Settings
+            </CardTitle>
+            <CardDescription>Configure how emails are sent from your company</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="space-y-1">
+                <Label className="font-medium">Enable Email Sending</Label>
+                <p className="text-sm text-muted-foreground">Toggle email notifications for your company</p>
+              </div>
+              <Switch checked={emailEnabled} onCheckedChange={setEmailEnabled} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>From Name</Label>
+                <Input value={emailFromName} onChange={e => setEmailFromName(e.target.value)} placeholder="Your Company Name" />
+              </div>
+              <div className="space-y-2">
+                <Label>From Email</Label>
+                <Input type="email" value={emailFromEmail} onChange={e => setEmailFromEmail(e.target.value)} placeholder="noreply@yourcompany.com" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Reply-To Email</Label>
+              <Input type="email" value={emailReplyTo} onChange={e => setEmailReplyTo(e.target.value)} placeholder="hr@yourcompany.com (optional)" />
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg border border-dashed space-y-3">
+              <Label className="text-sm font-medium">Send Test Email</Label>
+              <div className="flex gap-2">
+                <Input type="email" placeholder="test@email.com" value={testEmailAddr} onChange={e => setTestEmailAddr(e.target.value)} className="flex-1" />
+                <Button variant="outline" disabled={testingEmail || !testEmailAddr} onClick={async () => {
+                  setTestingEmail(true); setEmailTestResult(null);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('send-brevo-email', {
+                      body: { tenant_id: profile?.company_id, to: testEmailAddr, subject: 'Test Email from ' + (companyName || 'HRMS'), html: '<h2>Test Email</h2><p>Email configuration is working for your company.</p>' }
+                    });
+                    if (error || !data?.success) throw new Error(data?.error || 'Failed');
+                    setEmailTestResult('success');
+                  } catch { setEmailTestResult('error'); }
+                  finally { setTestingEmail(false); }
+                }}>
+                  {testingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : emailTestResult === 'success' ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : emailTestResult === 'error' ? <XCircle className="w-4 h-4 text-destructive" /> : <PlayCircle className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+            <Button disabled={emailSettingsSaving} onClick={async () => {
+              if (!profile?.company_id) return;
+              setEmailSettingsSaving(true);
+              const { error } = await supabase.from('tenant_email_settings').upsert({
+                company_id: profile.company_id, from_name: emailFromName || null, from_email: emailFromEmail || null,
+                reply_to_email: emailReplyTo || null, email_enabled: emailEnabled, updated_at: new Date().toISOString(),
+              }, { onConflict: 'company_id' });
+              toast(error ? { title: 'Error', description: 'Failed to save', variant: 'destructive' as const } : { title: 'Saved', description: 'Email settings updated' });
+              setEmailSettingsSaving(false);
+            }}>
+              <Save className="w-4 h-4 mr-2" />{emailSettingsSaving ? 'Saving...' : 'Save Email Settings'}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Data Backup & Restore */}
         {profile?.company_id && (
           <DataExportImport companyId={profile.company_id} companyName={companyName || 'company'} />
