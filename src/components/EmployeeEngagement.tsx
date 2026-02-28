@@ -156,7 +156,7 @@ export default function EmployeeEngagement() {
   };
 
   const toggleAnnouncement = async (id: string, active: boolean) => {
-    await supabase.from('announcements').update({ is_active: active }).eq('id', id);
+    await supabase.from('announcements').update({ status: active ? 'PUBLISHED' : 'ARCHIVED' }).eq('id', id);
     fetchData();
   };
 
