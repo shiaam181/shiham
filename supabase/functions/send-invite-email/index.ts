@@ -13,6 +13,63 @@ interface InviteRequest {
   invited_by: string;
 }
 
+function normalizeBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "");
+}
+
+function getConfiguredBaseUrl(value: unknown): string | null {
+  if (!value) return null;
+
+  if (typeof value === "string" && value.trim()) {
+    return normalizeBaseUrl(value);
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const url = (value as { url?: string }).url;
+    if (url && url.trim()) return normalizeBaseUrl(url);
+  }
+
+  return null;
+}
+
+function toOrigin(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function isLovableDomain(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host === "lovable.dev" || host.endsWith(".lovable.dev") || host.endsWith(".lovable.app");
+  } catch {
+    return true;
+  }
+}
+
+function resolveAppBaseUrl(req: Request, settingValue: unknown): string | null {
+  const configured = getConfiguredBaseUrl(settingValue);
+  if (configured) return configured;
+
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+  if (forwardedHost) {
+    const fromForwarded = normalizeBaseUrl(`${forwardedProto}://${forwardedHost}`);
+    if (!isLovableDomain(fromForwarded)) return fromForwarded;
+  }
+
+  const fromOrigin = toOrigin(req.headers.get("origin"));
+  if (fromOrigin && !isLovableDomain(fromOrigin)) return normalizeBaseUrl(fromOrigin);
+
+  const fromReferer = toOrigin(req.headers.get("referer"));
+  if (fromReferer && !isLovableDomain(fromReferer)) return normalizeBaseUrl(fromReferer);
+
+  return null;
+}
+
 function getInviteEmailHtml(companyName: string, employeeName: string, activationLink: string, brandColor: string): string {
   return `
 <!DOCTYPE html>

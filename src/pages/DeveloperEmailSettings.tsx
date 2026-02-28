@@ -47,6 +47,7 @@ export default function DeveloperEmailSettings() {
 
   // APP_BASE_URL state
   const [appBaseUrl, setAppBaseUrl] = useState('');
+  const [environmentMode, setEnvironmentMode] = useState<'production' | 'local'>('production');
   const [isSavingUrl, setIsSavingUrl] = useState(false);
   const [isSendingTestInvite, setIsSendingTestInvite] = useState(false);
 

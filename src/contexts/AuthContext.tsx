@@ -43,6 +43,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getConfiguredAppBaseUrl = async (): Promise<string | null> => {
+  try {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'app_base_url')
+      .maybeSingle();
+
+    const raw = data?.value;
+    const configuredUrl =
+      typeof raw === 'string'
+        ? raw
+        : (raw as { url?: string } | null)?.url;
+
+    if (!configuredUrl) return null;
+
+    const parsed = new URL(configuredUrl.trim());
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
