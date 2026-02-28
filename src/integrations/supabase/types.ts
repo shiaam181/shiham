@@ -14,41 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
-          content: string
+          attachments_json: Json | null
+          body: string
+          category: string
+          company_id: string | null
           created_at: string
           created_by: string
           expires_at: string | null
           id: string
-          is_active: boolean | null
-          priority: string | null
+          priority: string
+          publish_at: string | null
+          scope: string
+          status: string
+          target_audience: string
+          target_departments: string[] | null
+          target_locations: string[] | null
+          target_roles: string[] | null
+          target_user_ids: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
-          content: string
+          attachments_json?: Json | null
+          body?: string
+          category?: string
+          company_id?: string | null
           created_at?: string
           created_by: string
           expires_at?: string | null
           id?: string
-          is_active?: boolean | null
-          priority?: string | null
+          priority?: string
+          publish_at?: string | null
+          scope?: string
+          status?: string
+          target_audience?: string
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          target_user_ids?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
-          content?: string
+          attachments_json?: Json | null
+          body?: string
+          category?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string
           expires_at?: string | null
           id?: string
-          is_active?: boolean | null
-          priority?: string | null
+          priority?: string
+          publish_at?: string | null
+          scope?: string
+          status?: string
+          target_audience?: string
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          target_user_ids?: string[] | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "announcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_updates: {
         Row: {
@@ -825,6 +899,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link_url: string | null
+          message: string | null
+          reference_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message?: string | null
+          reference_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_url?: string | null
+          message?: string | null
+          reference_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       otp_rate_limits: {
         Row: {

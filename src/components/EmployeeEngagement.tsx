@@ -39,9 +39,9 @@ import { format } from 'date-fns';
 interface Announcement {
   id: string;
   title: string;
-  content: string;
+  body: string;
   priority: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
   expires_at: string | null;
 }
@@ -136,8 +136,10 @@ export default function EmployeeEngagement() {
     setSaving(true);
     const { error } = await supabase.from('announcements').insert({
       title: annTitle,
-      content: annContent,
-      priority: annPriority,
+      body: annContent,
+      priority: annPriority.toUpperCase(),
+      status: 'PUBLISHED',
+      scope: 'TENANT',
       created_by: user?.id || '',
     });
     if (error) {
@@ -154,7 +156,7 @@ export default function EmployeeEngagement() {
   };
 
   const toggleAnnouncement = async (id: string, active: boolean) => {
-    await supabase.from('announcements').update({ is_active: active }).eq('id', id);
+    await supabase.from('announcements').update({ status: active ? 'PUBLISHED' : 'ARCHIVED' }).eq('id', id);
     fetchData();
   };
 
@@ -236,7 +238,7 @@ export default function EmployeeEngagement() {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">Announcements</p>
-              <p className="text-sm font-bold">{announcements.filter(a => a.is_active).length} active</p>
+              <p className="text-sm font-bold">{announcements.filter(a => a.status === 'PUBLISHED').length} active</p>
             </div>
           </div>
         </Card>
@@ -288,7 +290,7 @@ export default function EmployeeEngagement() {
           ) : (
             <div className="space-y-3">
               {announcements.map(ann => (
-                <Card key={ann.id} className={`p-4 ${!ann.is_active ? 'opacity-50' : ''}`}>
+                <Card key={ann.id} className={`p-4 ${ann.status !== 'PUBLISHED' ? 'opacity-50' : ''}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -297,13 +299,13 @@ export default function EmployeeEngagement() {
                           {ann.priority}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{ann.content}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{ann.body}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {format(new Date(ann.created_at), 'dd MMM yyyy, hh:mm a')}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Switch checked={ann.is_active} onCheckedChange={(v) => toggleAnnouncement(ann.id, v)} />
+                      <Switch checked={ann.status === 'PUBLISHED'} onCheckedChange={(v) => toggleAnnouncement(ann.id, v)} />
                       <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => deleteAnnouncement(ann.id)}>
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                       </Button>

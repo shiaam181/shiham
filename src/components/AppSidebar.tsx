@@ -5,6 +5,7 @@ import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
   BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
+  Megaphone, Radio,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -50,8 +51,9 @@ export default function AppSidebar() {
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
-    { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: User, label: 'Profile', path: '/profile' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
 
@@ -77,6 +79,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: FileText, label: 'Reports', path: '/admin/reports' },
+    { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
   ];
 
   // Manager items
@@ -113,6 +116,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
+    { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 
@@ -126,6 +130,7 @@ export default function AppSidebar() {
         { icon: MessageSquare, label: 'Engagement', path: '/developer/engagement' },
         { icon: Settings, label: 'System Settings', path: '/developer/settings' },
         { icon: Building2, label: 'Company Management', path: '/developer/companies' },
+        { icon: Radio, label: 'Global Broadcast', path: '/developer/broadcast' },
       ]
     },
     {
