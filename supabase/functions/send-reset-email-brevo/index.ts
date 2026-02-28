@@ -179,17 +179,20 @@ const handler = async (req: Request): Promise<Response> => {
       return successResponse;
     }
 
-    // Build reset link - use configurable APP_BASE_URL from system settings
+    // Build reset link using configured APP_BASE_URL (or detected non-lovable custom domain)
     const { data: baseUrlSetting } = await supabase
       .from("system_settings")
       .select("value")
       .eq("key", "app_base_url")
       .maybeSingle();
-    
-    const appBaseUrl = (baseUrlSetting?.value as { url?: string })?.url
-      || req.headers.get("origin")
-      || "https://shiham.lovable.app";
-    const resetLink = `${appBaseUrl.replace(/\/$/, "")}/reset-password?token=${tokenData.raw_token}`;
+
+    const appBaseUrl = resolveAppBaseUrl(req, baseUrlSetting?.value);
+    if (!appBaseUrl) {
+      console.error("APP_BASE_URL missing for password reset link generation");
+      return successResponse;
+    }
+
+    const resetLink = `${appBaseUrl}/reset-password?token=${tokenData.raw_token}`;
 
     // Send email via Brevo
     await fetch(`${supabaseUrl}/functions/v1/send-brevo-email`, {

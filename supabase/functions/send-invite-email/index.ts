@@ -211,17 +211,22 @@ const handler = async (req: Request): Promise<Response> => {
     const companyName = company?.name || "HRMS Platform";
     const brandColor = company?.brand_color || "#0284c7";
 
-    // Build activation link - use configurable APP_BASE_URL from system settings
+    // Build activation link using configured APP_BASE_URL (or detected non-lovable custom domain)
     const { data: baseUrlSetting } = await supabase
       .from("system_settings")
       .select("value")
       .eq("key", "app_base_url")
       .maybeSingle();
-    
-    const appBaseUrl = (baseUrlSetting?.value as { url?: string })?.url
-      || req.headers.get("origin")
-      || "https://shiham.lovable.app";
-    const activationLink = `${appBaseUrl.replace(/\/$/, "")}/activate?token=${tokenData.raw_token}`;
+
+    const appBaseUrl = resolveAppBaseUrl(req, baseUrlSetting?.value);
+    if (!appBaseUrl) {
+      return new Response(
+        JSON.stringify({ error: "APP_BASE_URL is not configured. Set it in Developer Email Settings." }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const activationLink = `${appBaseUrl}/activate?token=${tokenData.raw_token}`;
 
     // Send email via Brevo
     const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-brevo-email`, {

@@ -289,16 +289,28 @@ export default function DeveloperEmailSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label>Environment Mode</Label>
+              <select
+                value={environmentMode}
+                onChange={e => setEnvironmentMode(e.target.value === 'local' ? 'local' : 'production')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                <option value="production">Production (custom domain)</option>
+                <option value="local">Local development (localhost)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Public App URL</Label>
               <Input
                 value={appBaseUrl}
                 onChange={e => setAppBaseUrl(e.target.value)}
-                placeholder="https://yourdomain.com or https://yourapp.lovable.app"
+                placeholder={environmentMode === 'local' ? 'http://localhost:5173' : 'https://yourdomain.com'}
               />
               <p className="text-xs text-muted-foreground">
                 {appBaseUrl
                   ? `Invite links will look like: ${appBaseUrl}/activate?token=...`
-                  : 'Not set — links will fall back to request origin (may cause lovable.dev issues on mobile)'}
+                  : 'Required — links will not be generated until APP_BASE_URL is set to avoid lovable.app redirects.'}
               </p>
             </div>
             <div className="flex items-center gap-2">
