@@ -129,7 +129,7 @@ export default function AppSidebar() {
         { icon: MapPin, label: 'Live Tracking', path: '/developer/tracking' },
         { icon: MessageSquare, label: 'Engagement', path: '/developer/engagement' },
         { icon: Settings, label: 'System Settings', path: '/developer/settings' },
-        { icon: Mail, label: 'Email Service', path: '/developer/email-settings' },
+        { icon: MessageSquare, label: 'Email Service', path: '/developer/email-settings' },
         { icon: Building2, label: 'Company Management', path: '/developer/companies' },
         { icon: Radio, label: 'Global Broadcast', path: '/developer/broadcast' },
       ]
