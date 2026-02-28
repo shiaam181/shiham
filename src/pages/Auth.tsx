@@ -335,14 +335,19 @@ export default function Auth() {
     }
 
     setIsResetLoading(true);
-    const { error } = await resetPassword(resetEmail.trim());
-    setIsResetLoading(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-reset-email-brevo', {
+        body: { email: resetEmail.trim() },
+      });
 
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
+      if (error) throw error;
+
       setResetSent(true);
       toast({ title: 'Reset Email Sent', description: 'Check your email for a password reset link.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send reset email.', variant: 'destructive' });
+    } finally {
+      setIsResetLoading(false);
     }
   };
 

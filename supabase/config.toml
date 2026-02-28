@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.activate-employee]
 verify_jwt = false
+
+[functions.reset-password-with-token]
+verify_jwt = false
