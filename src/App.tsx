@@ -270,7 +270,11 @@ function AppRoutes() {
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
+        <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+        <Route path="/admin/announcements" element={<AdminRoute><AnnouncementsAdmin /></AdminRoute>} />
+        <Route path="/developer/broadcast" element={<DeveloperRoute><GlobalBroadcast /></DeveloperRoute>} />
+        <Route path="/leave-notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
         <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
         <Route path="/my-payslips" element={<ProtectedRoute><MyPayslips /></ProtectedRoute>} />
