@@ -47,6 +47,10 @@ import MyAttendance from "./pages/MyAttendance";
 import ManagerTeam from "./pages/ManagerTeam";
 import ManagerApprovals from "./pages/ManagerApprovals";
 import ComplianceReports from "./pages/ComplianceReports";
+import DeveloperRoles from "./pages/DeveloperRoles";
+import DeveloperTracking from "./pages/DeveloperTracking";
+import DeveloperEngagement from "./pages/DeveloperEngagement";
+import DeveloperSettings from "./pages/DeveloperSettings";
 
 const queryClient = new QueryClient();
 
@@ -251,6 +255,10 @@ function AppRoutes() {
         <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
         <Route path="/admin/attendance/:id" element={<AdminRoute><EmployeeAttendance /></AdminRoute>} />
         <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
+        <Route path="/developer/roles" element={<DeveloperRoute><DeveloperRoles /></DeveloperRoute>} />
+        <Route path="/developer/tracking" element={<DeveloperRoute><DeveloperTracking /></DeveloperRoute>} />
+        <Route path="/developer/engagement" element={<DeveloperRoute><DeveloperEngagement /></DeveloperRoute>} />
+        <Route path="/developer/settings" element={<DeveloperRoute><DeveloperSettings /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />

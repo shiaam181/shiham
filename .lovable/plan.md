@@ -1,42 +1,111 @@
 
+# Mobile UI Professional Enhancement Plan
 
-## Plan: Migrate Developer Dashboard Tabs to Sidebar Navigation
+## Current Issues Identified
 
-### Problem
-The Developer Dashboard uses an internal tab system (Overview, Roles, Tracking, Payroll, Engagement, Settings) with redundant navigation cards. This is inconsistent with the sidebar-based navigation used everywhere else.
+Based on the screenshots provided, here are the problems with the mobile UI:
 
-### Solution
-Break each tab into its own page, add them to the sidebar, and simplify the Developer Dashboard to a clean overview.
+1. **Header is cluttered** - Too many icons packed together, making it look cramped on mobile
+2. **Calendar legend is cramped** - The status indicators (Present, Absent, Leave, Holiday, Week Off) wrap awkwardly on mobile
+3. **Bottom navigation has redundant items** - "Home" and "Calendar" both point to `/dashboard`, and "Admin" label is inconsistent
+4. **Leave Requests card layout** - The title/description and button don't flow well on mobile
+5. **Stats cards only show 2 columns** - Could use better mobile optimization
+6. **Overall spacing** - Some areas have inconsistent padding and gaps on mobile
 
-### Changes
+---
 
-**1. Create 4 new page files:**
-- `src/pages/DeveloperRoles.tsx` — wraps `RoleManagement` component in `AppLayout`
-- `src/pages/DeveloperTracking.tsx` — wraps `LiveTrackingSettings` + `LiveLocationMap` in `AppLayout`
-- `src/pages/DeveloperEngagement.tsx` — wraps `EmployeeEngagement` in `AppLayout`
-- `src/pages/DeveloperSettings.tsx` — contains the entire Settings tab content (email config, Twilio, face verification, map config, auth settings, danger zone, etc.) in `AppLayout`
+## Planned Changes
 
-**2. Simplify `src/pages/DeveloperDashboard.tsx`:**
-- Remove all tabs and tab content
-- Keep only the 4 status cards (Access Level, Database, API Status, Notifications) as a clean overview
-- Remove all the settings state/logic (moves to DeveloperSettings)
-- Remove redundant quick-action navigation cards
+### 1. Improve Header for Mobile (RoleBasedHeader.tsx)
 
-**3. Update `src/components/AppSidebar.tsx`:**
-- Replace current developer sidebar items with:
-  - Developer Panel → `/developer` (overview)
-  - Role Management → `/developer/roles`
-  - Live Tracking → `/developer/tracking`
-  - Engagement → `/developer/engagement`
-  - System Settings → `/developer/settings`
-  - Company Management → `/developer/companies`
-  - Plus existing admin/payroll/config sub-menus
+- Make the header more compact on mobile
+- Reduce icon clutter by combining some actions into a dropdown
+- Better touch target sizes
+- Cleaner visual hierarchy
 
-**4. Update `src/App.tsx`:**
-- Add routes: `/developer/roles`, `/developer/tracking`, `/developer/engagement`, `/developer/settings`
-- All wrapped in `DeveloperRoute`
+### 2. Improve Attendance Calendar Legend (AttendanceCalendar.tsx)
 
-### File Summary
-- **Create**: `DeveloperRoles.tsx`, `DeveloperTracking.tsx`, `DeveloperEngagement.tsx`, `DeveloperSettings.tsx`
-- **Edit**: `DeveloperDashboard.tsx` (simplify to overview only), `AppSidebar.tsx` (update nav items), `App.tsx` (add routes)
+- Convert legend to a more compact 2-row grid layout on mobile
+- Use smaller, tighter spacing
+- Add visual separators for better grouping
 
+### 3. Fix Bottom Navigation (MobileBottomNav.tsx)
+
+- Remove duplicate "Calendar" item that points to same route
+- Add proper "Profile" navigation
+- Use distinct icons for each action
+- Add active indicator pill/bar for better visibility
+- Improve touch targets and spacing
+
+### 4. Improve Leave Requests Card Layout (LeaveRequestForm.tsx)
+
+- Stack title and button vertically on mobile
+- Better empty state layout
+- More touch-friendly request button
+
+### 5. Improve Stats Cards (EmployeeDashboard.tsx)
+
+- Show only 2 most important stats on very small screens
+- Better visual balance
+- Cleaner number presentation
+
+### 6. Overall Spacing & Polish
+
+- Consistent padding throughout
+- Better card shadows for visual depth
+- Improved touch target sizes (min 44px)
+
+---
+
+## Technical Details
+
+### File: `src/components/RoleBasedHeader.tsx`
+- Reduce logo/icon size on mobile
+- Combine settings and profile into single menu on mobile
+- Improve responsive breakpoints
+
+### File: `src/components/AttendanceCalendar.tsx`
+- Restructure legend to use `grid-cols-3` on mobile instead of `flex-wrap`
+- Add responsive text sizing
+- Improve day cell touch targets
+
+### File: `src/components/MobileBottomNav.tsx`
+- Replace redundant Calendar with Profile navigation
+- Add visual active indicator (pill/bar)
+- Improve icon sizing and spacing
+- Add haptic-like visual feedback on tap
+
+### File: `src/components/LeaveRequestForm.tsx`
+- Change `flex-row` to `flex-col sm:flex-row` in header
+- Make button full-width on mobile
+- Improve empty state icon and text sizing
+
+### File: `src/pages/EmployeeDashboard.tsx`
+- Adjust grid for stats on mobile
+- Improve section spacing
+- Add bottom safe area padding for bottom navigation
+
+---
+
+## Visual Improvements Summary
+
+| Area | Current | Improved |
+|------|---------|----------|
+| Header | Cluttered icons | Compact dropdown menu |
+| Legend | Wrapping awkwardly | Clean 3-column grid |
+| Bottom Nav | Duplicate items | Distinct, useful navigation |
+| Leave Card | Cramped layout | Stacked, breathing room |
+| Stats | 2 columns only | Optimized for mobile |
+| Spacing | Inconsistent | 16-20px consistent padding |
+
+---
+
+## Implementation Order
+
+1. Fix Bottom Navigation first (most visible issue)
+2. Clean up Header
+3. Improve Calendar legend
+4. Fix Leave Requests layout
+5. Polish stats and spacing
+
+This plan focuses on making the app feel native and professional on mobile devices while maintaining the existing functionality and design language.
