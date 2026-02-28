@@ -58,7 +58,7 @@ export default function DeveloperEmailSettings() {
         .maybeSingle();
 
       if (!error && data?.value) {
-        const saved = data.value as BrevoConfig;
+        const saved = data.value as unknown as BrevoConfig;
         setConfig({
           ...DEFAULT_CONFIG,
           ...saved,

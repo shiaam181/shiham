@@ -270,6 +270,7 @@ function AppRoutes() {
         <Route path="/developer/tracking" element={<DeveloperRoute><DeveloperTracking /></DeveloperRoute>} />
         <Route path="/developer/engagement" element={<DeveloperRoute><DeveloperEngagement /></DeveloperRoute>} />
         <Route path="/developer/settings" element={<DeveloperRoute><DeveloperSettings /></DeveloperRoute>} />
+        <Route path="/developer/email-settings" element={<DeveloperRoute><DeveloperEmailSettings /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
