@@ -514,6 +514,70 @@ export default function ProfileSettings() {
         </Card>
 
 
+        {/* Bank Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Bank Details
+            </CardTitle>
+            <CardDescription>Required for salary disbursement</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!user) return;
+              setSavingBank(true);
+              const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+              if (bankData.bank_ifsc && !ifscRegex.test(bankData.bank_ifsc.toUpperCase())) {
+                toast({ title: 'Invalid IFSC', description: 'IFSC should be 11 characters (e.g. SBIN0001234)', variant: 'destructive' });
+                setSavingBank(false);
+                return;
+              }
+              if (bankData.bank_account_number && (bankData.bank_account_number.length < 9 || bankData.bank_account_number.length > 18)) {
+                toast({ title: 'Invalid Account Number', description: 'Account number should be 9-18 digits', variant: 'destructive' });
+                setSavingBank(false);
+                return;
+              }
+              const { error } = await supabase.from('profiles').update({
+                bank_name: bankData.bank_name || null,
+                bank_account_number: bankData.bank_account_number || null,
+                bank_ifsc: bankData.bank_ifsc?.toUpperCase() || null,
+                bank_branch: bankData.bank_branch || null,
+              }).eq('user_id', user.id);
+              setSavingBank(false);
+              if (error) {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+              } else {
+                toast({ title: 'Saved', description: 'Bank details updated successfully' });
+                refreshProfile();
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bank_name">Bank Name</Label>
+                <Input id="bank_name" value={bankData.bank_name} onChange={e => setBankData({ ...bankData, bank_name: e.target.value })} placeholder="e.g. State Bank of India" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank_account_number">Account Number</Label>
+                <Input id="bank_account_number" value={bankData.bank_account_number} onChange={e => setBankData({ ...bankData, bank_account_number: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 1234567890123" maxLength={18} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank_ifsc">IFSC Code</Label>
+                  <Input id="bank_ifsc" value={bankData.bank_ifsc} onChange={e => setBankData({ ...bankData, bank_ifsc: e.target.value.toUpperCase() })} placeholder="e.g. SBIN0001234" maxLength={11} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bank_branch">Branch (optional)</Label>
+                  <Input id="bank_branch" value={bankData.bank_branch} onChange={e => setBankData({ ...bankData, bank_branch: e.target.value })} placeholder="e.g. Main Branch" />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={savingBank}>
+                {savingBank ? 'Saving...' : 'Save Bank Details'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
         {/* Install App */}
         <InstallAppCard />
 
