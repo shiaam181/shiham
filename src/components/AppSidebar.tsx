@@ -79,6 +79,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: FileText, label: 'Reports', path: '/admin/reports' },
+    { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
   ];
 
   // Manager items
