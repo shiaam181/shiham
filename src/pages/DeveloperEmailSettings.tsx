@@ -64,7 +64,13 @@ export default function DeveloperEmailSettings() {
         .eq('key', 'app_base_url')
         .maybeSingle();
       if (data?.value) {
-        setAppBaseUrl((data.value as { url?: string }).url || '');
+        const raw = data.value as { url?: string; mode?: 'production' | 'local' } | string;
+        if (typeof raw === 'string') {
+          setAppBaseUrl(raw);
+        } else {
+          setAppBaseUrl(raw.url || '');
+          setEnvironmentMode(raw.mode === 'local' ? 'local' : 'production');
+        }
       }
     } catch (err) {
       console.error('Error fetching app base URL:', err);
