@@ -47,6 +47,7 @@ export default function DeveloperEmailSettings() {
 
   // APP_BASE_URL state
   const [appBaseUrl, setAppBaseUrl] = useState('');
+  const [environmentMode, setEnvironmentMode] = useState<'production' | 'local'>('production');
   const [isSavingUrl, setIsSavingUrl] = useState(false);
   const [isSendingTestInvite, setIsSendingTestInvite] = useState(false);
 
@@ -63,7 +64,13 @@ export default function DeveloperEmailSettings() {
         .eq('key', 'app_base_url')
         .maybeSingle();
       if (data?.value) {
-        setAppBaseUrl((data.value as { url?: string }).url || '');
+        const raw = data.value as { url?: string; mode?: 'production' | 'local' } | string;
+        if (typeof raw === 'string') {
+          setAppBaseUrl(raw);
+        } else {
+          setAppBaseUrl(raw.url || '');
+          setEnvironmentMode(raw.mode === 'local' ? 'local' : 'production');
+        }
       }
     } catch (err) {
       console.error('Error fetching app base URL:', err);
@@ -87,7 +94,7 @@ export default function DeveloperEmailSettings() {
       const cleanUrl = appBaseUrl.trim().replace(/\/$/, '');
       const { error } = await supabase
         .from('system_settings')
-        .upsert({ key: 'app_base_url', value: { url: cleanUrl, updated_at: new Date().toISOString(), updated_by: user?.id } }, { onConflict: 'key' });
+        .upsert({ key: 'app_base_url', value: { url: cleanUrl, mode: environmentMode, updated_at: new Date().toISOString(), updated_by: user?.id } }, { onConflict: 'key' });
       if (error) throw error;
       setAppBaseUrl(cleanUrl);
       toast({ title: 'Saved', description: 'App Base URL updated. All email links will now use this domain.' });
@@ -103,13 +110,17 @@ export default function DeveloperEmailSettings() {
       toast({ title: 'Email Required', description: 'Enter a test email address above first', variant: 'destructive' });
       return;
     }
+    if (!appBaseUrl.trim()) {
+      toast({ title: 'APP_BASE_URL required', description: 'Set and save App Base URL first so links use your custom domain.', variant: 'destructive' });
+      return;
+    }
     setIsSendingTestInvite(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-brevo-email', {
         body: {
           to: testEmail,
           subject: 'Test Invite Link - Verify APP_BASE_URL',
-          html: `<h2>Test Invite Link</h2><p>This is a test to verify your email links point to the correct domain.</p><p><a href="${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER" style="display:inline-block;background-color:#0284c7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Test Activate Link</a></p><p style="color:#71717a;font-size:13px;">Link target: ${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER</p>`,
+          html: `<h2>Test Invite Link</h2><p>This is a test to verify your email links point to the correct domain.</p><p><a href="${appBaseUrl}/activate?token=TEST_TOKEN_PLACEHOLDER" style="display:inline-block;background-color:#0284c7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Test Activate Link</a></p><p style="color:#71717a;font-size:13px;">Link target: ${appBaseUrl}/activate?token=TEST_TOKEN_PLACEHOLDER</p>`,
           category: 'test',
         },
       });
@@ -278,16 +289,28 @@ export default function DeveloperEmailSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label>Environment Mode</Label>
+              <select
+                value={environmentMode}
+                onChange={e => setEnvironmentMode(e.target.value === 'local' ? 'local' : 'production')}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                <option value="production">Production (custom domain)</option>
+                <option value="local">Local development (localhost)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Public App URL</Label>
               <Input
                 value={appBaseUrl}
                 onChange={e => setAppBaseUrl(e.target.value)}
-                placeholder="https://yourdomain.com or https://yourapp.lovable.app"
+                placeholder={environmentMode === 'local' ? 'http://localhost:5173' : 'https://yourdomain.com'}
               />
               <p className="text-xs text-muted-foreground">
                 {appBaseUrl
                   ? `Invite links will look like: ${appBaseUrl}/activate?token=...`
-                  : 'Not set — links will fall back to request origin (may cause lovable.dev issues on mobile)'}
+                  : 'Required — links will not be generated until APP_BASE_URL is set to avoid lovable.app redirects.'}
               </p>
             </div>
             <div className="flex items-center gap-2">

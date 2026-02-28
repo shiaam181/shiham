@@ -43,6 +43,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getConfiguredAppBaseUrl = async (): Promise<string | null> => {
+  try {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'app_base_url')
+      .maybeSingle();
+
+    const raw = data?.value;
+    const configuredUrl =
+      typeof raw === 'string'
+        ? raw
+        : (raw as { url?: string } | null)?.url;
+
+    if (!configuredUrl) return null;
+
+    const parsed = new URL(configuredUrl.trim());
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -216,8 +239,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+    const configuredBaseUrl = await getConfiguredAppBaseUrl();
+    const redirectUrl = `${configuredBaseUrl || window.location.origin}/`;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -242,18 +265,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    const configuredBaseUrl = await getConfiguredAppBaseUrl();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/phone-verify`,
+        redirectTo: `${configuredBaseUrl || window.location.origin}/phone-verify`,
       },
     });
     return { error };
   };
 
   const resetPassword = async (email: string) => {
+    const configuredBaseUrl = await getConfiguredAppBaseUrl();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${configuredBaseUrl || window.location.origin}/reset-password`,
     });
     return { error };
   };
