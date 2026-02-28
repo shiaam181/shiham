@@ -130,6 +130,7 @@ export default function AppSidebar() {
         { icon: MessageSquare, label: 'Engagement', path: '/developer/engagement' },
         { icon: Settings, label: 'System Settings', path: '/developer/settings' },
         { icon: Building2, label: 'Company Management', path: '/developer/companies' },
+        { icon: Radio, label: 'Global Broadcast', path: '/developer/broadcast' },
       ]
     },
     {
