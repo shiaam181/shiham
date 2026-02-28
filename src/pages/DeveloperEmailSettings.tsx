@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Mail, Save, Eye, EyeOff, Shield, CheckCircle2, XCircle, Loader2, PlayCircle, Server, Key,
+  Mail, Save, Eye, EyeOff, Shield, CheckCircle2, XCircle, Loader2, PlayCircle, Server, Key, Globe, Send,
 } from 'lucide-react';
 
 interface BrevoConfig {
@@ -45,9 +45,86 @@ export default function DeveloperEmailSettings() {
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [maskedKey, setMaskedKey] = useState('');
 
+  // APP_BASE_URL state
+  const [appBaseUrl, setAppBaseUrl] = useState('');
+  const [isSavingUrl, setIsSavingUrl] = useState(false);
+  const [isSendingTestInvite, setIsSendingTestInvite] = useState(false);
+
   useEffect(() => {
     fetchConfig();
+    fetchAppBaseUrl();
   }, []);
+
+  const fetchAppBaseUrl = async () => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'app_base_url')
+        .maybeSingle();
+      if (data?.value) {
+        setAppBaseUrl((data.value as { url?: string }).url || '');
+      }
+    } catch (err) {
+      console.error('Error fetching app base URL:', err);
+    }
+  };
+
+  const handleSaveBaseUrl = async () => {
+    if (!appBaseUrl.trim()) {
+      toast({ title: 'Error', description: 'Please enter your app URL', variant: 'destructive' });
+      return;
+    }
+    // Validate URL format
+    try {
+      new URL(appBaseUrl.trim());
+    } catch {
+      toast({ title: 'Invalid URL', description: 'Enter a valid URL like https://yourdomain.com', variant: 'destructive' });
+      return;
+    }
+    setIsSavingUrl(true);
+    try {
+      const cleanUrl = appBaseUrl.trim().replace(/\/$/, '');
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({ key: 'app_base_url', value: { url: cleanUrl, updated_at: new Date().toISOString(), updated_by: user?.id } }, { onConflict: 'key' });
+      if (error) throw error;
+      setAppBaseUrl(cleanUrl);
+      toast({ title: 'Saved', description: 'App Base URL updated. All email links will now use this domain.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSavingUrl(false);
+    }
+  };
+
+  const handleSendTestInvite = async () => {
+    if (!testEmail) {
+      toast({ title: 'Email Required', description: 'Enter a test email address above first', variant: 'destructive' });
+      return;
+    }
+    setIsSendingTestInvite(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-brevo-email', {
+        body: {
+          to: testEmail,
+          subject: 'Test Invite Link - Verify APP_BASE_URL',
+          html: `<h2>Test Invite Link</h2><p>This is a test to verify your email links point to the correct domain.</p><p><a href="${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER" style="display:inline-block;background-color:#0284c7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Test Activate Link</a></p><p style="color:#71717a;font-size:13px;">Link target: ${appBaseUrl || window.location.origin}/activate?token=TEST_TOKEN_PLACEHOLDER</p>`,
+          category: 'test',
+        },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({ title: 'Test Sent', description: 'Check your inbox and verify the link opens your app domain.' });
+      } else {
+        throw new Error(data?.error || 'Failed');
+      }
+    } catch (err: any) {
+      toast({ title: 'Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSendingTestInvite(false);
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -62,7 +139,7 @@ export default function DeveloperEmailSettings() {
         setConfig({
           ...DEFAULT_CONFIG,
           ...saved,
-          smtp_api_key: '', // Never show the real key
+          smtp_api_key: '',
         });
         setIsConfigured(!!saved.smtp_api_key);
         if (saved.smtp_api_key) {
@@ -94,11 +171,9 @@ export default function DeveloperEmailSettings() {
         updated_by: user?.id,
       };
 
-      // Only update key if provided (not empty means user wants to update)
       if (config.smtp_api_key) {
         saveData.smtp_api_key = config.smtp_api_key;
       } else if (isConfigured) {
-        // Preserve existing key - read it first
         const { data: existing } = await supabase
           .from('system_settings')
           .select('value')
@@ -121,7 +196,6 @@ export default function DeveloperEmailSettings() {
       }
       setConfig(prev => ({ ...prev, smtp_api_key: '' }));
 
-      // Log audit
       await supabase.from('audit_logs').insert({
         user_id: user!.id,
         action: 'UPDATE',
@@ -191,6 +265,43 @@ export default function DeveloperEmailSettings() {
             Configure global Brevo SMTP credentials for platform-wide email delivery
           </p>
         </div>
+
+        {/* APP BASE URL */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Globe className="w-5 h-5" /> App Base URL
+            </CardTitle>
+            <CardDescription>
+              All email links (invite activation, password reset) will use this URL. Set this to your production domain to prevent links pointing to lovable.dev.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Public App URL</Label>
+              <Input
+                value={appBaseUrl}
+                onChange={e => setAppBaseUrl(e.target.value)}
+                placeholder="https://yourdomain.com or https://yourapp.lovable.app"
+              />
+              <p className="text-xs text-muted-foreground">
+                {appBaseUrl
+                  ? `Invite links will look like: ${appBaseUrl}/activate?token=...`
+                  : 'Not set — links will fall back to request origin (may cause lovable.dev issues on mobile)'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSaveBaseUrl} disabled={isSavingUrl}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSavingUrl ? 'Saving...' : 'Save URL'}
+              </Button>
+              <Button variant="outline" onClick={handleSendTestInvite} disabled={isSendingTestInvite || !isConfigured}>
+                <Send className="w-4 h-4 mr-2" />
+                {isSendingTestInvite ? 'Sending...' : 'Send Test Invite Link'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Status Banner */}
         <div className={`p-4 rounded-lg border ${isConfigured ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
