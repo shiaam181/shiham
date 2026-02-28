@@ -22,8 +22,19 @@ import {
   Save,
   X,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  UserPlus,
+  Mail,
+  Loader2,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
