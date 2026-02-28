@@ -305,7 +305,7 @@ export default function EmployeeEngagement() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Switch checked={ann.is_active} onCheckedChange={(v) => toggleAnnouncement(ann.id, v)} />
+                      <Switch checked={ann.status === 'PUBLISHED'} onCheckedChange={(v) => toggleAnnouncement(ann.id, v)} />
                       <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => deleteAnnouncement(ann.id)}>
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                       </Button>
