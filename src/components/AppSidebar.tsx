@@ -85,7 +85,9 @@ export default function AppSidebar() {
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll', children: [
-        { icon: Wallet, label: 'Compensation', path: '/payroll' },
+        { icon: IndianRupee, label: 'Compensation', path: '/admin/compensation' },
+        { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
+        { icon: Wallet, label: 'Processing', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
