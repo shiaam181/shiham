@@ -290,7 +290,7 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         {/* Manager Section */}
-        {(isManager && !isAdmin && !isDeveloper) && (
+        {isManager && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
               Manager
