@@ -49,6 +49,7 @@ import LeavePolicies from "./pages/LeavePolicies";
 import SetupGuide from "./pages/SetupGuide";
 import MyAttendance from "./pages/MyAttendance";
 import MyPayslips from "./pages/MyPayslips";
+import MyLeaves from "./pages/MyLeaves";
 import Compensation from "./pages/Compensation";
 import PayrollRun from "./pages/PayrollRun";
 import ManagerTeam from "./pages/ManagerTeam";
