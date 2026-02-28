@@ -73,7 +73,7 @@ export default function AppSidebar() {
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
-    { icon: Wallet, label: 'My Payslips', path: '/payroll' },
+    { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
