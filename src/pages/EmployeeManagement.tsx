@@ -672,6 +672,54 @@ export default function EmployeeManagement() {
           onOpenChange={setIsDetailOpen}
           onUpdate={fetchEmployees}
         />
+
+        {/* Invite Employee Dialog */}
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                Invite Employee
+              </DialogTitle>
+              <DialogDescription>
+                Send an activation email to a new employee. They'll set their own password.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="invite-name">Full Name</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="e.g. John Doe"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite-email">Email Address</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="e.g. john@company.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteSending}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleInviteEmployee}
+                disabled={inviteSending || !inviteName.trim() || !inviteEmail.trim()}
+              >
+                {inviteSending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                Send Invite
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </AppLayout>
   );
