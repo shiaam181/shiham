@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,41 +23,54 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isValidSession, setIsValidSession] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
-  
+  const [isValidToken, setIsValidToken] = useState(false);
+  const [checkingToken, setCheckingToken] = useState(true);
+
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Check URL hash for recovery token (Supabase redirects with hash)
+    const validateToken = async () => {
+      // Support both: token-based (Brevo) and hash-based (Supabase recovery)
+      if (token) {
+        // Brevo token flow — validate without consuming
+        try {
+          const { data, error } = await supabase.functions.invoke('manage-email-tokens', {
+            body: { action: 'validate', raw_token: token, purpose: 'RESET', consume: false },
+          });
+          if (!error && data?.valid) {
+            setIsValidToken(true);
+          }
+        } catch {
+          // invalid token
+        }
+        setCheckingToken(false);
+        return;
+      }
+
+      // Fallback: Supabase hash-based recovery
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const type = hashParams.get('type');
-      
+
       if (type === 'recovery' && accessToken) {
-        // Set session from recovery token
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: hashParams.get('refresh_token') || '',
         });
-        
-        if (!error) {
-          setIsValidSession(true);
-        }
-      } else if (session) {
-        setIsValidSession(true);
+        if (!error) setIsValidToken(true);
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) setIsValidToken(true);
       }
-      
-      setCheckingSession(false);
+
+      setCheckingToken(false);
     };
 
-    checkSession();
-  }, []);
+    validateToken();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,36 +79,41 @@ export default function ResetPassword() {
 
     try {
       const validated = passwordSchema.parse({ password, confirmPassword });
-      
-      const { error } = await supabase.auth.updateUser({
-        password: validated.password,
-      });
 
-      if (error) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
+      if (token) {
+        // Brevo token flow — consume token and set password
+        const { data, error } = await supabase.functions.invoke('reset-password-with-token', {
+          body: { token, password: validated.password },
         });
+
+        if (error || data?.error) {
+          toast({
+            title: 'Error',
+            description: data?.error || error?.message || 'Failed to reset password.',
+            variant: 'destructive',
+          });
+          return;
+        }
       } else {
-        setIsSuccess(true);
-        toast({
-          title: 'Password Updated',
-          description: 'Your password has been successfully reset.',
+        // Supabase session-based flow
+        const { error } = await supabase.auth.updateUser({
+          password: validated.password,
         });
-        
-        // Redirect to auth page after 2 seconds
-        setTimeout(() => {
-          navigate('/auth');
-        }, 2000);
+
+        if (error) {
+          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+          return;
+        }
       }
+
+      setIsSuccess(true);
+      toast({ title: 'Password Updated', description: 'Your password has been successfully reset.' });
+      setTimeout(() => navigate('/auth'), 2000);
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
         error.errors.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
+          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
         });
         setErrors(fieldErrors);
       }
@@ -104,7 +122,7 @@ export default function ResetPassword() {
     }
   };
 
-  if (checkingSession) {
+  if (checkingToken) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -115,7 +133,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (!isValidSession) {
+  if (!isValidToken) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <Card variant="elevated" className="w-full max-w-md border-0 shadow-xl">
@@ -129,12 +147,7 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="hero"
-              size="lg"
-              className="w-full"
-              onClick={() => navigate('/auth')}
-            >
+            <Button variant="hero" size="lg" className="w-full" onClick={() => navigate('/auth')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Sign In
             </Button>
@@ -165,7 +178,6 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-background">
       <div className="w-full max-w-md animate-fade-in">
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
             <Clock className="w-7 h-7 text-white" />
@@ -176,9 +188,7 @@ export default function ResetPassword() {
         <Card variant="elevated" className="border-0 shadow-xl">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-2xl font-display">Set New Password</CardTitle>
-            <CardDescription>
-              Enter your new password below
-            </CardDescription>
+            <CardDescription>Enter your new password below</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -189,15 +199,10 @@ export default function ResetPassword() {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrors(prev => ({ ...prev, password: '' }));
-                  }}
+                  onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
                   className={errors.password ? 'border-destructive' : ''}
                 />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
               <div className="space-y-2">
@@ -207,24 +212,13 @@ export default function ResetPassword() {
                   type="password"
                   placeholder="••••••••"
                   value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setErrors(prev => ({ ...prev, confirmPassword: '' }));
-                  }}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: '' })); }}
                   className={errors.confirmPassword ? 'border-destructive' : ''}
                 />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-                )}
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
               </div>
 
-              <Button
-                type="submit"
-                variant="hero"
-                size="lg"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
@@ -234,11 +228,7 @@ export default function ResetPassword() {
             </form>
 
             <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => navigate('/auth')}
-                className="text-sm text-muted-foreground hover:text-primary"
-              >
+              <button type="button" onClick={() => navigate('/auth')} className="text-sm text-muted-foreground hover:text-primary">
                 <ArrowLeft className="w-4 h-4 inline mr-1" />
                 Back to Sign In
               </button>
