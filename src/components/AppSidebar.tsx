@@ -26,6 +26,9 @@ import {
   Receipt,
   UserCheck,
   Briefcase,
+  Bell,
+  Sparkles,
+  CalendarDays,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -68,12 +71,12 @@ export default function AppSidebar() {
   // Employee items - visible to all
   const employeeItems: NavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
-    {
-      icon: ClipboardList, label: 'Attendance', children: [
-        { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
-      ]
-    },
+    { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
+    { icon: CalendarDays, label: 'My Leaves', path: '/admin/leaves' },
+    { icon: Wallet, label: 'My Payslips', path: '/payroll' },
     { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
 
   // HR items - visible to HR role
@@ -157,6 +160,7 @@ export default function AppSidebar() {
       icon: Wallet, label: 'Payroll & Compliance', children: [
         { icon: Wallet, label: 'Compensation', path: '/payroll' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
+        { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
       ]
     },
@@ -286,7 +290,7 @@ export default function AppSidebar() {
         </SidebarGroup>
 
         {/* Manager Section */}
-        {(isManager && !isAdmin && !isDeveloper) && (
+        {isManager && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
               Manager

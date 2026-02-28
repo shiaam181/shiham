@@ -16,6 +16,7 @@ import {
   Bell
 } from 'lucide-react';
 import { format } from 'date-fns';
+import AppLayout from '@/components/AppLayout';
 
 interface LeaveRequestDetail {
   id: string;
@@ -154,16 +155,8 @@ export default function Notifications() {
   // Show detailed view for a specific notification
   if (leaveId && leaveRequest) {
     return (
-      <div className="min-h-screen bg-background">
+      <AppLayout>
         <div className="container max-w-2xl mx-auto py-6 px-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-6"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
 
           <Card className="border-border">
             <CardHeader className="space-y-4">
@@ -256,25 +249,16 @@ export default function Notifications() {
                 </p>
               </div>
             </CardContent>
-          </Card>
+        </Card>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   // Show all notifications list
   return (
-    <div className="min-h-screen bg-background">
+    <AppLayout>
       <div className="container max-w-2xl mx-auto py-6 px-4">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-
         <div className="flex items-center gap-3 mb-6">
           <Bell className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">Notifications</h1>
@@ -324,6 +308,6 @@ export default function Notifications() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }
