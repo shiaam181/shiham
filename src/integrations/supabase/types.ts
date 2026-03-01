@@ -1164,6 +1164,48 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_payslip_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          preview_image_url: string | null
+          status: string
+          template_content: string
+          template_type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          preview_image_url?: string | null
+          status?: string
+          template_content: string
+          template_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          preview_image_url?: string | null
+          status?: string
+          template_content?: string
+          template_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       professional_tax_slabs: {
         Row: {
           created_at: string
@@ -1608,6 +1650,76 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_payslip_settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          custom_template_content: string | null
+          footer_text: string | null
+          header_text: string | null
+          id: string
+          primary_color: string | null
+          secondary_color: string | null
+          selected_platform_template_id: string | null
+          template_mode: string
+          tenant_logo_url: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          custom_template_content?: string | null
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          selected_platform_template_id?: string | null
+          template_mode?: string
+          tenant_logo_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          custom_template_content?: string | null
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          selected_platform_template_id?: string | null
+          template_mode?: string
+          tenant_logo_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_payslip_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_payslip_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_payslip_settings_selected_platform_template_id_fkey"
+            columns: ["selected_platform_template_id"]
+            isOneToOne: false
+            referencedRelation: "platform_payslip_templates"
             referencedColumns: ["id"]
           },
         ]

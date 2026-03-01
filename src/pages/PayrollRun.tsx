@@ -88,7 +88,7 @@ export default function PayrollRun() {
     setLoading(true);
     const [payrollRes, empRes, companyRes, brandRes] = await Promise.all([
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
-      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
+      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc, company_id').eq('is_active', true),
       supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
       supabase.from('companies').select('brand_color').limit(1).maybeSingle(),
     ]);
@@ -127,7 +127,7 @@ export default function PayrollRun() {
         .gte('date', `${year}-${String(month).padStart(2, '0')}-01`)
         .lt('date', month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`),
       supabase.from('week_offs').select('day_of_week').eq('is_global', true),
-      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
+      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc, company_id').eq('is_active', true),
     ]);
 
     const salaries = salaryRes.data || [];
@@ -334,6 +334,8 @@ export default function PayrollRun() {
   };
 
   const openSlip = (p: PayrollEntry) => {
+    // Get company_id from the employee's profile
+    const empProfile = p.profile as any;
     setSalarySlipData({
       employeeName: p.profile?.full_name || 'Unknown', department: p.profile?.department,
       email: p.profile?.email || '', month: p.month, year: p.year,
@@ -346,6 +348,7 @@ export default function PayrollRun() {
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
       status: p.status, companyName, brandColor: companyBrandColor,
+      companyId: empProfile?.company_id || null,
     });
     setShowSalarySlip(true);
   };

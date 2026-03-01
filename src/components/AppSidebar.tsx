@@ -66,6 +66,7 @@ export default function AppSidebar() {
         { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
+        { icon: FileText, label: 'Payslip Settings', path: '/admin/payslip-settings' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
@@ -116,6 +117,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
+    { icon: FileText, label: 'Payslip Settings', path: '/admin/payslip-settings' },
     { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
@@ -147,6 +149,7 @@ export default function AppSidebar() {
         { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
         { icon: Calculator, label: 'Payroll Run', path: '/admin/payroll-run' },
         { icon: Wallet, label: 'Processing', path: '/payroll' },
+        { icon: FileText, label: 'Payslip Templates', path: '/developer/payslip-templates' },
         { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
         { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
         { icon: Receipt, label: 'Leave Policies', path: '/leave-policies' },
