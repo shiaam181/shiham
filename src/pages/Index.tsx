@@ -19,13 +19,16 @@ export default function Index() {
       }
 
       if (!isLoading && !user) {
-        const { data } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'show_marketing_landing_page')
-          .maybeSingle();
+        const { data, error } = await supabase.rpc('get_public_auth_settings' as never);
 
-        const marketingEnabled = data?.value && (data.value as { enabled: boolean }).enabled;
+        if (error) {
+          console.error('Failed to load public auth settings:', error);
+        }
+
+        const marketingSetting = (data as Array<{ key: string; value: { enabled?: boolean } }> | null)?.find(
+          (row) => row.key === 'show_marketing_landing_page'
+        );
+        const marketingEnabled = marketingSetting?.value?.enabled ?? false;
         setShowMarketing(!!marketingEnabled);
         
         if (!marketingEnabled) {
