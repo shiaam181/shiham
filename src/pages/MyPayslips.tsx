@@ -65,6 +65,7 @@ export default function MyPayslips() {
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
       status: p.status, companyName, brandColor,
+      companyId: profile?.company_id || null,
     });
     setShowSlip(true);
   };

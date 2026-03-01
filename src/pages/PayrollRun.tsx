@@ -88,7 +88,7 @@ export default function PayrollRun() {
     setLoading(true);
     const [payrollRes, empRes, companyRes, brandRes] = await Promise.all([
       supabase.from('payroll_runs').select('*').order('year', { ascending: false }).order('month', { ascending: false }).limit(200),
-      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
+      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc, company_id').eq('is_active', true),
       supabase.from('company_settings').select('company_name').limit(1).maybeSingle(),
       supabase.from('companies').select('brand_color').limit(1).maybeSingle(),
     ]);
