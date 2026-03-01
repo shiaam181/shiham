@@ -61,6 +61,8 @@ import DeveloperTracking from "./pages/DeveloperTracking";
 import DeveloperEngagement from "./pages/DeveloperEngagement";
 import DeveloperSettings from "./pages/DeveloperSettings";
 import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
+import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
+import PayslipSettings from "./pages/PayslipSettings";
 
 const queryClient = new QueryClient();
 
