@@ -49,11 +49,21 @@ export function useSystemSettings() {
 
   const fetchSettings = useCallback(async () => {
     try {
+      let settingsRows: Array<{ key: string; value: unknown }> = [];
+
       const { data, error } = await supabase
         .from('system_settings')
         .select('key, value');
-      
-      if (error) throw error;
+
+      if (error) {
+        // Unauthenticated users no longer read from system_settings directly.
+        // Fall back to whitelisted public auth settings via SECURITY DEFINER RPC.
+        const { data: publicData, error: publicError } = await supabase.rpc('get_public_auth_settings' as never);
+        if (publicError) throw publicError;
+        settingsRows = (publicData as Array<{ key: string; value: unknown }>) ?? [];
+      } else {
+        settingsRows = (data as Array<{ key: string; value: unknown }>) ?? [];
+      }
 
       const newSettings = { ...defaultSettings };
       
