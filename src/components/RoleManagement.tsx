@@ -288,7 +288,8 @@ export default function RoleManagement() {
                             <SelectItem value="employee">Employee</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="owner">Owner</SelectItem>
-                            <SelectItem value="payroll_team">Payroll Team</SelectItem>
+                            <SelectItem value="hr">HR</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
                             <SelectItem value="developer">Developer</SelectItem>
                           </SelectContent>
                         </Select>
