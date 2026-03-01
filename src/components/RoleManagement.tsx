@@ -342,10 +342,16 @@ export default function RoleManagement() {
                   including employee approvals and attendance oversight.
                 </>
               )}
-              {newRole === 'payroll_team' && (
+              {newRole === 'hr' && (
                 <>
-                  <strong>Note:</strong> Payroll Team role grants access to the Payroll Processing dashboard
-                  to review and process approved payroll entries.
+                  <strong>Note:</strong> HR role grants company-wide access to employee management,
+                  payroll structures, and leave administration.
+                </>
+              )}
+              {newRole === 'manager' && (
+                <>
+                  <strong>Note:</strong> Manager role grants team-level oversight for employees
+                  assigned under this manager, including attendance and leave approvals.
                 </>
               )}
               {newRole === 'employee' && (
