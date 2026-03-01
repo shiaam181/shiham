@@ -127,7 +127,7 @@ export default function PayrollRun() {
         .gte('date', `${year}-${String(month).padStart(2, '0')}-01`)
         .lt('date', month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`),
       supabase.from('week_offs').select('day_of_week').eq('is_global', true),
-      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc').eq('is_active', true),
+      supabase.from('profiles').select('user_id, full_name, email, department, bank_name, bank_account_number, bank_ifsc, company_id').eq('is_active', true),
     ]);
 
     const salaries = salaryRes.data || [];
