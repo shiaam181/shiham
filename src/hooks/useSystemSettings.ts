@@ -67,7 +67,7 @@ export function useSystemSettings() {
 
       const newSettings = { ...defaultSettings };
       
-      data?.forEach((setting) => {
+      settingsRows.forEach((setting) => {
         const value = setting.value as { enabled?: boolean; service_id?: string; template_id?: string; public_key?: string; threshold?: number };
         switch (setting.key) {
           case 'face_verification_required':
