@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Shield, User, Code, Save, AlertTriangle, Building, Calculator } from 'lucide-react';
+import { Search, Shield, User, Code, Save, AlertTriangle, Building, UserCog, Users } from 'lucide-react';
 
 interface UserWithRole {
   user_id: string;
