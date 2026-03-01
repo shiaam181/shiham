@@ -29,14 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Shield, User, Code, Save, AlertTriangle, Building, Calculator } from 'lucide-react';
+import { Search, Shield, User, Code, Save, AlertTriangle, Building, UserCog, Users } from 'lucide-react';
 
 interface UserWithRole {
   user_id: string;
   full_name: string;
   email: string;
   department: string | null;
-  role: 'admin' | 'employee' | 'developer' | 'owner' | 'payroll_team';
+  role: 'admin' | 'employee' | 'developer' | 'owner' | 'hr' | 'manager';
   is_active: boolean;
 }
 
@@ -158,11 +158,18 @@ export default function RoleManagement() {
             Owner
           </Badge>
         );
-      case 'payroll_team':
+      case 'hr':
         return (
           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
-            <Calculator className="w-3 h-3 mr-1" />
-            Payroll Team
+            <UserCog className="w-3 h-3 mr-1" />
+            HR
+          </Badge>
+        );
+      case 'manager':
+        return (
+          <Badge className="bg-teal-500/20 text-teal-500 border-teal-500/30">
+            <Users className="w-3 h-3 mr-1" />
+            Manager
           </Badge>
         );
       default:
@@ -281,7 +288,8 @@ export default function RoleManagement() {
                             <SelectItem value="employee">Employee</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="owner">Owner</SelectItem>
-                            <SelectItem value="payroll_team">Payroll Team</SelectItem>
+                            <SelectItem value="hr">HR</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
                             <SelectItem value="developer">Developer</SelectItem>
                           </SelectContent>
                         </Select>
@@ -334,10 +342,16 @@ export default function RoleManagement() {
                   including employee approvals and attendance oversight.
                 </>
               )}
-              {newRole === 'payroll_team' && (
+              {newRole === 'hr' && (
                 <>
-                  <strong>Note:</strong> Payroll Team role grants access to the Payroll Processing dashboard
-                  to review and process approved payroll entries.
+                  <strong>Note:</strong> HR role grants company-wide access to employee management,
+                  payroll structures, and leave administration.
+                </>
+              )}
+              {newRole === 'manager' && (
+                <>
+                  <strong>Note:</strong> Manager role grants team-level oversight for employees
+                  assigned under this manager, including attendance and leave approvals.
                 </>
               )}
               {newRole === 'employee' && (
