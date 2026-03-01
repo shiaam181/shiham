@@ -275,6 +275,8 @@ function AppRoutes() {
         <Route path="/developer/email-settings" element={<DeveloperRoute><DeveloperEmailSettings /></DeveloperRoute>} />
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
+        <Route path="/developer/payslip-templates" element={<DeveloperRoute><DeveloperPayslipTemplates /></DeveloperRoute>} />
+        <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />

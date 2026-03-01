@@ -116,6 +116,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
+    { icon: FileText, label: 'Payslip Settings', path: '/admin/payslip-settings' },
     { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
