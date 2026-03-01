@@ -334,6 +334,8 @@ export default function PayrollRun() {
   };
 
   const openSlip = (p: PayrollEntry) => {
+    // Get company_id from the employee's profile
+    const empProfile = p.profile as any;
     setSalarySlipData({
       employeeName: p.profile?.full_name || 'Unknown', department: p.profile?.department,
       email: p.profile?.email || '', month: p.month, year: p.year,
@@ -346,6 +348,7 @@ export default function PayrollRun() {
       otherDeductions: Number(p.other_deductions_detail?.other) || 0,
       grossSalary: Number(p.gross_salary), totalDeductions: Number(p.total_deductions), netSalary: Number(p.net_salary),
       status: p.status, companyName, brandColor: companyBrandColor,
+      companyId: empProfile?.company_id || null,
     });
     setShowSalarySlip(true);
   };
