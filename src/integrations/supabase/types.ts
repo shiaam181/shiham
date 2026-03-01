@@ -1824,6 +1824,13 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_challenges: { Args: never; Returns: undefined }
+      get_public_auth_settings: {
+        Args: never
+        Returns: {
+          key: string
+          value: Json
+        }[]
+      }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
