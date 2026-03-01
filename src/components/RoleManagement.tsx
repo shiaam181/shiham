@@ -158,11 +158,18 @@ export default function RoleManagement() {
             Owner
           </Badge>
         );
-      case 'payroll_team':
+      case 'hr':
         return (
           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
-            <Calculator className="w-3 h-3 mr-1" />
-            Payroll Team
+            <UserCog className="w-3 h-3 mr-1" />
+            HR
+          </Badge>
+        );
+      case 'manager':
+        return (
+          <Badge className="bg-teal-500/20 text-teal-500 border-teal-500/30">
+            <Users className="w-3 h-3 mr-1" />
+            Manager
           </Badge>
         );
       default:
