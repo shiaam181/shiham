@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,7 @@ interface AppUpdate {
 
 export default function Updates() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { hasDeferredUpdate, update: applyUpdate } = usePWAUpdate();
+  const { hasDeferredUpdate, deferredAt, update: applyUpdate } = usePWAUpdate();
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -96,43 +94,56 @@ export default function Updates() {
           <p className="text-sm text-muted-foreground">See what's new</p>
         </div>
 
-        {hasDeferredUpdate && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="flex items-center justify-between gap-4 p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <RefreshCw className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Update Available</p>
-                  <p className="text-xs text-muted-foreground">A new version is ready to install</p>
-                </div>
-              </div>
-              <Button size="sm" onClick={applyUpdate} className="gap-2 shrink-0">
-                <RefreshCw className="w-4 h-4" />
-                Update Now
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Updates List */}
         <div className="space-y-4">
-          {updates.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-medium mb-2">No updates yet</h3>
-              <p className="text-sm text-muted-foreground">
-                When new features are released, they'll appear here.
-              </p>
+          {hasDeferredUpdate && (
+            <Card className="relative overflow-hidden ring-2 ring-primary/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">New app version ready</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        {deferredAt
+                          ? `Detected ${format(new Date(deferredAt), 'MMM d, yyyy • h:mm a')}`
+                          : 'A new version is ready to install'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={applyUpdate} className="gap-2 shrink-0">
+                    <RefreshCw className="w-4 h-4" />
+                    Update Now
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Update is available and waiting for your action.
+                </p>
+              </CardContent>
             </Card>
+          )}
+
+          {updates.length === 0 ? (
+            !hasDeferredUpdate ? (
+              <Card className="p-8 text-center">
+                <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">No updates yet</h3>
+                <p className="text-sm text-muted-foreground">
+                  When new features are released, they'll appear here.
+                </p>
+              </Card>
+            ) : null
           ) : (
             updates.map((update) => {
               const wasSeen = seenIds.has(update.id);
-              
+
               return (
-                <Card 
-                  key={update.id} 
+                <Card
+                  key={update.id}
                   className={`relative overflow-hidden ${!wasSeen ? 'ring-2 ring-primary/20' : ''}`}
                 >
                   {update.is_critical && (
