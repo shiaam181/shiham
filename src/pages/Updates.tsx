@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Check, AlertTriangle } from 'lucide-react';
+import { Sparkles, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
+import { usePWAUpdate } from '@/hooks/usePWAUpdate';
 
 interface AppUpdate {
   id: string;
@@ -20,6 +21,7 @@ interface AppUpdate {
 export default function Updates() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { hasDeferredUpdate, update: applyUpdate } = usePWAUpdate();
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +95,26 @@ export default function Updates() {
           <h1 className="text-xl font-display font-bold">App Updates</h1>
           <p className="text-sm text-muted-foreground">See what's new</p>
         </div>
+
+        {hasDeferredUpdate && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="flex items-center justify-between gap-4 p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <RefreshCw className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Update Available</p>
+                  <p className="text-xs text-muted-foreground">A new version is ready to install</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={applyUpdate} className="gap-2 shrink-0">
+                <RefreshCw className="w-4 h-4" />
+                Update Now
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Updates List */}
         <div className="space-y-4">
