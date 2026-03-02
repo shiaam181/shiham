@@ -204,14 +204,14 @@ export default function GlobalBroadcast() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-5xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Radio className="w-6 h-6 text-primary" /> Global Broadcast
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Radio className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> Global Broadcast
             </h1>
-            <p className="text-sm text-muted-foreground">Platform-wide announcements for all users across all companies</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Platform-wide announcements for all users across all companies</p>
           </div>
-          <Button size="sm" onClick={() => openComposer()}>
+          <Button size="sm" onClick={() => openComposer()} className="self-start sm:self-auto">
             <Plus className="w-4 h-4 mr-1" /> New Broadcast
           </Button>
         </div>

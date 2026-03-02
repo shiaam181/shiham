@@ -368,12 +368,12 @@ export default function PayrollRun() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><Calculator className="w-6 h-6 text-primary" /> Payroll Run</h1>
-            <p className="text-sm text-muted-foreground">Generate, review, approve and lock monthly payroll</p>
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> Payroll Run</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Generate, review, approve and lock monthly payroll</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={() => exportBankCSV(parseInt(runMonth), parseInt(runYear))}>
               <Download className="w-4 h-4 mr-1" /> Bank CSV
             </Button>

@@ -214,14 +214,12 @@ export default function StatutoryCompliance() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Scale className="w-6 h-6 text-primary" />
-              Statutory Compliance
-            </h1>
-            <p className="text-sm text-muted-foreground">PF, ESI & Professional Tax configuration</p>
-          </div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Scale className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            Statutory Compliance
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">PF, ESI & Professional Tax configuration</p>
         </div>
 
         {/* Summary Cards */}
