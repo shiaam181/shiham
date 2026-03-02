@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Check, AlertTriangle } from 'lucide-react';
+import { Sparkles, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
+import { usePWAUpdate } from '@/hooks/usePWAUpdate';
 
 interface AppUpdate {
   id: string;
