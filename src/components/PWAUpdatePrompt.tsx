@@ -1,17 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { usePWAUpdate } from '@/hooks/usePWAUpdate';
 
 export default function PWAUpdatePrompt() {
-  const { hasDeferredUpdate } = usePWAUpdate();
+  const { hasDeferredUpdate, hasBeenNotified, markDeferredAsNotified } = usePWAUpdate();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const shownRef = useRef(false);
 
   useEffect(() => {
-    if (hasDeferredUpdate && !shownRef.current) {
-      shownRef.current = true;
+    if (hasDeferredUpdate && !hasBeenNotified) {
       toast({
         title: 'New update available',
         description: 'Go to Updates to install the latest version.',
@@ -24,8 +22,11 @@ export default function PWAUpdatePrompt() {
           </button>
         ),
       });
+
+      markDeferredAsNotified();
     }
-  }, [hasDeferredUpdate]);
+  }, [hasDeferredUpdate, hasBeenNotified, markDeferredAsNotified, toast, navigate]);
 
   return null;
 }
+
