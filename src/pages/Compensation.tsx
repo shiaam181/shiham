@@ -152,14 +152,14 @@ export default function Compensation() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <IndianRupee className="w-6 h-6 text-primary" /> Compensation
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <IndianRupee className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> Compensation
             </h1>
-            <p className="text-sm text-muted-foreground">Employee salary structures & revision history</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Employee salary structures & revision history</p>
           </div>
-          <Button size="sm" onClick={() => openAdd()}>
+          <Button size="sm" onClick={() => openAdd()} className="self-start sm:self-auto">
             <Plus className="w-4 h-4 mr-1" /> Add Salary
           </Button>
         </div>

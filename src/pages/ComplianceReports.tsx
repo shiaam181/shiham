@@ -89,12 +89,12 @@ export default function ComplianceReports() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BarChart3 className="w-6 h-6 text-primary" /> Compliance Reports
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" /> Compliance Reports
             </h1>
-            <p className="text-sm text-muted-foreground">PF, ESI & PT contribution summaries</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">PF, ESI & PT contribution summaries</p>
           </div>
           <div className="flex gap-2">
             <select className="border rounded px-2 py-1 text-sm bg-background" value={month} onChange={e => setMonth(Number(e.target.value))}>

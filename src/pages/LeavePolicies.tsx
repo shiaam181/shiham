@@ -142,15 +142,15 @@ export default function LeavePolicies() {
   return (
     <AppLayout>
       <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Receipt className="w-6 h-6 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Receipt className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               Leave Policies
             </h1>
-            <p className="text-sm text-muted-foreground">Configure leave types, quotas, and accrual rules</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Configure leave types, quotas, and accrual rules</p>
           </div>
-          <Button size="sm" onClick={openAdd}>
+          <Button size="sm" onClick={openAdd} className="self-start sm:self-auto">
             <Plus className="w-4 h-4 mr-1" /> Add Policy
           </Button>
         </div>
