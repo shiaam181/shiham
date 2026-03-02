@@ -21,6 +21,7 @@ interface AppUpdate {
 export default function Updates() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { hasDeferredUpdate, update: applyUpdate } = usePWAUpdate();
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
