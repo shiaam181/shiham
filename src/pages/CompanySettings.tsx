@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Building2, Save, Mail, Phone, MapPin, Clock, PlayCircle, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 import DataExportImport from '@/components/DataExportImport';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -213,7 +214,12 @@ export default function CompanySettings() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 space-y-6 max-w-4xl">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 max-w-4xl">
+        <PageHeader
+          title="Company Settings"
+          description="Manage your company configuration"
+          icon={<Building2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+        />
         {/* Company Information */}
         <Card>
           <CardHeader>
