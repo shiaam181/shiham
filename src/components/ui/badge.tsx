@@ -25,6 +25,12 @@ const badgeVariants = cva(
         "week-off": "border-border bg-muted text-muted-foreground font-medium",
         holiday: "border-warning/20 bg-warning-soft text-warning font-medium",
         "half-day": "border-info/20 bg-info-soft text-info font-medium",
+        draft: "border-border bg-muted text-muted-foreground font-medium",
+        locked: "border-destructive/20 bg-destructive-soft text-destructive font-medium",
+        processed: "border-success/20 bg-success-soft text-success font-medium",
+        approved: "border-success/20 bg-success-soft text-success font-medium",
+        pending: "border-warning/20 bg-warning-soft text-warning font-medium",
+        rejected: "border-destructive/20 bg-destructive-soft text-destructive font-medium",
       },
     },
     defaultVariants: {
