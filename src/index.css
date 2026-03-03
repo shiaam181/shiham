@@ -185,13 +185,36 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "cv11", "ss01";
+    font-size: 14px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* Standardized Typography Scale */
+  h1 {
     font-family: 'Outfit', system-ui, sans-serif;
-    @apply font-semibold tracking-tight;
+    @apply text-xl sm:text-[22px] font-bold tracking-tight leading-tight;
+  }
+  h2 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    @apply text-base sm:text-lg font-semibold tracking-tight leading-snug;
+  }
+  h3 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    @apply text-sm sm:text-base font-semibold tracking-tight leading-snug;
+  }
+  h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    @apply text-sm font-medium tracking-tight;
+  }
+
+  p {
+    @apply text-sm leading-relaxed;
+  }
+
+  small, .text-caption {
+    @apply text-xs text-muted-foreground;
   }
 }
 

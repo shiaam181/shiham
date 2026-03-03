@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, differenceInMinutes } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Table,
   TableBody,
@@ -420,19 +421,13 @@ export default function Reports() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-6">
-        {/* Page Header */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
-              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-info" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-display font-bold text-sm sm:text-lg truncate">Attendance Reports</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Monthly analytics & export</p>
-            </div>
-          </div>
+        <PageHeader
+          title="Attendance Reports"
+          description="Monthly analytics & export"
+          icon={<BarChart3 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-info" />}
+        />
             
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5">
               <Input
                 type="month"
                 value={selectedMonth}
@@ -444,13 +439,12 @@ export default function Reports() {
                   <FileSpreadsheet className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Export </span>CSV
                 </Button>
-                <Button variant="hero" size="sm" onClick={exportToPDF} className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                <Button size="sm" onClick={exportToPDF} className="flex-1 sm:flex-initial text-xs sm:text-sm">
                   <FileText className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Export </span>PDF
                 </Button>
               </div>
-            </div>
-          </div>
+        </div>
         {/* Summary Stats */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <Card className="p-3 sm:p-6">

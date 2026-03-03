@@ -8,6 +8,8 @@ import {
   Bell,
 } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 export default function DeveloperDashboard() {
   const { isDeveloper, isLoading: authLoading } = useAuth();
@@ -31,61 +33,39 @@ export default function DeveloperDashboard() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Developer Panel</h1>
-          <p className="text-muted-foreground text-sm">System overview and quick status</p>
-        </div>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5">
+        <PageHeader
+          title="Developer Panel"
+          description="System overview and quick status"
+          icon={<Code className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+        />
 
         {/* Status Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          <Card className="p-3 sm:p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                <Code className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Access Level</p>
-                <p className="text-sm sm:text-xl font-display font-bold truncate">Developer</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
-                <Database className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Database</p>
-                <p className="text-sm sm:text-xl font-display font-bold truncate">Connected</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
-                <Key className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">API Status</p>
-                <p className="text-sm sm:text-xl font-display font-bold truncate">Active</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Notifications</p>
-                <p className="text-sm sm:text-xl font-display font-bold truncate">Enabled</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <StatCard
+            label="Access Level"
+            value="Developer"
+            icon={<Code className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+            iconBg="bg-primary/10"
+          />
+          <StatCard
+            label="Database"
+            value="Connected"
+            icon={<Database className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-success" />}
+            iconBg="bg-success-soft"
+          />
+          <StatCard
+            label="API Status"
+            value="Active"
+            icon={<Key className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-success" />}
+            iconBg="bg-success-soft"
+          />
+          <StatCard
+            label="Notifications"
+            value="Enabled"
+            icon={<Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-warning" />}
+            iconBg="bg-warning-soft"
+          />
         </div>
       </main>
     </AppLayout>

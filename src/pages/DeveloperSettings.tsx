@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 import DataExportImport from '@/components/DataExportImport';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -428,11 +429,12 @@ export default function DeveloperSettings() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold">System Settings</h1>
-          <p className="text-muted-foreground text-sm">Configure system-wide settings and integrations</p>
-        </div>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5">
+        <PageHeader
+          title="System Settings"
+          description="Configure system-wide settings and integrations"
+          icon={<Settings className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+        />
 
         {/* Email Configuration */}
         <Card>
