@@ -427,7 +427,7 @@ export default function Reports() {
           icon={<BarChart3 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-info" />}
         />
             
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5">
               <Input
                 type="month"
                 value={selectedMonth}
@@ -439,13 +439,12 @@ export default function Reports() {
                   <FileSpreadsheet className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Export </span>CSV
                 </Button>
-                <Button variant="hero" size="sm" onClick={exportToPDF} className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                <Button size="sm" onClick={exportToPDF} className="flex-1 sm:flex-initial text-xs sm:text-sm">
                   <FileText className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Export </span>PDF
                 </Button>
               </div>
-            </div>
-          </div>
+        </div>
         {/* Summary Stats */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <Card className="p-3 sm:p-6">
