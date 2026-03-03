@@ -68,6 +68,7 @@ import {
 } from '@/components/ui/collapsible';
 import EmployeeDetailDialog from '@/components/EmployeeDetailDialog';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface Employee {
   id: string;
@@ -365,27 +366,21 @@ export default function EmployeeManagement() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-6">
-        {/* Page Header */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="font-display font-bold text-sm sm:text-lg truncate">Employee Management</h1>
-                <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage employee profiles & attendance</p>
-              </div>
-            </div>
-            {userCompanyId && (
+        <PageHeader
+          title="Employee Management"
+          description="Manage employee profiles & attendance"
+          icon={<Users className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+          actions={
+            userCompanyId ? (
               <Button size="sm" onClick={() => setInviteOpen(true)}>
                 <UserPlus className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline">Invite Employee</span>
                 <span className="sm:hidden">Invite</span>
               </Button>
-            )}
-          </div>
-          <div className="relative">
+            ) : undefined
+          }
+        />
+          <div className="relative mb-5">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search employees or companies..."
@@ -394,7 +389,6 @@ export default function EmployeeManagement() {
               className="pl-9 w-full"
             />
           </div>
-        </div>
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <Card className="p-3 sm:p-4">

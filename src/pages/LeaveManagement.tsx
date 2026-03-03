@@ -41,6 +41,7 @@ import {
   User
 } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface LeaveRequest {
   id: string;
@@ -231,15 +232,12 @@ export default function LeaveManagement() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(fromDeveloper ? '/developer' : '/admin')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="font-display font-bold text-sm sm:text-lg truncate">Leave Management</h1>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Review and manage leave requests</p>
-          </div>
-        </div>
+        <PageHeader
+          title="Leave Management"
+          description="Review and manage leave requests"
+          backTo={fromDeveloper ? '/developer' : '/admin'}
+          icon={<Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+        />
         
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">

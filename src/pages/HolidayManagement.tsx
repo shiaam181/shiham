@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableBody,
@@ -200,28 +202,22 @@ export default function HolidayManagement() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between gap-2 mb-4">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-display font-bold text-sm sm:text-lg truncate">Holiday Management</h1>
-              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Manage company holidays</p>
-            </div>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="hero" size="sm" onClick={() => handleOpenDialog()} className="shrink-0">
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Add Holiday</span>
-              </Button>
-            </DialogTrigger>
+        <PageHeader
+          title="Holiday Management"
+          description="Manage company holidays"
+          icon={<Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-warning" />}
+          actions={
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => handleOpenDialog()}>
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Holiday</span>
+                </Button>
+              </DialogTrigger>
               <DialogContent className="max-w-[90vw] sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-base sm:text-lg">{editingHoliday ? 'Edit Holiday' : 'Add Holiday'}</DialogTitle>
-                  <DialogDescription className="text-xs sm:text-sm">
+                  <DialogTitle>{editingHoliday ? 'Edit Holiday' : 'Add Holiday'}</DialogTitle>
+                  <DialogDescription>
                     {editingHoliday ? 'Update holiday details' : 'Add a new company holiday'}
                   </DialogDescription>
                 </DialogHeader>
@@ -259,14 +255,15 @@ export default function HolidayManagement() {
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button variant="hero" onClick={handleSubmit}>
+                  <Button onClick={handleSubmit}>
                     <Save className="w-4 h-4 mr-2" />
                     {editingHoliday ? 'Update' : 'Save'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-        </div>
+          }
+        />
         <Card>
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">Company Holidays</CardTitle>
@@ -288,8 +285,17 @@ export default function HolidayManagement() {
                 <TableBody>
                   {holidays.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
-                        No holidays configured. Add your first holiday.
+                      <TableCell colSpan={4} className="p-0">
+                        <EmptyState
+                          icon={<Calendar className="w-6 h-6 text-muted-foreground" />}
+                          title="No holidays configured"
+                          description="Add your first company holiday to get started."
+                          action={
+                            <Button size="sm" variant="outline" onClick={() => handleOpenDialog()}>
+                              <Plus className="w-4 h-4 mr-1" /> Add Holiday
+                            </Button>
+                          }
+                        />
                       </TableCell>
                     </TableRow>
                   ) : (

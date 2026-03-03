@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -275,56 +276,36 @@ export default function AdminDashboard() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 pb-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Employees</p>
-                <p className="text-xl sm:text-3xl font-display font-bold mt-1">{stats.totalEmployees}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Present Today</p>
-                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-success">{stats.presentToday}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-success-soft flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Absent Today</p>
-                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-destructive">{stats.absentToday}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-destructive-soft flex items-center justify-center shrink-0">
-                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-destructive" />
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-3 sm:p-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">On Leave</p>
-                <p className="text-xl sm:text-3xl font-display font-bold mt-1 text-info">{stats.onLeave}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-info-soft flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-info" />
-              </div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <StatCard
+            label="Total Employees"
+            value={stats.totalEmployees}
+            icon={<Users className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />}
+            iconBg="bg-primary/10"
+          />
+          <StatCard
+            label="Present Today"
+            value={stats.presentToday}
+            valueColor="text-success"
+            icon={<CheckCircle2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-success" />}
+            iconBg="bg-success-soft"
+          />
+          <StatCard
+            label="Absent Today"
+            value={stats.absentToday}
+            valueColor="text-destructive"
+            icon={<XCircle className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-destructive" />}
+            iconBg="bg-destructive-soft"
+          />
+          <StatCard
+            label="On Leave"
+            value={stats.onLeave}
+            valueColor="text-info"
+            icon={<Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-info" />}
+            iconBg="bg-info-soft"
+          />
         </div>
 
         {/* Attendance Management with Tabs */}
