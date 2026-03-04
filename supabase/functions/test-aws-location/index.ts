@@ -163,7 +163,7 @@ serve(async (req) => {
       );
     }
 
-    const { action } = await req.json();
+    const { action, mapName: newMapName, region: newRegion, placeIndexName: newPlaceIndex } = await req.json();
 
     if (action === "get" || action === "get-config") {
       // Return current credentials status
@@ -221,6 +221,34 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify(testResult),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "save-map-config") {
+      // Save map config values to system_settings (actual secrets must be updated via Cloud)
+      const updates: Record<string, string> = {};
+      if (newMapName) updates.mapName = newMapName;
+      if (newRegion) updates.region = newRegion;
+      if (newPlaceIndex) updates.placeIndexName = newPlaceIndex;
+
+      // Store in system_settings for display purposes
+      await supabase.from("system_settings").upsert({
+        key: "aws_location_config",
+        value: {
+          mapName: newMapName || Deno.env.get("AWS_LOCATION_MAP_NAME") || "",
+          region: newRegion || Deno.env.get("AWS_REGION") || "",
+          placeIndexName: newPlaceIndex || Deno.env.get("AWS_LOCATION_PLACE_INDEX") || "",
+          updated_at: new Date().toISOString(),
+          updated_by: userId,
+        },
+      }, { onConflict: "key" });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Map configuration saved. Note: To change actual backend values, update the secrets AWS_LOCATION_MAP_NAME, AWS_REGION, and AWS_LOCATION_PLACE_INDEX in Cloud settings." 
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
