@@ -177,7 +177,6 @@ serve(async (req) => {
       }
 
       // Use AWS Location Service Places API (SearchPlaceIndexForText)
-      const placeIndexName = Deno.env.get('AWS_LOCATION_PLACE_INDEX') || 'hrms-place-index';
       const searchHost = `places.geo.${region}.amazonaws.com`;
       const searchPath = `/places/v0/indexes/${placeIndexName}/search/text`;
       const searchUrl = `https://${searchHost}${searchPath}`;
@@ -250,7 +249,6 @@ serve(async (req) => {
         });
       }
 
-      const placeIndexName = Deno.env.get('AWS_LOCATION_PLACE_INDEX') || 'hrms-place-index';
       const revHost = `places.geo.${region}.amazonaws.com`;
       const revPath = `/places/v0/indexes/${placeIndexName}/search/position`;
       const revUrl = `https://${revHost}${revPath}`;
