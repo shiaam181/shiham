@@ -40,6 +40,7 @@ import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import AppLayout from '@/components/AppLayout';
 import LocationDisplay from '@/components/LocationDisplay';
+import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -100,6 +101,8 @@ export default function EmployeeDashboard() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isInitiatingAttendance, setIsInitiatingAttendance] = useState(false);
   const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
+  const [geofenceAllowed, setGeofenceAllowed] = useState(true);
+  const [geofenceLocationName, setGeofenceLocationName] = useState('');
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
 
