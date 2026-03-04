@@ -21,7 +21,7 @@ const loginSchema = z.object({
 });
 
 export default function Auth() {
-  const { settings } = useSystemSettings();
+  const { settings, isLoading: settingsLoading } = useSystemSettings();
   const [loginMethod, setLoginMethod] = useState<'password' | 'email_otp' | 'phone_otp'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -57,7 +57,7 @@ export default function Auth() {
   const hasEmailOtp = !isTestingMode && settings.emailOtpEnabled;
   const hasPhoneOtp = !isTestingMode && settings.phoneOtpEnabled;
   const hasMultipleLoginMethods = (hasPasswordLogin ? 1 : 0) + (hasEmailOtp ? 1 : 0) + (hasPhoneOtp ? 1 : 0) > 1;
-  const hasGoogleSignin = settings.googleSigninEnabled;
+  const hasGoogleSignin = !settingsLoading && settings.googleSigninEnabled;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
