@@ -147,7 +147,7 @@ serve(async (req) => {
 
     switch (action) {
       case "put_geofence": {
-        // Create or update a geofence in AWS
+        // Create or update a geofence in AWS (best-effort, falls back to local)
         const { geofenceId, latitude, longitude, radiusMeters } = params;
         const collectionName = awsConfig.geofenceCollectionName;
         const path = `/geofencing/v0/collections/${collectionName}/geofences/${geofenceId}`;
@@ -159,7 +159,12 @@ serve(async (req) => {
             },
           },
         });
-        result = await awsRequest("PUT", path, body, awsConfig.region, awsConfig.accessKeyId, awsConfig.secretAccessKey);
+        try {
+          result = await awsRequest("PUT", path, body, awsConfig.region, awsConfig.accessKeyId, awsConfig.secretAccessKey);
+        } catch (e: any) {
+          console.warn("AWS put_geofence failed (using local fallback):", e.message);
+          result = { message: "Geofence saved locally (AWS sync unavailable)", localOnly: true, geofenceId };
+        }
         break;
       }
 
@@ -168,7 +173,12 @@ serve(async (req) => {
         const collectionName = awsConfig.geofenceCollectionName;
         const path = `/geofencing/v0/collections/${collectionName}/delete-geofences`;
         const body = JSON.stringify({ GeofenceIds: geofenceIds });
-        result = await awsRequest("POST", path, body, awsConfig.region, awsConfig.accessKeyId, awsConfig.secretAccessKey);
+        try {
+          result = await awsRequest("POST", path, body, awsConfig.region, awsConfig.accessKeyId, awsConfig.secretAccessKey);
+        } catch (e: any) {
+          console.warn("AWS delete_geofence failed (using local fallback):", e.message);
+          result = { message: "Geofence deleted locally (AWS sync unavailable)", localOnly: true };
+        }
         break;
       }
 
@@ -247,7 +257,8 @@ serve(async (req) => {
           if (e.message?.includes("ConflictException") || e.message?.includes("already exists")) {
             result = { message: "Collection already exists", exists: true };
           } else {
-            throw e;
+            console.warn("AWS create_collection failed:", e.message);
+            result = { message: "Collection creation skipped (AWS unavailable)", localOnly: true };
           }
         }
         break;
@@ -267,7 +278,8 @@ serve(async (req) => {
           if (e.message?.includes("ConflictException") || e.message?.includes("already exists")) {
             result = { message: "Tracker already exists", exists: true };
           } else {
-            throw e;
+            console.warn("AWS create_tracker failed:", e.message);
+            result = { message: "Tracker creation skipped (AWS unavailable)", localOnly: true };
           }
         }
         break;
@@ -286,7 +298,8 @@ serve(async (req) => {
           if (e.message?.includes("ConflictException") || e.message?.includes("already exists")) {
             result = { message: "Association already exists", exists: true };
           } else {
-            throw e;
+            console.warn("AWS associate_tracker failed:", e.message);
+            result = { message: "Association skipped (AWS unavailable)", localOnly: true };
           }
         }
         break;
