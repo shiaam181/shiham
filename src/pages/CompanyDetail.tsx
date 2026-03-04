@@ -729,6 +729,72 @@ export default function CompanyDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Invite Member Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Invite Member to {company.name}
+            </DialogTitle>
+            <DialogDescription>
+              Send an invitation email. The recipient will set up their own password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="John Doe"
+                value={inviteName}
+                onChange={e => setInviteName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email Address *</Label>
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {inviteRole === 'owner' && 'Full company management access'}
+                {inviteRole === 'admin' && 'Company administration and employee management'}
+                {inviteRole === 'hr' && 'Employee, payroll, and leave management'}
+                {inviteRole === 'manager' && 'Team-level oversight and approvals'}
+                {inviteRole === 'employee' && 'Standard employee self-service access'}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
+            <Button
+              onClick={handleInviteMember}
+              disabled={inviteSending || !inviteName.trim() || !inviteEmail.trim()}
+            >
+              {inviteSending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Mail className="w-4 h-4 mr-1" />}
+              {inviteSending ? 'Sending...' : 'Send Invite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AppLayout>
   );
 }
