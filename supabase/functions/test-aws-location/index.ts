@@ -166,12 +166,21 @@ serve(async (req) => {
     const { action, mapName: newMapName, region: newRegion, placeIndexName: newPlaceIndex } = await req.json();
 
     if (action === "get" || action === "get-config") {
-      // Return current credentials status
+      // Read saved overrides from system_settings first
+      const { data: cfgRow } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "aws_location_config")
+        .maybeSingle();
+
+      const saved = cfgRow?.value as Record<string, string> | null;
+
       const accessKey = Deno.env.get("AWS_ACCESS_KEY_ID") || "";
       const secretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY") || "";
-      const region = Deno.env.get("AWS_REGION") || "";
-      const mapName = Deno.env.get("AWS_LOCATION_MAP_NAME") || "";
-      const placeIndexName = Deno.env.get("AWS_LOCATION_PLACE_INDEX") || "";
+      // Prefer saved DB values, fall back to env vars
+      const region = saved?.region || Deno.env.get("AWS_REGION") || "";
+      const mapName = saved?.mapName || Deno.env.get("AWS_LOCATION_MAP_NAME") || "";
+      const placeIndexName = saved?.placeIndexName || Deno.env.get("AWS_LOCATION_PLACE_INDEX") || "";
       
       return new Response(
         JSON.stringify({
