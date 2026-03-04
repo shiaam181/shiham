@@ -57,7 +57,8 @@ export default function Auth() {
   const hasEmailOtp = !isTestingMode && settings.emailOtpEnabled;
   const hasPhoneOtp = !isTestingMode && settings.phoneOtpEnabled;
   const hasMultipleLoginMethods = (hasPasswordLogin ? 1 : 0) + (hasEmailOtp ? 1 : 0) + (hasPhoneOtp ? 1 : 0) > 1;
-  const hasGoogleSignin = settings.googleSigninEnabled;
+  const { isLoading: settingsLoading } = useSystemSettings();
+  const hasGoogleSignin = !settingsLoading && settings.googleSigninEnabled;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
