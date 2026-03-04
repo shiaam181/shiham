@@ -22,8 +22,12 @@ import {
 import { Switch } from '@/components/ui/switch';
 import {
   ArrowLeft, Building2, Users, Save, Loader2, Copy, Share2, Settings2,
-  Trash2, Crown, Palette, Link2, User, Shield, MapPin, Eye, Pencil
+  Trash2, Crown, Palette, Link2, User, Shield, MapPin, Eye, Pencil,
+  UserPlus, Mail
 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
 
 interface Company {
