@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,24 +79,69 @@ serve(async (req) => {
   }
 
   try {
-    const region = Deno.env.get('AWS_REGION') || 'ap-south-1';
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+
     const accessKey = Deno.env.get('AWS_ACCESS_KEY_ID');
     const secretKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
-    const mapName = Deno.env.get('AWS_LOCATION_MAP_NAME');
+
+    let region = Deno.env.get('AWS_REGION') || 'ap-south-1';
+    let mapName = Deno.env.get('AWS_LOCATION_MAP_NAME') || '';
+    let placeIndexName = Deno.env.get('AWS_LOCATION_PLACE_INDEX') || 'hrms-place-index';
+
+    // Allow Developer Settings to override non-secret AWS Location config
+    // without requiring secret updates for map/index/region changes.
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supabaseUrl && serviceRoleKey) {
+        const adminClient = createClient(supabaseUrl, serviceRoleKey);
+        const { data: cfgRow } = await adminClient
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'aws_location_config')
+          .maybeSingle();
+
+        const config = (cfgRow?.value as {
+          region?: string;
+          mapName?: string;
+          placeIndexName?: string;
+        } | null) ?? null;
+
+        if (typeof config?.region === 'string' && config.region.trim()) {
+          region = config.region.trim();
+        }
+        if (typeof config?.mapName === 'string' && config.mapName.trim()) {
+          mapName = config.mapName.trim();
+        }
+        if (typeof config?.placeIndexName === 'string' && config.placeIndexName.trim()) {
+          placeIndexName = config.placeIndexName.trim();
+        }
+      }
+    } catch (settingsError) {
+      console.warn('Failed to load aws_location_config from system settings, using env fallback:', settingsError);
+    }
 
     if (!accessKey || !secretKey) {
       return new Response(JSON.stringify({ error: 'AWS credentials not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (!mapName) {
+
+    const needsMapName = action === 'style' || action === 'tile' || action === 'proxy' || req.method === 'POST';
+    const needsPlaceIndex = action === 'search' || action === 'reverse-geocode';
+
+    if (needsMapName && !mapName) {
       return new Response(JSON.stringify({ error: 'Map name not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const url = new URL(req.url);
-    const action = url.searchParams.get('action');
+    if (needsPlaceIndex && !placeIndexName) {
+      return new Response(JSON.stringify({ error: 'Place index not configured' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // ── Generic AWS proxy: signs and forwards any amazonaws.com URL ──
     if (action === 'proxy') {
@@ -131,7 +177,6 @@ serve(async (req) => {
       }
 
       // Use AWS Location Service Places API (SearchPlaceIndexForText)
-      const placeIndexName = Deno.env.get('AWS_LOCATION_PLACE_INDEX') || 'hrms-place-index';
       const searchHost = `places.geo.${region}.amazonaws.com`;
       const searchPath = `/places/v0/indexes/${placeIndexName}/search/text`;
       const searchUrl = `https://${searchHost}${searchPath}`;
@@ -204,7 +249,6 @@ serve(async (req) => {
         });
       }
 
-      const placeIndexName = Deno.env.get('AWS_LOCATION_PLACE_INDEX') || 'hrms-place-index';
       const revHost = `places.geo.${region}.amazonaws.com`;
       const revPath = `/places/v0/indexes/${placeIndexName}/search/position`;
       const revUrl = `https://${revHost}${revPath}`;
