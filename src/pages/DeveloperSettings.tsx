@@ -274,6 +274,30 @@ export default function DeveloperSettings() {
     }
   };
 
+  const saveMapConfig = async () => {
+    setSavingAwsLocation(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-aws-location', {
+        body: {
+          action: 'save-map-config',
+          mapName: newMapName || awsLocationMapName,
+          region: newRegion || awsLocationRegion,
+          placeIndexName: newPlaceIndex || awsLocationPlaceIndex,
+        },
+      });
+      if (error) throw error;
+      toast({ title: 'Success', description: 'Map configuration saved. Update the corresponding Cloud secrets for changes to take effect.' });
+      setNewMapName('');
+      setNewRegion('');
+      setNewPlaceIndex('');
+      checkAwsLocationConfig();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to save map configuration', variant: 'destructive' });
+    } finally {
+      setSavingAwsLocation(false);
+    }
+  };
+
   const saveEmailConfig = async () => {
     setEmailConfigSaving(true);
     const { error } = await supabase.from('system_settings').upsert({
