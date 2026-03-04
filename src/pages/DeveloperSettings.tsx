@@ -246,6 +246,7 @@ export default function DeveloperSettings() {
         setAwsLocationConfigured(data.configured || false);
         setAwsLocationMapName(data.mapName || '');
         setAwsLocationRegion(data.region || 'ap-south-1');
+        setAwsLocationPlaceIndex(data.placeIndexName || '');
       }
     } catch (err) {
       console.error('Error checking map service config:', err);
