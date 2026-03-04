@@ -11,7 +11,10 @@ interface InviteRequest {
   employee_name: string;
   tenant_id: string;
   invited_by: string;
+  role?: string; // Optional: owner, admin, hr, manager, employee (default)
 }
+
+const VALID_ROLES = ['employee', 'admin', 'owner', 'hr', 'manager', 'payroll_team'];
 
 function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, "");
@@ -70,7 +73,18 @@ function resolveAppBaseUrl(req: Request, settingValue: unknown): string | null {
   return null;
 }
 
-function getInviteEmailHtml(companyName: string, employeeName: string, activationLink: string, brandColor: string): string {
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case 'owner': return 'Company Owner';
+    case 'admin': return 'Administrator';
+    case 'hr': return 'HR Manager';
+    case 'manager': return 'Team Manager';
+    case 'payroll_team': return 'Payroll Team';
+    default: return 'Team Member';
+  }
+}
+
+function getInviteEmailHtml(companyName: string, employeeName: string, activationLink: string, brandColor: string, roleLabel: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -84,8 +98,11 @@ function getInviteEmailHtml(companyName: string, employeeName: string, activatio
         </td></tr>
         <tr><td style="padding:40px;">
           <h2 style="margin:0 0 16px;color:#18181b;font-size:20px;">Welcome aboard, ${employeeName}!</h2>
+          <p style="margin:0 0 8px;color:#52525b;font-size:15px;line-height:1.6;">
+            You've been invited to join <strong>${companyName}</strong> as <strong>${roleLabel}</strong>.
+          </p>
           <p style="margin:0 0 24px;color:#52525b;font-size:15px;line-height:1.6;">
-            You've been invited to join <strong>${companyName}</strong>. Click the button below to set up your account and get started.
+            Click the button below to set up your account and get started.
           </p>
           <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 24px;">
             <a href="${activationLink}" style="display:inline-block;background-color:${brandColor};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600;">
@@ -110,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { employee_email, employee_name, tenant_id, invited_by }: InviteRequest = await req.json();
+    const { employee_email, employee_name, tenant_id, invited_by, role: requestedRole }: InviteRequest = await req.json();
 
     if (!employee_email || !employee_name || !tenant_id || !invited_by) {
       return new Response(
@@ -119,9 +136,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Validate role if provided
+    const assignRole = requestedRole && VALID_ROLES.includes(requestedRole) ? requestedRole : 'employee';
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify that the inviter has developer role (required for non-employee roles)
+    if (assignRole !== 'employee') {
+      const { data: inviterRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", invited_by)
+        .maybeSingle();
+
+      if (!inviterRole || inviterRole.role !== 'developer') {
+        return new Response(
+          JSON.stringify({ error: "Only developers can assign non-employee roles" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     // Check if user already exists
     const { data: existingProfile } = await supabase
@@ -176,6 +212,27 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("user_id", userId);
     }
 
+    // Set the role if non-default
+    if (assignRole !== 'employee') {
+      // Check if role entry already exists
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingRole) {
+        await supabase
+          .from("user_roles")
+          .update({ role: assignRole })
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: assignRole });
+      }
+    }
+
     // Generate invite token
     const tokenResponse = await fetch(`${supabaseUrl}/functions/v1/manage-email-tokens`, {
       method: "POST",
@@ -210,6 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const companyName = company?.name || "HRMS Platform";
     const brandColor = company?.brand_color || "#0284c7";
+    const roleLabel = getRoleLabel(assignRole);
 
     // Build activation link using configured APP_BASE_URL (or detected non-lovable custom domain)
     const { data: baseUrlSetting } = await supabase
@@ -239,9 +297,9 @@ const handler = async (req: Request): Promise<Response> => {
         tenant_id,
         to: employee_email,
         to_name: employee_name,
-        subject: `You're invited to join ${companyName}`,
-        html: getInviteEmailHtml(companyName, employee_name, activationLink, brandColor),
-        text: `Welcome to ${companyName}! Activate your account: ${activationLink}`,
+        subject: `You're invited to join ${companyName} as ${roleLabel}`,
+        html: getInviteEmailHtml(companyName, employee_name, activationLink, brandColor, roleLabel),
+        text: `Welcome to ${companyName}! You've been invited as ${roleLabel}. Activate your account: ${activationLink}`,
         category: "invite",
       }),
     });
@@ -256,10 +314,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Invite sent: employee=${employee_email}, company=${companyName}`);
+    console.log(`Invite sent: email=${employee_email}, company=${companyName}, role=${assignRole}`);
 
     return new Response(
-      JSON.stringify({ success: true, user_id: userId }),
+      JSON.stringify({ success: true, user_id: userId, role: assignRole }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {

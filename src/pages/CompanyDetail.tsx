@@ -22,8 +22,12 @@ import {
 import { Switch } from '@/components/ui/switch';
 import {
   ArrowLeft, Building2, Users, Save, Loader2, Copy, Share2, Settings2,
-  Trash2, Crown, Palette, Link2, User, Shield, MapPin, Eye, Pencil
+  Trash2, Crown, Palette, Link2, User, Shield, MapPin, Eye, Pencil,
+  UserPlus, Mail
 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
 
 interface Company {
@@ -58,7 +62,7 @@ interface CompanyUser {
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isDeveloper } = useAuth();
+  const { user, isDeveloper } = useAuth();
   const { toast } = useToast();
 
   const [company, setCompany] = useState<Company | null>(null);
@@ -84,6 +88,13 @@ export default function CompanyDetail() {
   // Assign owner state
   const [showAssignOwner, setShowAssignOwner] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
+
+  // Invite member state
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('employee');
+  const [inviteSending, setInviteSending] = useState(false);
 
   const fetchCompany = useCallback(async () => {
     if (!id) return;
@@ -209,8 +220,45 @@ export default function CompanyDetail() {
       case 'owner': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
       case 'admin': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case 'developer': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'hr': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
+      case 'manager': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400';
       case 'payroll_team': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
       default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const handleInviteMember = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !company) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-email', {
+        body: {
+          employee_email: inviteEmail.trim(),
+          employee_name: inviteName.trim(),
+          tenant_id: company.id,
+          invited_by: user?.id,
+          role: inviteRole,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      
+      const roleLabel = inviteRole === 'employee' ? 'Employee' : 
+                        inviteRole === 'owner' ? 'Owner' :
+                        inviteRole === 'admin' ? 'Admin' :
+                        inviteRole === 'hr' ? 'HR' :
+                        inviteRole === 'manager' ? 'Manager' : inviteRole;
+      
+      toast({ title: 'Invite Sent', description: `Invitation sent to ${inviteEmail} as ${roleLabel}` });
+      setShowInviteDialog(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInviteRole('employee');
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+    } finally {
+      setInviteSending(false);
     }
   };
 
@@ -475,15 +523,21 @@ export default function CompanyDetail() {
           <TabsContent value="employees" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Users className="w-5 h-5 text-primary" />
                     Team Members
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => setShowAssignOwner(true)}>
-                    <Crown className="w-4 h-4 mr-1" />
-                    Assign Owner
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => setShowInviteDialog(true)}>
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Invite Member
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAssignOwner(true)}>
+                      <Crown className="w-4 h-4 mr-1" />
+                      Assign Owner
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -674,6 +728,72 @@ export default function CompanyDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invite Member Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Invite Member to {company.name}
+            </DialogTitle>
+            <DialogDescription>
+              Send an invitation email. The recipient will set up their own password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="John Doe"
+                value={inviteName}
+                onChange={e => setInviteName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email Address *</Label>
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="owner">Owner</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {inviteRole === 'owner' && 'Full company management access'}
+                {inviteRole === 'admin' && 'Company administration and employee management'}
+                {inviteRole === 'hr' && 'Employee, payroll, and leave management'}
+                {inviteRole === 'manager' && 'Team-level oversight and approvals'}
+                {inviteRole === 'employee' && 'Standard employee self-service access'}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
+            <Button
+              onClick={handleInviteMember}
+              disabled={inviteSending || !inviteName.trim() || !inviteEmail.trim()}
+            >
+              {inviteSending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Mail className="w-4 h-4 mr-1" />}
+              {inviteSending ? 'Sending...' : 'Send Invite'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </AppLayout>
   );
