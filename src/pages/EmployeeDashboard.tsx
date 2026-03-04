@@ -325,6 +325,16 @@ export default function EmployeeDashboard() {
         return;
       }
 
+      // Check geofence validation if geofencing is active
+      if (!geofenceAllowed) {
+        toast({
+          title: 'Outside Work Zone',
+          description: `You are outside the permitted work location${geofenceLocationName ? ` (nearest: ${geofenceLocationName})` : ''}. Please move within the geofence boundary.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setCaptureType(type);
       
       if (systemSettings.photoCaptureEnabled) {
