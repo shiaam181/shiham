@@ -176,64 +176,90 @@ serve(async (req) => {
         });
       }
 
-      // Use AWS Location Service Places API (SearchPlaceIndexForText)
-      const searchHost = `places.geo.${region}.amazonaws.com`;
-      const searchPath = `/places/v0/indexes/${placeIndexName}/search/text`;
-      const searchUrl = `https://${searchHost}${searchPath}`;
+      const candidateIndexes = Array.from(
+        new Set(
+          [
+            placeIndexName,
+            Deno.env.get('AWS_LOCATION_PLACE_INDEX') || '',
+            'HRMSPlaceIndex',
+            'HRMS-place-index',
+          ].map((v) => v.trim()).filter(Boolean)
+        )
+      );
 
-      // Build signed POST request
+      // Build signed POST request body once
       const body = JSON.stringify({
         Text: query,
         MaxResults: 5,
         Language: 'en',
       });
 
-      const nowD = new Date();
-      const amzDateS = nowD.toISOString().replace(/[:-]|\.\d{3}/g, '');
-      const dateStampS = amzDateS.slice(0, 8);
-      const serviceS = 'geo';
-      const credScopeS = `${dateStampS}/${region}/${serviceS}/aws4_request`;
-      const payloadHashS = toHex(await sha256(body));
-      const canonHeadersS = `content-type:application/json\nhost:${searchHost}\nx-amz-date:${amzDateS}\n`;
-      const signedHeadersS = 'content-type;host;x-amz-date';
-      const canonReqS = ['POST', searchPath, '', canonHeadersS, signedHeadersS, payloadHashS].join('\n');
-      const strToSignS = ['AWS4-HMAC-SHA256', amzDateS, credScopeS, toHex(await sha256(canonReqS))].join('\n');
-      const sigKeyS = await getSignatureKey(secretKey, dateStampS, region, serviceS);
-      const sigS = toHex(await hmacSha256(sigKeyS, strToSignS));
-      const authS = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScopeS}, SignedHeaders=${signedHeadersS}, Signature=${sigS}`;
+      let lastErrorText = 'Unknown place search error';
+      let lastStatus = 500;
 
-      const searchResponse = await fetch(searchUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': authS,
-          'x-amz-date': amzDateS,
-          'Content-Type': 'application/json',
-          'Host': searchHost,
-        },
-        body,
-      });
+      for (const currentPlaceIndex of candidateIndexes) {
+        const searchHost = `places.geo.${region}.amazonaws.com`;
+        const searchPath = `/places/v0/indexes/${currentPlaceIndex}/search/text`;
+        const searchUrl = `https://${searchHost}${searchPath}`;
 
-      if (!searchResponse.ok) {
-        const errText = await searchResponse.text();
-        console.error(`Place search failed [${searchResponse.status}]: ${errText}`);
-        return new Response(JSON.stringify({ error: 'Place search failed', details: errText }), {
-          status: searchResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        const nowD = new Date();
+        const amzDateS = nowD.toISOString().replace(/[:-]|\.\d{3}/g, '');
+        const dateStampS = amzDateS.slice(0, 8);
+        const serviceS = 'geo';
+        const credScopeS = `${dateStampS}/${region}/${serviceS}/aws4_request`;
+        const payloadHashS = toHex(await sha256(body));
+        const canonHeadersS = `content-type:application/json\nhost:${searchHost}\nx-amz-date:${amzDateS}\n`;
+        const signedHeadersS = 'content-type;host;x-amz-date';
+        const canonReqS = ['POST', searchPath, '', canonHeadersS, signedHeadersS, payloadHashS].join('\n');
+        const strToSignS = ['AWS4-HMAC-SHA256', amzDateS, credScopeS, toHex(await sha256(canonReqS))].join('\n');
+        const sigKeyS = await getSignatureKey(secretKey, dateStampS, region, serviceS);
+        const sigS = toHex(await hmacSha256(sigKeyS, strToSignS));
+        const authS = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScopeS}, SignedHeaders=${signedHeadersS}, Signature=${sigS}`;
+
+        const searchResponse = await fetch(searchUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': authS,
+            'x-amz-date': amzDateS,
+            'Content-Type': 'application/json',
+            'Host': searchHost,
+          },
+          body,
         });
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          const results = (searchData.Results || []).map((r: any) => ({
+            label: r.Place?.Label || '',
+            lat: r.Place?.Geometry?.Point?.[1] || 0,
+            lng: r.Place?.Geometry?.Point?.[0] || 0,
+            address: r.Place?.Label || '',
+            municipality: r.Place?.Municipality || '',
+            region: r.Place?.Region || '',
+            country: r.Place?.Country || '',
+          }));
+
+          return new Response(JSON.stringify({ results, placeIndexUsed: currentPlaceIndex }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const errText = await searchResponse.text();
+        lastErrorText = errText;
+        lastStatus = searchResponse.status;
+
+        // Only fallback to next index on not-found index errors.
+        if (searchResponse.status !== 404 || !errText.includes('Place index not found')) {
+          console.error(`Place search failed [${searchResponse.status}] for index '${currentPlaceIndex}': ${errText}`);
+          return new Response(JSON.stringify({ error: 'Place search failed', details: errText }), {
+            status: searchResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
-      const searchData = await searchResponse.json();
-      // Transform to simpler format
-      const results = (searchData.Results || []).map((r: any) => ({
-        label: r.Place?.Label || '',
-        lat: r.Place?.Geometry?.Point?.[1] || 0,
-        lng: r.Place?.Geometry?.Point?.[0] || 0,
-        address: r.Place?.Label || '',
-        municipality: r.Place?.Municipality || '',
-        region: r.Place?.Region || '',
-        country: r.Place?.Country || '',
-      }));
-
-      return new Response(JSON.stringify({ results }), {
+      console.error(`Place search failed [${lastStatus}] across candidate indexes: ${candidateIndexes.join(', ')}. Last error: ${lastErrorText}`);
+      return new Response(JSON.stringify({ results: [], warning: 'No valid place index found for search' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -249,53 +275,88 @@ serve(async (req) => {
         });
       }
 
-      const revHost = `places.geo.${region}.amazonaws.com`;
-      const revPath = `/places/v0/indexes/${placeIndexName}/search/position`;
-      const revUrl = `https://${revHost}${revPath}`;
+      const candidateIndexes = Array.from(
+        new Set(
+          [
+            placeIndexName,
+            Deno.env.get('AWS_LOCATION_PLACE_INDEX') || '',
+            'HRMSPlaceIndex',
+            'HRMS-place-index',
+          ].map((v) => v.trim()).filter(Boolean)
+        )
+      );
+
       const revBody = JSON.stringify({
         Position: [parseFloat(lng), parseFloat(lat)],
         MaxResults: 1,
         Language: 'en',
       });
 
-      const nowR = new Date();
-      const amzDateR = nowR.toISOString().replace(/[:-]|\.\d{3}/g, '');
-      const dateStampR = amzDateR.slice(0, 8);
-      const credScopeR = `${dateStampR}/${region}/geo/aws4_request`;
-      const payloadHashR = toHex(await sha256(revBody));
-      const canonHeadersR = `content-type:application/json\nhost:${revHost}\nx-amz-date:${amzDateR}\n`;
-      const signedHeadersR = 'content-type;host;x-amz-date';
-      const canonReqR = ['POST', revPath, '', canonHeadersR, signedHeadersR, payloadHashR].join('\n');
-      const strToSignR = ['AWS4-HMAC-SHA256', amzDateR, credScopeR, toHex(await sha256(canonReqR))].join('\n');
-      const sigKeyR = await getSignatureKey(secretKey, dateStampR, region, 'geo');
-      const sigR = toHex(await hmacSha256(sigKeyR, strToSignR));
-      const authR = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScopeR}, SignedHeaders=${signedHeadersR}, Signature=${sigR}`;
+      let lastErrorText = 'Unknown reverse geocode error';
+      let lastStatus = 500;
 
-      const revResponse = await fetch(revUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': authR,
-          'x-amz-date': amzDateR,
-          'Content-Type': 'application/json',
-          'Host': revHost,
-        },
-        body: revBody,
-      });
+      for (const currentPlaceIndex of candidateIndexes) {
+        const revHost = `places.geo.${region}.amazonaws.com`;
+        const revPath = `/places/v0/indexes/${currentPlaceIndex}/search/position`;
+        const revUrl = `https://${revHost}${revPath}`;
 
-      if (!revResponse.ok) {
-        const errText = await revResponse.text();
-        return new Response(JSON.stringify({ error: 'Reverse geocode failed', details: errText }), {
-          status: revResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        const nowR = new Date();
+        const amzDateR = nowR.toISOString().replace(/[:-]|\.\d{3}/g, '');
+        const dateStampR = amzDateR.slice(0, 8);
+        const credScopeR = `${dateStampR}/${region}/geo/aws4_request`;
+        const payloadHashR = toHex(await sha256(revBody));
+        const canonHeadersR = `content-type:application/json\nhost:${revHost}\nx-amz-date:${amzDateR}\n`;
+        const signedHeadersR = 'content-type;host;x-amz-date';
+        const canonReqR = ['POST', revPath, '', canonHeadersR, signedHeadersR, payloadHashR].join('\n');
+        const strToSignR = ['AWS4-HMAC-SHA256', amzDateR, credScopeR, toHex(await sha256(canonReqR))].join('\n');
+        const sigKeyR = await getSignatureKey(secretKey, dateStampR, region, 'geo');
+        const sigR = toHex(await hmacSha256(sigKeyR, strToSignR));
+        const authR = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScopeR}, SignedHeaders=${signedHeadersR}, Signature=${sigR}`;
+
+        const revResponse = await fetch(revUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': authR,
+            'x-amz-date': amzDateR,
+            'Content-Type': 'application/json',
+            'Host': revHost,
+          },
+          body: revBody,
         });
+
+        if (revResponse.ok) {
+          const revData = await revResponse.json();
+          const place = revData.Results?.[0]?.Place;
+          return new Response(JSON.stringify({
+            label: place?.Label || '',
+            address: place?.Label || '',
+            municipality: place?.Municipality || '',
+            region: place?.Region || '',
+            placeIndexUsed: currentPlaceIndex,
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const errText = await revResponse.text();
+        lastErrorText = errText;
+        lastStatus = revResponse.status;
+
+        if (revResponse.status !== 404 || !errText.includes('Place index not found')) {
+          return new Response(JSON.stringify({ error: 'Reverse geocode failed', details: errText }), {
+            status: revResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       }
 
-      const revData = await revResponse.json();
-      const place = revData.Results?.[0]?.Place;
+      console.error(`Reverse geocode failed [${lastStatus}] across candidate indexes: ${candidateIndexes.join(', ')}. Last error: ${lastErrorText}`);
       return new Response(JSON.stringify({
-        label: place?.Label || '',
-        address: place?.Label || '',
-        municipality: place?.Municipality || '',
-        region: place?.Region || '',
+        label: '',
+        address: '',
+        municipality: '',
+        region: '',
+        warning: 'No valid place index found for reverse geocode',
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
