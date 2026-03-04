@@ -662,6 +662,41 @@ export default function CompanyDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Geofencing */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  AWS Geofencing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">Geofencing Attendance</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {geofencingEnabled ? 'Enabled — employees must be within work zone' : 'Disabled — no location boundary check'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={geofencingEnabled}
+                    onCheckedChange={setGeofencingEnabled}
+                  />
+                </div>
+
+                {geofencingEnabled && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate(`/developer/companies/${company.id}/geofencing`)}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Manage Geofence Locations
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
