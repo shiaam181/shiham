@@ -229,7 +229,7 @@ export default function GeofenceLocations() {
           title="Geofence Locations"
           description={`Manage attendance geofence zones for ${companyName}`}
           icon={<MapPin className="w-5 h-5 text-primary" />}
-          backPath={isDeveloper ? `/developer/companies/${companyId}` : undefined}
+          backTo={isDeveloper ? `/developer/companies/${companyId}` : undefined}
           actions={
             <Button onClick={openAdd} size="sm">
               <Plus className="w-4 h-4 mr-1" />
@@ -240,11 +240,15 @@ export default function GeofenceLocations() {
 
         {locations.length === 0 ? (
           <EmptyState
-            icon={MapPin}
+            icon={<MapPin className="w-6 h-6 text-muted-foreground" />}
             title="No geofence locations"
             description="Add work locations to enable GPS-based attendance validation"
-            actionLabel="Add Location"
-            onAction={openAdd}
+            action={
+              <Button onClick={openAdd} size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Add Location
+              </Button>
+            }
           />
         ) : (
           <Card>
