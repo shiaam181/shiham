@@ -523,15 +523,21 @@ export default function CompanyDetail() {
           <TabsContent value="employees" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Users className="w-5 h-5 text-primary" />
                     Team Members
                   </CardTitle>
-                  <Button size="sm" variant="outline" onClick={() => setShowAssignOwner(true)}>
-                    <Crown className="w-4 h-4 mr-1" />
-                    Assign Owner
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => setShowInviteDialog(true)}>
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Invite Member
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAssignOwner(true)}>
+                      <Crown className="w-4 h-4 mr-1" />
+                      Assign Owner
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
