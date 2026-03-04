@@ -40,6 +40,7 @@ import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import AppLayout from '@/components/AppLayout';
 import LocationDisplay from '@/components/LocationDisplay';
+import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -100,6 +101,8 @@ export default function EmployeeDashboard() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isInitiatingAttendance, setIsInitiatingAttendance] = useState(false);
   const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
+  const [geofenceAllowed, setGeofenceAllowed] = useState(true);
+  const [geofenceLocationName, setGeofenceLocationName] = useState('');
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
 
@@ -317,6 +320,16 @@ export default function EmployeeDashboard() {
         toast({
           title: 'GPS Required',
           description: locationError || 'Please enable GPS to mark attendance.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check geofence validation if geofencing is active
+      if (!geofenceAllowed) {
+        toast({
+          title: 'Outside Work Zone',
+          description: `You are outside the permitted work location${geofenceLocationName ? ` (nearest: ${geofenceLocationName})` : ''}. Please move within the geofence boundary.`,
           variant: 'destructive',
         });
         return;
@@ -785,6 +798,19 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
+          {/* Geofence Status */}
+          <div className="px-5 sm:px-6 -mt-2 mb-0">
+            <GeofenceStatusIndicator
+              latitude={location?.lat ?? null}
+              longitude={location?.lng ?? null}
+              accuracy={location?.accuracy ?? null}
+              onStatusChange={(isInside, locName) => {
+                setGeofenceAllowed(isInside);
+                setGeofenceLocationName(locName || '');
+              }}
+            />
+          </div>
+
           <CardContent className="p-6">
             {!hasCheckedIn ? (
               <Button 
@@ -792,7 +818,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckIn}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || !geofenceAllowed}
               >
                 {isInitiatingAttendance ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -809,7 +835,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || !geofenceAllowed}
               >
                 {isInitiatingAttendance ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />

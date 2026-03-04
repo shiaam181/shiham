@@ -46,6 +46,7 @@ interface Company {
   face_verification_disabled: boolean;
   live_tracking_enabled: boolean | null;
   tracking_interval_seconds: number | null;
+  geofencing_enabled: boolean | null;
 }
 
 interface CompanyUser {
@@ -79,6 +80,7 @@ export default function CompanyDetail() {
   const [faceVerificationDisabled, setFaceVerificationDisabled] = useState(false);
   const [liveTrackingEnabled, setLiveTrackingEnabled] = useState(false);
   const [trackingInterval, setTrackingInterval] = useState('60');
+  const [geofencingEnabled, setGeofencingEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
@@ -118,6 +120,7 @@ export default function CompanyDetail() {
     setFaceVerificationDisabled(data.face_verification_disabled);
     setLiveTrackingEnabled(data.live_tracking_enabled || false);
     setTrackingInterval(String(data.tracking_interval_seconds || 60));
+    setGeofencingEnabled((data as any).geofencing_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
@@ -159,7 +162,8 @@ export default function CompanyDetail() {
       face_verification_disabled: faceVerificationDisabled,
       live_tracking_enabled: liveTrackingEnabled,
       tracking_interval_seconds: parseInt(trackingInterval) || 60,
-    }).eq('id', company.id);
+      geofencing_enabled: geofencingEnabled,
+    } as any).eq('id', company.id);
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -655,6 +659,41 @@ export default function CompanyDetail() {
                       className="w-32"
                     />
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Geofencing */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  AWS Geofencing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">Geofencing Attendance</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {geofencingEnabled ? 'Enabled — employees must be within work zone' : 'Disabled — no location boundary check'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={geofencingEnabled}
+                    onCheckedChange={setGeofencingEnabled}
+                  />
+                </div>
+
+                {geofencingEnabled && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate(`/developer/companies/${company.id}/geofencing`)}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Manage Geofence Locations
+                  </Button>
                 )}
               </CardContent>
             </Card>

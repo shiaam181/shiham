@@ -171,6 +171,9 @@ export type Database = {
           created_at: string
           date: string
           face_confidence: number | null
+          geofence_evaluation_result: Json | null
+          geofence_location_id: string | null
+          geofence_status: string | null
           gps_timestamp: string | null
           id: string
           modified_by: string | null
@@ -197,6 +200,9 @@ export type Database = {
           created_at?: string
           date?: string
           face_confidence?: number | null
+          geofence_evaluation_result?: Json | null
+          geofence_location_id?: string | null
+          geofence_status?: string | null
           gps_timestamp?: string | null
           id?: string
           modified_by?: string | null
@@ -223,6 +229,9 @@ export type Database = {
           created_at?: string
           date?: string
           face_confidence?: number | null
+          geofence_evaluation_result?: Json | null
+          geofence_location_id?: string | null
+          geofence_status?: string | null
           gps_timestamp?: string | null
           id?: string
           modified_by?: string | null
@@ -233,7 +242,15 @@ export type Database = {
           user_id?: string
           verification_method?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attendance_geofence_location_id_fkey"
+            columns: ["geofence_location_id"]
+            isOneToOne: false
+            referencedRelation: "company_geofence_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attendance_challenges: {
         Row: {
@@ -308,6 +325,7 @@ export type Database = {
           created_at: string
           esi_registration_number: string | null
           face_verification_disabled: boolean
+          geofencing_enabled: boolean | null
           gst_number: string | null
           id: string
           invite_code: string | null
@@ -337,6 +355,7 @@ export type Database = {
           created_at?: string
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
+          geofencing_enabled?: boolean | null
           gst_number?: string | null
           id?: string
           invite_code?: string | null
@@ -366,6 +385,7 @@ export type Database = {
           created_at?: string
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
+          geofencing_enabled?: boolean | null
           gst_number?: string | null
           id?: string
           invite_code?: string | null
@@ -390,6 +410,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      company_geofence_locations: {
+        Row: {
+          address: string | null
+          aws_geofence_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          latitude: number
+          location_name: string
+          longitude: number
+          radius_meters: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          aws_geofence_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          latitude: number
+          location_name: string
+          longitude: number
+          radius_meters?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          aws_geofence_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          location_name?: string
+          longitude?: number
+          radius_meters?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_geofence_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_geofence_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_settings: {
         Row: {
@@ -683,6 +763,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      geofence_audit_logs: {
+        Row: {
+          accuracy: number | null
+          company_id: string
+          created_at: string
+          distance_meters: number | null
+          geofence_status: string
+          id: string
+          latitude: number
+          longitude: number
+          nearest_location_name: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          company_id: string
+          created_at?: string
+          distance_meters?: number | null
+          geofence_status: string
+          id?: string
+          latitude: number
+          longitude: number
+          nearest_location_name?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          company_id?: string
+          created_at?: string
+          distance_meters?: number | null
+          geofence_status?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          nearest_location_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geofence_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "geofence_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       holidays: {
         Row: {

@@ -63,6 +63,7 @@ import DeveloperSettings from "./pages/DeveloperSettings";
 import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
 import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
 import PayslipSettings from "./pages/PayslipSettings";
+import GeofenceLocations from "./pages/GeofenceLocations";
 
 const queryClient = new QueryClient();
 
@@ -276,6 +277,8 @@ function AppRoutes() {
         <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
         <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
         <Route path="/developer/payslip-templates" element={<DeveloperRoute><DeveloperPayslipTemplates /></DeveloperRoute>} />
+        <Route path="/developer/companies/:id/geofencing" element={<DeveloperRoute><GeofenceLocations /></DeveloperRoute>} />
+        <Route path="/admin/geofencing" element={<AdminRoute><GeofenceLocations /></AdminRoute>} />
         <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
