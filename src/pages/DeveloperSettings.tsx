@@ -789,10 +789,31 @@ export default function DeveloperSettings() {
               <div className="p-4 bg-success/10 rounded-lg border border-success/30"><div className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-success mt-0.5" /><div><p className="font-medium text-sm text-success">Map Service Configured</p><p className="text-xs text-muted-foreground mt-1">Map Name: {awsLocationMapName || 'Configured via backend secrets'}</p></div></div></div>
             )}
             <div className="space-y-4">
-              <div className="space-y-2"><Label>Current Map Name</Label><Input value={awsLocationMapName} disabled placeholder="Not configured" className="bg-muted" /></div>
-              <div className="space-y-2"><Label>Region</Label><Input value={awsLocationRegion} disabled className="bg-muted" /></div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Map Name</Label>
+                <Input value={newMapName} onChange={(e) => setNewMapName(e.target.value)} placeholder={awsLocationMapName || 'e.g. AttendanceHubMap'} />
+                {awsLocationMapName && !newMapName && <p className="text-xs text-muted-foreground">Current: {awsLocationMapName}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Region</Label>
+                <Input value={newRegion} onChange={(e) => setNewRegion(e.target.value)} placeholder={awsLocationRegion || 'e.g. ap-south-1'} />
+                {awsLocationRegion && !newRegion && <p className="text-xs text-muted-foreground">Current: {awsLocationRegion}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">Place Index Name</Label>
+                <Input value={newPlaceIndex} onChange={(e) => setNewPlaceIndex(e.target.value)} placeholder={awsLocationPlaceIndex || 'e.g. HRMSPlaceIndex'} />
+                {awsLocationPlaceIndex && !newPlaceIndex && <p className="text-xs text-muted-foreground">Current: {awsLocationPlaceIndex}</p>}
+                <p className="text-xs text-muted-foreground">Used for place search / geocoding in geofence location picker.</p>
+              </div>
             </div>
-            <div className="flex items-center justify-end">
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
+              💡 These values are stored as Cloud secrets (<code>AWS_LOCATION_MAP_NAME</code>, <code>AWS_REGION</code>, <code>AWS_LOCATION_PLACE_INDEX</code>). Update them via Lovable Cloud settings for changes to take effect in backend functions.
+            </p>
+            <div className="flex items-center justify-between">
+              <Button onClick={saveMapConfig} disabled={savingAwsLocation || (!newMapName && !newRegion && !newPlaceIndex)}>
+                {savingAwsLocation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Configuration
+              </Button>
               <Button variant="outline" onClick={testAwsLocation} disabled={testingAwsLocation}>
                 {testingAwsLocation ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : awsLocationTestResult === 'success' ? <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> : awsLocationTestResult === 'error' ? <XCircle className="w-4 h-4 mr-2 text-destructive" /> : <PlayCircle className="w-4 h-4 mr-2" />}
                 Test Map Configuration
