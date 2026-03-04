@@ -80,6 +80,7 @@ export default function CompanyDetail() {
   const [faceVerificationDisabled, setFaceVerificationDisabled] = useState(false);
   const [liveTrackingEnabled, setLiveTrackingEnabled] = useState(false);
   const [trackingInterval, setTrackingInterval] = useState('60');
+  const [geofencingEnabled, setGeofencingEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
@@ -119,6 +120,7 @@ export default function CompanyDetail() {
     setFaceVerificationDisabled(data.face_verification_disabled);
     setLiveTrackingEnabled(data.live_tracking_enabled || false);
     setTrackingInterval(String(data.tracking_interval_seconds || 60));
+    setGeofencingEnabled((data as any).geofencing_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
@@ -160,7 +162,8 @@ export default function CompanyDetail() {
       face_verification_disabled: faceVerificationDisabled,
       live_tracking_enabled: liveTrackingEnabled,
       tracking_interval_seconds: parseInt(trackingInterval) || 60,
-    }).eq('id', company.id);
+      geofencing_enabled: geofencingEnabled,
+    } as any).eq('id', company.id);
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
