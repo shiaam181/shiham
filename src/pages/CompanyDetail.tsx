@@ -46,6 +46,7 @@ interface Company {
   face_verification_disabled: boolean;
   live_tracking_enabled: boolean | null;
   tracking_interval_seconds: number | null;
+  geofencing_enabled: boolean | null;
 }
 
 interface CompanyUser {
