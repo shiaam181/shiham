@@ -62,7 +62,7 @@ interface CompanyUser {
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isDeveloper } = useAuth();
+  const { user, isDeveloper } = useAuth();
   const { toast } = useToast();
 
   const [company, setCompany] = useState<Company | null>(null);
