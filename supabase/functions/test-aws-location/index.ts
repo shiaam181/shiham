@@ -171,6 +171,7 @@ serve(async (req) => {
       const secretKey = Deno.env.get("AWS_SECRET_ACCESS_KEY") || "";
       const region = Deno.env.get("AWS_REGION") || "";
       const mapName = Deno.env.get("AWS_LOCATION_MAP_NAME") || "";
+      const placeIndexName = Deno.env.get("AWS_LOCATION_PLACE_INDEX") || "";
       
       return new Response(
         JSON.stringify({
@@ -182,6 +183,7 @@ serve(async (req) => {
           hasMapName: !!mapName,
           region: region || "Not set",
           mapName: mapName || "Not set",
+          placeIndexName: placeIndexName || "Not set",
           accessKeyMasked: accessKey ? `${accessKey.substring(0, 8)}...` : "",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

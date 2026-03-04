@@ -109,6 +109,10 @@ export default function DeveloperSettings() {
 
   const [awsLocationMapName, setAwsLocationMapName] = useState('');
   const [awsLocationRegion, setAwsLocationRegion] = useState('ap-south-1');
+  const [awsLocationPlaceIndex, setAwsLocationPlaceIndex] = useState('');
+  const [newMapName, setNewMapName] = useState('');
+  const [newRegion, setNewRegion] = useState('');
+  const [newPlaceIndex, setNewPlaceIndex] = useState('');
   const [awsLocationConfigured, setAwsLocationConfigured] = useState(false);
   const [savingAwsLocation, setSavingAwsLocation] = useState(false);
   const [testingAwsLocation, setTestingAwsLocation] = useState(false);
