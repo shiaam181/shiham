@@ -89,6 +89,13 @@ export default function CompanyDetail() {
   const [showAssignOwner, setShowAssignOwner] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
 
+  // Invite member state
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('employee');
+  const [inviteSending, setInviteSending] = useState(false);
+
   const fetchCompany = useCallback(async () => {
     if (!id) return;
     const { data, error } = await supabase
