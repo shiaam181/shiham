@@ -220,8 +220,45 @@ export default function CompanyDetail() {
       case 'owner': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
       case 'admin': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       case 'developer': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'hr': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
+      case 'manager': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400';
       case 'payroll_team': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
       default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const handleInviteMember = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim() || !company) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invite-email', {
+        body: {
+          employee_email: inviteEmail.trim(),
+          employee_name: inviteName.trim(),
+          tenant_id: company.id,
+          invited_by: user?.id,
+          role: inviteRole,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      
+      const roleLabel = inviteRole === 'employee' ? 'Employee' : 
+                        inviteRole === 'owner' ? 'Owner' :
+                        inviteRole === 'admin' ? 'Admin' :
+                        inviteRole === 'hr' ? 'HR' :
+                        inviteRole === 'manager' ? 'Manager' : inviteRole;
+      
+      toast({ title: 'Invite Sent', description: `Invitation sent to ${inviteEmail} as ${roleLabel}` });
+      setShowInviteDialog(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInviteRole('employee');
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+    } finally {
+      setInviteSending(false);
     }
   };
 
