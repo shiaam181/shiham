@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -19,10 +19,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { ArrowLeft, MapPin, Plus, Pencil, Trash2, Loader2, Navigation, Building2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Plus, Pencil, Trash2, Loader2, Navigation } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
+
+const GeofenceMapPicker = lazy(() => import('@/components/GeofenceMapPicker'));
 
 interface GeofenceLocation {
   id: string;
@@ -39,8 +41,7 @@ interface GeofenceLocation {
 
 export default function GeofenceLocations() {
   const { id: companyId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { isDeveloper, isAdmin, isOwner } = useAuth();
+  const { isDeveloper } = useAuth();
   const { toast } = useToast();
 
   const [locations, setLocations] = useState<GeofenceLocation[]>([]);
@@ -54,19 +55,17 @@ export default function GeofenceLocations() {
   // Form state
   const [formName, setFormName] = useState('');
   const [formAddress, setFormAddress] = useState('');
-  const [formLat, setFormLat] = useState('');
-  const [formLng, setFormLng] = useState('');
-  const [formRadius, setFormRadius] = useState('100');
+  const [formLat, setFormLat] = useState<number | null>(null);
+  const [formLng, setFormLng] = useState<number | null>(null);
+  const [formRadius, setFormRadius] = useState(100);
   const [formActive, setFormActive] = useState(true);
 
   const fetchData = useCallback(async () => {
     if (!companyId) return;
-
     const [{ data: company }, { data: locs }] = await Promise.all([
       supabase.from('companies').select('name').eq('id', companyId).single(),
       supabase.from('company_geofence_locations').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
     ]);
-
     setCompanyName(company?.name || '');
     setLocations((locs as GeofenceLocation[]) || []);
     setIsLoading(false);
@@ -77,9 +76,9 @@ export default function GeofenceLocations() {
   const resetForm = () => {
     setFormName('');
     setFormAddress('');
-    setFormLat('');
-    setFormLng('');
-    setFormRadius('100');
+    setFormLat(null);
+    setFormLng(null);
+    setFormRadius(100);
     setFormActive(true);
   };
 
@@ -87,9 +86,9 @@ export default function GeofenceLocations() {
     setEditLocation(loc);
     setFormName(loc.location_name);
     setFormAddress(loc.address || '');
-    setFormLat(String(loc.latitude));
-    setFormLng(String(loc.longitude));
-    setFormRadius(String(loc.radius_meters));
+    setFormLat(loc.latitude);
+    setFormLng(loc.longitude);
+    setFormRadius(loc.radius_meters);
     setFormActive(loc.is_active);
     setShowAddDialog(true);
   };
@@ -100,75 +99,55 @@ export default function GeofenceLocations() {
     setShowAddDialog(true);
   };
 
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast({ title: 'Error', description: 'Geolocation not supported', variant: 'destructive' });
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormLat(String(pos.coords.latitude));
-        setFormLng(String(pos.coords.longitude));
-        toast({ title: 'Location captured', description: `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}` });
-      },
-      (err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
-      { enableHighAccuracy: true }
-    );
+  const handleLocationChange = (lat: number, lng: number, address?: string) => {
+    setFormLat(lat);
+    setFormLng(lng);
+    if (address) setFormAddress(address);
   };
 
   const handleSave = async () => {
-    if (!formName.trim() || !formLat || !formLng || !companyId) return;
+    if (!formName.trim() || formLat === null || formLng === null || !companyId) return;
     setIsSaving(true);
 
-    const lat = parseFloat(formLat);
-    const lng = parseFloat(formLng);
-    const radius = parseInt(formRadius) || 100;
+    const radius = formRadius || 100;
     const geofenceId = `${companyId}_${editLocation?.id || crypto.randomUUID()}`;
 
     try {
-      // Create/update geofence in AWS via edge function
-      const { data: awsResult, error: awsError } = await supabase.functions.invoke('manage-geofence', {
+      // Create/update geofence in AWS
+      const { error: awsError } = await supabase.functions.invoke('manage-geofence', {
         body: {
           action: 'put_geofence',
           geofenceId,
-          latitude: lat,
-          longitude: lng,
+          latitude: formLat,
+          longitude: formLng,
           radiusMeters: radius,
         },
       });
-
-      if (awsError) {
-        console.warn('AWS geofence creation warning:', awsError);
-        // Continue with DB save even if AWS fails - will retry later
-      }
+      if (awsError) console.warn('AWS geofence warning:', awsError);
 
       if (editLocation) {
-        // Update
         const { error } = await supabase.from('company_geofence_locations').update({
           location_name: formName.trim(),
           address: formAddress.trim() || null,
-          latitude: lat,
-          longitude: lng,
+          latitude: formLat,
+          longitude: formLng,
           radius_meters: isDeveloper ? radius : Math.min(radius, 500),
           is_active: formActive,
           aws_geofence_id: geofenceId,
         }).eq('id', editLocation.id);
-
         if (error) throw error;
         toast({ title: 'Updated', description: 'Geofence location updated' });
       } else {
-        // Insert
         const { error } = await supabase.from('company_geofence_locations').insert({
           company_id: companyId,
           location_name: formName.trim(),
           address: formAddress.trim() || null,
-          latitude: lat,
-          longitude: lng,
+          latitude: formLat,
+          longitude: formLng,
           radius_meters: isDeveloper ? radius : Math.min(radius, 500),
           is_active: formActive,
           aws_geofence_id: geofenceId,
         });
-
         if (error) throw error;
         toast({ title: 'Added', description: 'Geofence location created' });
       }
@@ -187,21 +166,14 @@ export default function GeofenceLocations() {
   const handleDelete = async () => {
     if (!deleteLocation) return;
     setIsSaving(true);
-
     try {
-      // Delete from AWS
       if (deleteLocation.aws_geofence_id) {
         await supabase.functions.invoke('manage-geofence', {
-          body: {
-            action: 'delete_geofence',
-            geofenceIds: [deleteLocation.aws_geofence_id],
-          },
+          body: { action: 'delete_geofence', geofenceIds: [deleteLocation.aws_geofence_id] },
         });
       }
-
       const { error } = await supabase.from('company_geofence_locations').delete().eq('id', deleteLocation.id);
       if (error) throw error;
-
       toast({ title: 'Deleted', description: 'Geofence location removed' });
       setDeleteLocation(null);
       fetchData();
@@ -309,63 +281,87 @@ export default function GeofenceLocations() {
         )}
       </main>
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog with Map */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5 text-primary" />
               {editLocation ? 'Edit Location' : 'Add Geofence Location'}
             </DialogTitle>
             <DialogDescription>
-              Define a work location with GPS coordinates and radius
+              Search for a place or click on the map to set the geofence center
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4 py-2">
+            {/* Map Picker */}
+            <Suspense
+              fallback={
+                <div className="h-[300px] rounded-lg bg-muted flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              }
+            >
+              <GeofenceMapPicker
+                latitude={formLat}
+                longitude={formLng}
+                radius={formRadius}
+                onLocationChange={handleLocationChange}
+              />
+            </Suspense>
+
+            {/* Location name */}
             <div className="space-y-2">
               <Label>Location Name *</Label>
-              <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="e.g. Main Office" />
+              <Input
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                placeholder="e.g. Main Office, Warehouse B"
+              />
             </div>
+
+            {/* Address (auto-filled from search/reverse geocode) */}
             <div className="space-y-2">
               <Label>Address</Label>
-              <Input value={formAddress} onChange={e => setFormAddress(e.target.value)} placeholder="Street address" />
+              <Input
+                value={formAddress}
+                onChange={e => setFormAddress(e.target.value)}
+                placeholder="Auto-filled from map selection"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Latitude *</Label>
-                <Input type="number" step="any" value={formLat} onChange={e => setFormLat(e.target.value)} placeholder="e.g. 12.9716" />
-              </div>
-              <div className="space-y-2">
-                <Label>Longitude *</Label>
-                <Input type="number" step="any" value={formLng} onChange={e => setFormLng(e.target.value)} placeholder="e.g. 77.5946" />
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={useCurrentLocation} className="w-full">
-              <Navigation className="w-4 h-4 mr-1" />
-              Use Current Location
-            </Button>
+
+            {/* Radius */}
             <div className="space-y-2">
               <Label>Radius (meters)</Label>
               <Input
                 type="number"
                 value={formRadius}
-                onChange={e => setFormRadius(e.target.value)}
-                min="50"
-                max={isDeveloper ? "10000" : "500"}
+                onChange={e => setFormRadius(parseInt(e.target.value) || 100)}
+                min={50}
+                max={isDeveloper ? 10000 : 500}
                 placeholder="100"
               />
               <p className="text-xs text-muted-foreground">
                 {isDeveloper ? 'Developer: max 10,000m' : 'Max 500m. Contact developer for larger radius.'}
               </p>
             </div>
+
+            {/* Active toggle */}
             <div className="flex items-center justify-between">
               <Label>Active</Label>
               <Switch checked={formActive} onCheckedChange={setFormActive} />
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving || !formName.trim() || !formLat || !formLng}>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !formName.trim() || formLat === null || formLng === null}
+            >
               {isSaving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
               {editLocation ? 'Update' : 'Create'}
             </Button>
@@ -379,7 +375,7 @@ export default function GeofenceLocations() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Geofence Location?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove <strong>{deleteLocation?.location_name}</strong> and its AWS geofence. Employees will no longer be validated against this location.
+              This will remove <strong>{deleteLocation?.location_name}</strong> and its geofence. Employees will no longer be validated against this location.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
