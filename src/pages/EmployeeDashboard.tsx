@@ -835,7 +835,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || !geofenceAllowed}
               >
                 {isInitiatingAttendance ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
