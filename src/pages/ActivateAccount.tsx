@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Lock, Clock, AlertTriangle, Eye, EyeOff, Check, X } from 'lucide-react';
-import { getReadableError } from '@/lib/edgeFunctionError';
+
 
 type PageState = 'loading' | 'valid' | 'expired' | 'success';
 
