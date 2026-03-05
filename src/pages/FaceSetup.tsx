@@ -15,14 +15,25 @@ import {
   ArrowRight,
   AlertCircle,
   Loader2,
-  X,
-  Plus
+  RotateCcw,
+  MoveRight,
+  MoveLeft,
+  MoveUp,
+  MoveDown,
+  Circle
 } from 'lucide-react';
 import { registerFace } from '@/lib/faceVerificationService';
 import { loadFaceModels } from '@/lib/faceRecognition';
+import * as faceapi from 'face-api.js';
 
-const MIN_IMAGES = 3;
-const MAX_IMAGES = 5;
+const REQUIRED_POSES = [
+  { id: 'center', label: 'Look straight ahead', icon: Circle, instruction: 'Keep your face centered' },
+  { id: 'right', label: 'Turn head right', icon: MoveRight, instruction: 'Slowly turn your head to the right' },
+  { id: 'left', label: 'Turn head left', icon: MoveLeft, instruction: 'Slowly turn your head to the left' },
+];
+
+const FACE_STABLE_FRAMES = 6;
+const DETECTION_INTERVAL = 100;
 
 export default function FaceSetup() {
   const navigate = useNavigate();
@@ -34,15 +45,20 @@ export default function FaceSetup() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stableFramesRef = useRef(0);
+  const capturedRef = useRef(false);
   
-  const [showCamera, setShowCamera] = useState(false);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState<'intro' | 'capture' | 'confirm' | 'complete'>('intro');
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
-  const [isCapturing, setIsCapturing] = useState(false);
+  const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
+  const [poseProgress, setPoseProgress] = useState(0);
+  const [poseStatus, setPoseStatus] = useState<'waiting' | 'detecting' | 'captured'>('waiting');
+  const [showFlash, setShowFlash] = useState(false);
 
   // Only redirect if already has face embedding AND not updating
   useEffect(() => {
@@ -63,13 +79,12 @@ export default function FaceSetup() {
     checkExistingEmbedding();
   }, [user, navigate, isUpdate]);
 
-  // Load face models on mount (for local face detection during capture)
+  // Load face models on mount
   useEffect(() => {
     loadFaceModels()
       .then(() => setModelsLoading(false))
       .catch((err) => {
         console.error('Failed to load face models:', err);
-        // Continue anyway - backend will handle validation
         setModelsLoading(false);
       });
   }, []);
@@ -78,6 +93,11 @@ export default function FaceSetup() {
     setCameraError(null);
     setCameraLoading(true);
     setStep('capture');
+    setCurrentPoseIndex(0);
+    setCapturedImages([]);
+    setPoseStatus('waiting');
+    stableFramesRef.current = 0;
+    capturedRef.current = false;
     
     try {
       if (streamRef.current) {
@@ -86,7 +106,7 @@ export default function FaceSetup() {
       }
       
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
+        video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
       });
       
       if (videoRef.current) {
@@ -101,116 +121,171 @@ export default function FaceSetup() {
           }
         });
       }
-      setShowCamera(true);
       setCameraLoading(false);
+      startDetectionLoop();
     } catch (error: any) {
       console.error('Camera error:', error);
       setCameraLoading(false);
       
       let errorMessage = 'Could not access camera. Please check permissions.';
-      if (error.name === 'NotReadableError') {
-        errorMessage = 'Camera is in use by another app.';
-      } else if (error.name === 'NotAllowedError') {
-        errorMessage = 'Camera access denied. Please allow camera permissions.';
-      } else if (error.name === 'NotFoundError') {
-        errorMessage = 'No camera found.';
-      }
+      if (error.name === 'NotReadableError') errorMessage = 'Camera is in use by another app.';
+      else if (error.name === 'NotAllowedError') errorMessage = 'Camera access denied. Please allow camera permissions.';
+      else if (error.name === 'NotFoundError') errorMessage = 'No camera found.';
       
       setCameraError(errorMessage);
-      toast({
-        title: 'Camera Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      toast({ title: 'Camera Error', description: errorMessage, variant: 'destructive' });
     }
   };
 
   const stopCamera = useCallback(() => {
+    if (detectionRef.current) {
+      clearTimeout(detectionRef.current);
+      detectionRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    setShowCamera(false);
   }, []);
 
-  const capturePhoto = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    if (capturedImages.length >= MAX_IMAGES) {
-      toast({
-        title: 'Maximum Photos Reached',
-        description: `You can only capture up to ${MAX_IMAGES} photos.`,
-        variant: 'destructive',
-      });
-      return;
-    }
+  const autoCapturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || capturedRef.current) return null;
+    capturedRef.current = true;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
-    if (!ctx) return;
-
-    setIsCapturing(true);
+    if (!ctx) return null;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
-    // Draw the image (not mirrored - backend needs proper orientation)
     ctx.drawImage(video, 0, 0);
     
-    // Create display image (mirrored for user preview)
-    const displayCanvas = document.createElement('canvas');
-    displayCanvas.width = canvas.width;
-    displayCanvas.height = canvas.height;
-    const displayCtx = displayCanvas.getContext('2d');
-    if (displayCtx) {
-      displayCtx.translate(canvas.width, 0);
-      displayCtx.scale(-1, 1);
-      displayCtx.drawImage(video, 0, 0);
-    }
-    
-    const dataUrl = displayCanvas.toDataURL('image/jpeg', 0.8);
-    // Store the non-mirrored image for backend processing
     const rawDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    
-    setCapturedImages(prev => [...prev, rawDataUrl]);
-    
-    toast({
-      title: `Photo ${capturedImages.length + 1} Captured`,
-      description: `${MIN_IMAGES - capturedImages.length - 1} more ${MIN_IMAGES - capturedImages.length - 1 === 1 ? 'photo' : 'photos'} needed`,
-    });
-    
-    setIsCapturing(false);
-  };
+    return rawDataUrl;
+  }, []);
 
-  const removeImage = (index: number) => {
-    setCapturedImages(prev => prev.filter((_, i) => i !== index));
-  };
+  const startDetectionLoop = useCallback(() => {
+    const detect = async () => {
+      if (!videoRef.current || capturedRef.current) return;
 
-  const retakePhotos = () => {
-    setCapturedImages([]);
-    startCamera();
-  };
+      try {
+        const detection = await faceapi
+          .detectSingleFace(videoRef.current, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+          .withFaceLandmarks();
 
-  const proceedToConfirm = () => {
-    if (capturedImages.length < MIN_IMAGES) {
-      toast({
-        title: 'More Photos Needed',
-        description: `Please capture at least ${MIN_IMAGES} photos.`,
-        variant: 'destructive',
-      });
-      return;
+        if (detection) {
+          const landmarks = detection.landmarks;
+          const nose = landmarks.getNose();
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+          
+          // Calculate head pose from landmarks
+          const noseTip = nose[3]; // tip of nose
+          const leftEyeCenter = { x: leftEye.reduce((s, p) => s + p.x, 0) / leftEye.length, y: leftEye.reduce((s, p) => s + p.y, 0) / leftEye.length };
+          const rightEyeCenter = { x: rightEye.reduce((s, p) => s + p.x, 0) / rightEye.length, y: rightEye.reduce((s, p) => s + p.y, 0) / rightEye.length };
+          const eyeCenter = { x: (leftEyeCenter.x + rightEyeCenter.x) / 2, y: (leftEyeCenter.y + rightEyeCenter.y) / 2 };
+          
+          // Horizontal offset: nose tip relative to eye center (normalized by eye distance)
+          const eyeDistance = Math.abs(rightEyeCenter.x - leftEyeCenter.x);
+          const horizontalOffset = (noseTip.x - eyeCenter.x) / eyeDistance;
+          
+          const currentPose = REQUIRED_POSES[stableFramesRef.current >= FACE_STABLE_FRAMES ? 0 : currentPoseIndex];
+          let poseMatched = false;
+
+          // Use the currentPoseIndex from state - read it via closure
+          const poseId = REQUIRED_POSES[currentPoseIndex]?.id;
+          
+          if (poseId === 'center') {
+            poseMatched = Math.abs(horizontalOffset) < 0.15;
+          } else if (poseId === 'right') {
+            // On mirrored camera, turning head right = nose moves left relative to eyes
+            poseMatched = horizontalOffset < -0.12;
+          } else if (poseId === 'left') {
+            poseMatched = horizontalOffset > 0.12;
+          }
+
+          if (poseMatched) {
+            stableFramesRef.current++;
+            setPoseProgress((stableFramesRef.current / FACE_STABLE_FRAMES) * 100);
+            setPoseStatus('detecting');
+
+            if (stableFramesRef.current >= FACE_STABLE_FRAMES) {
+              // Capture!
+              const img = autoCapturePhoto();
+              if (img) {
+                // Flash effect
+                setShowFlash(true);
+                setTimeout(() => setShowFlash(false), 200);
+                
+                setCapturedImages(prev => {
+                  const newImages = [...prev, img];
+                  
+                  if (newImages.length >= REQUIRED_POSES.length) {
+                    // All poses captured, go to confirm
+                    setTimeout(() => {
+                      stopCamera();
+                      setStep('confirm');
+                    }, 500);
+                  } else {
+                    // Move to next pose
+                    setCurrentPoseIndex(prev => prev + 1);
+                    stableFramesRef.current = 0;
+                    capturedRef.current = false;
+                    setPoseProgress(0);
+                    setPoseStatus('waiting');
+                  }
+                  
+                  return newImages;
+                });
+                
+                setPoseStatus('captured');
+                return; // Stop detection loop briefly
+              }
+            }
+          } else {
+            stableFramesRef.current = Math.max(0, stableFramesRef.current - 1);
+            setPoseProgress((stableFramesRef.current / FACE_STABLE_FRAMES) * 100);
+            setPoseStatus('waiting');
+          }
+        } else {
+          stableFramesRef.current = 0;
+          setPoseProgress(0);
+          setPoseStatus('waiting');
+        }
+      } catch (err) {
+        console.error('Detection error:', err);
+      }
+
+      detectionRef.current = setTimeout(detect, DETECTION_INTERVAL);
+    };
+
+    detect();
+  }, [currentPoseIndex, autoCapturePhoto, stopCamera]);
+
+  // Restart detection when pose index changes
+  useEffect(() => {
+    if (step === 'capture' && !cameraLoading && !cameraError && currentPoseIndex > 0) {
+      // Small delay before starting next pose detection
+      const timer = setTimeout(() => {
+        capturedRef.current = false;
+        stableFramesRef.current = 0;
+        startDetectionLoop();
+      }, 800);
+      return () => clearTimeout(timer);
     }
-    stopCamera();
-    setStep('confirm');
-  };
+  }, [currentPoseIndex, step, cameraLoading, cameraError]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
 
   const saveFaceRegistration = async () => {
-    if (capturedImages.length < MIN_IMAGES || !user) return;
+    if (capturedImages.length < REQUIRED_POSES.length || !user) return;
 
     setIsUploading(true);
     try {
-      // Call the backend registration API
       const result = await registerFace(capturedImages);
       
       if (!result.success) {
@@ -225,9 +300,7 @@ export default function FaceSetup() {
         description: `${result.imagesStored} face images registered for verification.`,
       });
 
-      setTimeout(() => {
-        navigate('/install');
-      }, 2000);
+      setTimeout(() => navigate('/install'), 2000);
     } catch (error: any) {
       console.error('Save error:', error);
       toast({
@@ -243,12 +316,15 @@ export default function FaceSetup() {
   const getProgress = () => {
     switch (step) {
       case 'intro': return 25;
-      case 'capture': return 50;
-      case 'confirm': return 75;
+      case 'capture': return 25 + (capturedImages.length / REQUIRED_POSES.length) * 50;
+      case 'confirm': return 80;
       case 'complete': return 100;
       default: return 0;
     }
   };
+
+  const currentPose = REQUIRED_POSES[currentPoseIndex];
+  const PoseIcon = currentPose?.icon || Circle;
 
   if (modelsLoading) {
     return (
@@ -278,7 +354,7 @@ export default function FaceSetup() {
         <div className="px-6 py-4 bg-muted/50">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
             <span>Step {step === 'intro' ? 1 : step === 'capture' ? 2 : step === 'confirm' ? 3 : 4} of 4</span>
-            <span>{getProgress()}% complete</span>
+            <span>{Math.round(getProgress())}% complete</span>
           </div>
           <Progress value={getProgress()} className="h-2" />
         </div>
@@ -294,39 +370,29 @@ export default function FaceSetup() {
               <div>
                 <h2 className="font-display font-semibold text-xl mb-2">Welcome, {profile?.full_name?.split(' ')[0]}!</h2>
                 <p className="text-muted-foreground">
-                  We'll capture {MIN_IMAGES}-{MAX_IMAGES} photos of your face for secure attendance verification.
+                  We'll automatically capture your face from different angles — just like setting up face unlock on your phone.
                 </p>
               </div>
 
               <div className="bg-muted/50 rounded-xl p-4 text-left space-y-3">
-                <h3 className="font-semibold text-sm">Tips for best results:</h3>
+                <h3 className="font-semibold text-sm">How it works:</h3>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    Find a well-lit area with even lighting
+                    <Circle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    Look straight at the camera
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    Capture from slightly different angles
+                    <MoveRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    Turn your head to the right
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    Remove glasses or hats if possible
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    Keep a neutral expression
+                    <MoveLeft className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    Turn your head to the left
                   </li>
                 </ul>
-              </div>
-
-              <div className="bg-info-soft rounded-xl p-4 text-left">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-info shrink-0 mt-0.5" />
-                  <p className="text-sm text-info">
-                    You'll need to capture {MIN_IMAGES}-{MAX_IMAGES} photos to ensure accurate verification.
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Photos are captured automatically when you match the pose — no buttons needed!
+                </p>
               </div>
 
               <Button onClick={startCamera} size="lg" className="w-full" variant="hero">
@@ -337,49 +403,44 @@ export default function FaceSetup() {
             </div>
           )}
 
-          {/* Camera Step - Multi-image capture */}
+          {/* Camera Step - Auto capture with pose guidance */}
           {step === 'capture' && (
             <div className="space-y-4">
-              <div className="text-center mb-4">
-                <h2 className="font-display font-semibold text-lg">Capture Your Face</h2>
-                <p className="text-sm text-muted-foreground">
-                  {capturedImages.length} of {MIN_IMAGES} photos captured
-                  {capturedImages.length >= MIN_IMAGES && capturedImages.length < MAX_IMAGES && 
-                    ` (${MAX_IMAGES - capturedImages.length} more optional)`
-                  }
-                </p>
+              {/* Pose indicators */}
+              <div className="flex justify-center gap-3 mb-2">
+                {REQUIRED_POSES.map((pose, idx) => (
+                  <div
+                    key={pose.id}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      idx < capturedImages.length
+                        ? 'bg-success/20 text-success'
+                        : idx === currentPoseIndex
+                        ? 'bg-primary/20 text-primary ring-2 ring-primary/30'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {idx < capturedImages.length ? (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    ) : (
+                      <pose.icon className="w-3.5 h-3.5" />
+                    )}
+                    <span className="hidden sm:inline">{pose.id}</span>
+                  </div>
+                ))}
               </div>
 
-              {/* Captured Images Preview */}
-              {capturedImages.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {capturedImages.map((img, index) => (
-                    <div key={index} className="relative shrink-0">
-                      <img 
-                        src={img} 
-                        alt={`Captured ${index + 1}`} 
-                        className="w-16 h-16 rounded-lg object-cover border-2 border-primary"
-                      />
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                      <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs text-center rounded-b-lg">
-                        {index + 1}
-                      </span>
-                    </div>
-                  ))}
-                  {capturedImages.length < MAX_IMAGES && (
-                    <div className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center shrink-0">
-                      <Plus className="w-6 h-6 text-muted-foreground/50" />
-                    </div>
-                  )}
+              {/* Current pose instruction */}
+              {currentPose && (
+                <div className="text-center">
+                  <h2 className="font-display font-semibold text-lg flex items-center justify-center gap-2">
+                    <PoseIcon className="w-5 h-5 text-primary" />
+                    {currentPose.label}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">{currentPose.instruction}</p>
                 </div>
               )}
 
-              <div className="relative rounded-xl overflow-hidden bg-black aspect-[4/3]">
+              <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '3/4' }}>
                 {cameraLoading && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10">
                     <RefreshCw className="w-10 h-10 text-white animate-spin mb-3" />
@@ -397,12 +458,10 @@ export default function FaceSetup() {
                     </Button>
                   </div>
                 )}
-                
-                {isCapturing && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
-                    <Loader2 className="w-10 h-10 text-white animate-spin mb-3" />
-                    <p className="text-white text-sm">Capturing...</p>
-                  </div>
+
+                {/* Flash effect on capture */}
+                {showFlash && (
+                  <div className="absolute inset-0 bg-white z-30 animate-pulse" />
                 )}
                 
                 <video
@@ -411,63 +470,99 @@ export default function FaceSetup() {
                   playsInline
                   muted
                   className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
+                  style={{ transform: 'scaleX(-1)', objectPosition: 'center center' }}
                 />
                 
-                {showCamera && !cameraError && !cameraLoading && (
+                {!cameraError && !cameraLoading && (
                   <>
+                    {/* Face guide oval */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-48 h-60 border-4 border-dashed border-white/50 rounded-full" />
+                      <div className={`w-48 h-60 border-4 border-dashed rounded-full transition-colors duration-300 ${
+                        poseStatus === 'captured' ? 'border-success' :
+                        poseStatus === 'detecting' ? 'border-primary' :
+                        'border-white/40'
+                      }`} />
                     </div>
-                    <div className="absolute bottom-4 left-4 right-4 text-center">
-                      <p className="text-white text-sm bg-black/50 backdrop-blur rounded-lg px-4 py-2">
-                        Position your face and capture {MIN_IMAGES - capturedImages.length > 0 ? MIN_IMAGES - capturedImages.length : 'more'} photo{MIN_IMAGES - capturedImages.length !== 1 ? 's' : ''}
-                      </p>
+
+                    {/* Pose direction arrow indicator */}
+                    {currentPose && poseStatus !== 'captured' && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        {currentPose.id === 'right' && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-pulse">
+                            <MoveRight className="w-10 h-10 text-primary drop-shadow-lg" />
+                          </div>
+                        )}
+                        {currentPose.id === 'left' && (
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 animate-pulse">
+                            <MoveLeft className="w-10 h-10 text-primary drop-shadow-lg" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Progress ring at bottom */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-black/60 backdrop-blur rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {poseStatus === 'captured' ? (
+                            <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
+                          ) : poseStatus === 'detecting' ? (
+                            <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0" />
+                          ) : (
+                            <PoseIcon className="w-5 h-5 text-white/70 shrink-0" />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-white text-sm font-medium">
+                              {poseStatus === 'captured' 
+                                ? 'Captured!' 
+                                : poseStatus === 'detecting'
+                                ? `Hold steady... ${Math.round(poseProgress)}%`
+                                : currentPose?.instruction || 'Position your face'
+                              }
+                            </p>
+                            <div className="w-full h-1.5 bg-white/20 rounded-full mt-1.5 overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-150 ${
+                                  poseStatus === 'captured' ? 'bg-success' : 'bg-primary'
+                                }`}
+                                style={{ width: `${poseStatus === 'captured' ? 100 : poseProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="text-white/60 text-xs">
+                            {capturedImages.length}/{REQUIRED_POSES.length}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
               </div>
               
-              <div className="flex flex-wrap justify-center gap-3">
+              <div className="flex justify-center">
                 <Button 
                   variant="outline" 
                   onClick={() => {
                     stopCamera();
                     setCameraError(null);
                     setCapturedImages([]);
+                    setCurrentPoseIndex(0);
                     setStep('intro');
                   }}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  onClick={capturePhoto} 
-                  variant="hero" 
-                  disabled={!showCamera || cameraLoading || !!cameraError || isCapturing || capturedImages.length >= MAX_IMAGES}
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  {isCapturing ? 'Capturing...' : `Capture Photo ${capturedImages.length + 1}`}
-                </Button>
-                {capturedImages.length >= MIN_IMAGES && (
-                  <Button 
-                    onClick={proceedToConfirm} 
-                    variant="success"
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Continue
-                  </Button>
-                )}
               </div>
             </div>
           )}
 
           {/* Confirm Step */}
-          {step === 'confirm' && capturedImages.length >= MIN_IMAGES && (
+          {step === 'confirm' && capturedImages.length >= REQUIRED_POSES.length && (
             <div className="space-y-4">
               <div className="text-center mb-4">
                 <h2 className="font-display font-semibold text-lg">Review Your Photos</h2>
                 <p className="text-sm text-muted-foreground">
-                  {capturedImages.length} photos captured successfully
+                  {capturedImages.length} photos captured from different angles
                 </p>
               </div>
               
@@ -479,10 +574,14 @@ export default function FaceSetup() {
                       alt={`Photo ${index + 1}`} 
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute top-2 left-2">
+                      <div className="bg-black/60 backdrop-blur rounded-full px-2 py-0.5">
+                        <span className="text-white text-xs font-medium">{REQUIRED_POSES[index]?.id}</span>
+                      </div>
+                    </div>
                     <div className="absolute top-2 right-2">
-                      <div className="bg-success/90 backdrop-blur rounded-full px-2 py-1 flex items-center gap-1">
+                      <div className="bg-success/90 backdrop-blur rounded-full p-1">
                         <CheckCircle2 className="w-3 h-3 text-white" />
-                        <span className="text-white text-xs font-medium">{index + 1}</span>
                       </div>
                     </div>
                   </div>
@@ -499,8 +598,8 @@ export default function FaceSetup() {
               </div>
               
               <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={retakePhotos}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                <Button variant="outline" onClick={() => startCamera()}>
+                  <RotateCcw className="w-4 h-4 mr-2" />
                   Retake
                 </Button>
                 <Button onClick={saveFaceRegistration} disabled={isUploading} variant="success">
