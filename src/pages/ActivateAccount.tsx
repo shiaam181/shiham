@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,18 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Lock, Clock, AlertTriangle } from 'lucide-react';
-import { z } from 'zod';
-
-const passwordSchema = z.object({
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+import { CheckCircle, Lock, Clock, AlertTriangle, Eye, EyeOff, Check, X } from 'lucide-react';
+import { getReadableError } from '@/lib/edgeFunctionError';
 
 type PageState = 'loading' | 'valid' | 'expired' | 'success';
+
+const passwordRules = [
+  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+  { label: 'Contains uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'Contains lowercase letter', test: (p: string) => /[a-z]/.test(p) },
+  { label: 'Contains a number', test: (p: string) => /[0-9]/.test(p) },
+  { label: 'Contains special character (!@#$...)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
 
 export default function ActivateAccount() {
   const [searchParams] = useSearchParams();
@@ -28,16 +28,20 @@ export default function ActivateAccount() {
   const [state, setState] = useState<PageState>('loading');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tokenData, setTokenData] = useState<{ user_id: string; tenant_id: string } | null>(null);
   const [companyName, setCompanyName] = useState('');
 
+  const passedRules = useMemo(() => passwordRules.map(r => r.test(password)), [password]);
+  const allRulesPassed = passedRules.every(Boolean);
+  const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
+  const canSubmit = allRulesPassed && passwordsMatch && !isSubmitting;
+
   useEffect(() => {
-    if (!token) {
-      setState('expired');
-      return;
-    }
+    if (!token) { setState('expired'); return; }
     validateToken();
   }, [token]);
 
@@ -46,77 +50,61 @@ export default function ActivateAccount() {
       const { data, error } = await supabase.functions.invoke('manage-email-tokens', {
         body: { action: 'validate', raw_token: token, purpose: 'INVITE', consume: false },
       });
-
-      if (error || !data?.valid) {
-        setState('expired');
-        return;
-      }
-
+      if (error || !data?.valid) { setState('expired'); return; }
       setTokenData({ user_id: data.user_id, tenant_id: data.tenant_id });
-
-      // Get company name
       if (data.tenant_id) {
-        const { data: company } = await supabase
-          .from('companies')
-          .select('name')
-          .eq('id', data.tenant_id)
-          .maybeSingle();
+        const { data: company } = await supabase.from('companies').select('name').eq('id', data.tenant_id).maybeSingle();
         if (company) setCompanyName(company.name);
       }
-
       setState('valid');
-    } catch {
-      setState('expired');
-    }
+    } catch { setState('expired'); }
   };
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    try {
-      passwordSchema.parse({ password, confirmPassword });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        err.errors.forEach(e => { if (e.path[0]) fieldErrors[e.path[0] as string] = e.message; });
-        setErrors(fieldErrors);
-        return;
-      }
+    if (!allRulesPassed) {
+      setErrors({ password: 'Please meet all password requirements below' });
+      return;
+    }
+    if (!passwordsMatch) {
+      setErrors({ confirmPassword: "Passwords don't match" });
+      return;
     }
 
     setIsSubmitting(true);
     try {
-      // Consume the token
       const { data: tokenResult, error: tokenError } = await supabase.functions.invoke('manage-email-tokens', {
         body: { action: 'validate', raw_token: token, purpose: 'INVITE', consume: true },
       });
-
       if (tokenError || !tokenResult?.valid) {
-        toast({ title: 'Token Expired', description: 'This link has already been used or expired.', variant: 'destructive' });
+        toast({ title: 'Link Expired', description: 'This activation link has already been used or has expired. Please ask your administrator to send a new invitation.', variant: 'destructive' });
         setState('expired');
         return;
       }
 
-      // Update user password via admin API (edge function)
       const { data: activateResult, error: activateError } = await supabase.functions.invoke('activate-employee', {
-        body: {
-          user_id: tokenResult.user_id,
-          password,
-          tenant_id: tokenResult.tenant_id,
-        },
+        body: { user_id: tokenResult.user_id, password, tenant_id: tokenResult.tenant_id },
       });
 
       if (activateError || activateResult?.error) {
-        throw new Error(activateResult?.error || activateError?.message || 'Activation failed');
+        const rawMsg = activateResult?.error || activateError?.message || '';
+        const friendlyMsg = rawMsg.includes('non-2xx')
+          ? 'Unable to activate your account right now. Please try again or contact your administrator.'
+          : rawMsg || 'Activation failed. Please try again.';
+        toast({ title: 'Activation Failed', description: friendlyMsg, variant: 'destructive' });
+        return;
       }
 
       setState('success');
       toast({ title: 'Account Activated!', description: 'You can now sign in with your new password.' });
-
       setTimeout(() => navigate('/auth'), 3000);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      const msg = err?.message?.includes('non-2xx')
+        ? 'Something went wrong. Please try again or contact your administrator.'
+        : err?.message || 'An unexpected error occurred.';
+      toast({ title: 'Activation Failed', description: msg, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -147,9 +135,7 @@ export default function ActivateAccount() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" size="lg" onClick={() => navigate('/auth')}>
-              Go to Sign In
-            </Button>
+            <Button className="w-full" size="lg" onClick={() => navigate('/auth')}>Go to Sign In</Button>
           </CardContent>
         </Card>
       </div>
@@ -165,9 +151,7 @@ export default function ActivateAccount() {
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
             <CardTitle className="text-2xl font-display">Account Activated!</CardTitle>
-            <CardDescription>
-              Your account has been set up successfully. Redirecting to sign in...
-            </CardDescription>
+            <CardDescription>Your account has been set up successfully. Redirecting to sign in...</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -196,31 +180,71 @@ export default function ActivateAccount() {
             <form onSubmit={handleActivate} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
-                  className={errors.password ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
+                    className={`pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
+              {/* Password strength checklist */}
+              {password.length > 0 && (
+                <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Password requirements:</p>
+                  {passwordRules.map((rule, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      {passedRules[i] ? (
+                        <Check className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                      ) : (
+                        <X className="w-3.5 h-3.5 text-destructive shrink-0" />
+                      )}
+                      <span className={passedRules[i] ? 'text-green-600' : 'text-muted-foreground'}>{rule.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={e => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: '' })); }}
-                  className={errors.confirmPassword ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={e => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: '' })); }}
+                    className={`pr-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                {confirmPassword.length > 0 && !errors.confirmPassword && (
+                  <p className={`text-xs ${passwordsMatch ? 'text-green-600' : 'text-destructive'}`}>
+                    {passwordsMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
+                  </p>
+                )}
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" size="lg" disabled={!canSubmit}>
                 {isSubmitting ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
@@ -230,6 +254,12 @@ export default function ActivateAccount() {
                   </>
                 )}
               </Button>
+
+              {!allRulesPassed && password.length > 0 && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Please meet all password requirements to activate your account
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>
