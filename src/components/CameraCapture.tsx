@@ -131,7 +131,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
       setError(null);
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
         audio: false
       });
       
@@ -299,7 +299,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         </div>
 
         {/* Camera View */}
-        <div className="relative aspect-[4/3] bg-black">
+        <div className="relative bg-black" style={{ aspectRatio: '3/4' }}>
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
@@ -321,7 +321,7 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
             playsInline
             muted
             className="w-full h-full object-cover"
-            style={{ transform: 'scaleX(-1)' }}
+            style={{ transform: 'scaleX(-1)', objectPosition: 'center center' }}
           />
 
           {/* Face Guide Overlay - only show when not capturing */}
