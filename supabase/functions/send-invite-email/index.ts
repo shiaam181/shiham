@@ -170,13 +170,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (existingProfile) {
       userId = existingProfile.user_id;
-      // If already active, don't re-invite
-      if (existingProfile.is_active && existingProfile.registration_status === 'approved') {
-        return new Response(
-          JSON.stringify({ error: "This employee is already active" }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
+      // Reset profile for re-invitation (allow re-inviting active employees)
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: employee_name,
+          company_id: tenant_id,
+          is_active: false,
+          registration_status: "pending_activation",
+        })
+        .eq("user_id", userId);
     } else {
       // Create user account with a random temporary password (they'll set real one during activation)
       const tempPassword = crypto.randomUUID() + "Aa1!";
