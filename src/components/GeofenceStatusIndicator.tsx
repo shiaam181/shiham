@@ -8,6 +8,7 @@ interface GeofenceStatusIndicatorProps {
   longitude: number | null;
   accuracy: number | null;
   onStatusChange?: (isInside: boolean, locationName?: string) => void;
+  onDisabled?: () => void;
 }
 
 export default function GeofenceStatusIndicator({
@@ -15,6 +16,7 @@ export default function GeofenceStatusIndicator({
   longitude,
   accuracy,
   onStatusChange,
+  onDisabled,
 }: GeofenceStatusIndicatorProps) {
   const [status, setStatus] = useState<'checking' | 'inside' | 'outside' | 'disabled' | 'error'>('checking');
   const [locationName, setLocationName] = useState('');
@@ -24,6 +26,7 @@ export default function GeofenceStatusIndicator({
   useEffect(() => {
     if (latitude === null || longitude === null || latitude === 0) {
       setStatus('disabled');
+      onDisabled?.();
       return;
     }
 
@@ -39,6 +42,7 @@ export default function GeofenceStatusIndicator({
         if (!data.geofencingEnabled) {
           setStatus('disabled');
           onStatusChange?.(true);
+          onDisabled?.();
           return;
         }
 

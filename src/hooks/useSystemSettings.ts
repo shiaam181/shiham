@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SystemSettings {
@@ -43,11 +43,23 @@ const defaultSettings: SystemSettings = {
   testingModeEnabled: false,
 };
 
-export function useSystemSettings() {
-  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
-  const [isLoading, setIsLoading] = useState(true);
+// Global cache to avoid re-fetching on every component mount
+let cachedSettings: SystemSettings | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 60000; // 1 minute
 
-  const fetchSettings = useCallback(async () => {
+export function useSystemSettings() {
+  const [settings, setSettings] = useState<SystemSettings>(cachedSettings || defaultSettings);
+  const [isLoading, setIsLoading] = useState(!cachedSettings);
+
+  const fetchSettings = useCallback(async (force = false) => {
+    // Use cache if still fresh and not forced
+    if (!force && cachedSettings && Date.now() - cacheTimestamp < CACHE_TTL) {
+      setSettings(cachedSettings);
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       let settingsRows: Array<{ key: string; value: unknown }> = [];
 
@@ -123,6 +135,8 @@ export function useSystemSettings() {
         }
       });
 
+      cachedSettings = newSettings;
+      cacheTimestamp = Date.now();
       setSettings(newSettings);
     } catch (error) {
       console.error('Error fetching system settings:', error);
@@ -135,7 +149,7 @@ export function useSystemSettings() {
     fetchSettings();
   }, [fetchSettings]);
 
-  return { settings, isLoading, refetch: fetchSettings };
+  return { settings, isLoading, refetch: () => fetchSettings(true) };
 }
 
 export function isEmailConfigured(settings: SystemSettings): boolean {

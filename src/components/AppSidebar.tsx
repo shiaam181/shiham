@@ -351,7 +351,7 @@ export default function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-3 border-t border-sidebar-border">
+      <SidebarFooter className="p-3 border-t border-sidebar-border pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
             <User className="w-4 h-4 text-sidebar-foreground/70" />

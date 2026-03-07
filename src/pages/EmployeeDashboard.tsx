@@ -101,7 +101,7 @@ export default function EmployeeDashboard() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isInitiatingAttendance, setIsInitiatingAttendance] = useState(false);
   const [challengeToken, setChallengeToken] = useState<ChallengeToken | null>(null);
-  const [geofenceAllowed, setGeofenceAllowed] = useState(true);
+  const [geofenceAllowed, setGeofenceAllowed] = useState<boolean | null>(null); // null = still checking
   const [geofenceLocationName, setGeofenceLocationName] = useState('');
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
@@ -326,7 +326,15 @@ export default function EmployeeDashboard() {
       }
 
       // Check geofence validation if geofencing is active
-      if (!geofenceAllowed) {
+      if (geofenceAllowed === null) {
+        toast({
+          title: 'Please Wait',
+          description: 'Verifying your work location. Please try again in a moment.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (geofenceAllowed === false) {
         toast({
           title: 'Outside Work Zone',
           description: `You are outside the permitted work location${geofenceLocationName ? ` (nearest: ${geofenceLocationName})` : ''}. Please move within the geofence boundary.`,
@@ -808,6 +816,7 @@ export default function EmployeeDashboard() {
                 setGeofenceAllowed(isInside);
                 setGeofenceLocationName(locName || '');
               }}
+              onDisabled={() => setGeofenceAllowed(true)}
             />
           </div>
 
@@ -818,7 +827,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckIn}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || !geofenceAllowed}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || geofenceAllowed !== true}
               >
                 {isInitiatingAttendance ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -835,7 +844,7 @@ export default function EmployeeDashboard() {
                 size="xl" 
                 className="w-full"
                 onClick={handleCheckOut}
-                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || !geofenceAllowed}
+                disabled={(systemSettings.gpsTrackingEnabled && !location) || isVerifying || isInitiatingAttendance || geofenceAllowed !== true}
               >
                 {isInitiatingAttendance ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />

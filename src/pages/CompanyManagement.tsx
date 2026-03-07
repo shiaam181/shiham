@@ -657,7 +657,7 @@ export default function CompanyManagement() {
           </DialogContent>
         </Dialog>
 
-        <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1">
           {/* Companies List */}
           <Card>
             <CardHeader>
@@ -683,68 +683,68 @@ export default function CompanyManagement() {
                       }`}
                       onClick={() => handleSelectCompany(company)}
                     >
-                      <div className="flex items-center justify-between gap-2">
+                         <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <p className="font-medium truncate">{company.name}</p>
                           <p className="text-xs text-muted-foreground truncate">/{company.slug}</p>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 flex-wrap justify-end">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={(e) => {
                               e.stopPropagation();
                               openEditDialog(company);
                             }}
                             title="Edit Company"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={(e) => {
                               e.stopPropagation();
                               openInviteSettingsDialog(company);
                             }}
                             title="Invite Settings"
                           >
-                            <Settings2 className="w-4 h-4" />
+                            <Settings2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
                             onClick={(e) => {
                               e.stopPropagation();
                               shareInviteLink(company.invite_code, company.name);
                             }}
                             title="Share Invite Link"
                           >
-                            <Share2 className="w-4 h-4" />
+                            <Share2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex"
                             onClick={(e) => {
                               e.stopPropagation();
                               copyInviteLink(company.invite_code);
                             }}
                             title="Copy Invite Link"
                           >
-                            <Copy className="w-4 h-4" />
+                            <Copy className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={(e) => openDeleteConfirm(company, e)}
                             title="Delete Company"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                           <Badge variant={company.is_active ? 'default' : 'secondary'} className="hidden sm:flex">
                             {company.is_active ? 'Active' : 'Inactive'}
