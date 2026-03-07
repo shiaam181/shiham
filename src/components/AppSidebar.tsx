@@ -175,7 +175,7 @@ export default function AppSidebar() {
 
   const renderNavItem = (item: NavItem, depth = 0) => {
     if (item.children) {
-      return <CollapsibleNavItem key={item.label} item={item} depth={depth} />;
+      return renderCollapsibleItem(item, depth);
     }
 
     return (
@@ -216,11 +216,11 @@ export default function AppSidebar() {
     setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const CollapsibleNavItem = ({ item, depth }: { item: NavItem; depth: number }) => {
+  const renderCollapsibleItem = (item: NavItem, depth: number) => {
     const isOpen = openMenus[item.label] ?? false;
 
     return (
-      <Collapsible open={isOpen} onOpenChange={() => toggleMenu(item.label)}>
+      <Collapsible key={item.label} open={isOpen} onOpenChange={() => toggleMenu(item.label)}>
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
             <SidebarMenuButton
