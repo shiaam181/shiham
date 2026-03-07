@@ -1,79 +1,57 @@
 project_id = "kvygdphglkxqtaoxlzmh"
 
-[functions.check-phone-exists]
-verify_jwt = false
-
-[functions.send-otp]
-verify_jwt = false
-
-[functions.verify-otp]
-verify_jwt = false
-
-[functions.verify-face]
-verify_jwt = false
-
-[functions.phone-login]
-verify_jwt = false
-
-[functions.send-email-otp]
-verify_jwt = false
-
-[functions.verify-email-otp]
-verify_jwt = false
-
-[functions.email-login]
-verify_jwt = false
-
-[functions.get-company-by-invite]
-verify_jwt = false
-
-[functions.track-invite-usage]
-verify_jwt = false
-
-[functions.approve-employee]
-verify_jwt = false
-
-[functions.generate-challenge]
-verify_jwt = false
-
-[functions.register-face]
-verify_jwt = false
-
-[functions.verify-attendance]
-verify_jwt = false
-
-[functions.check-punch-missing]
-verify_jwt = false
-
-[functions.update-aws-credentials]
-verify_jwt = false
-
-[functions.update-live-location]
-verify_jwt = false
-
-[functions.get-live-locations]
-verify_jwt = false
-
-[functions.test-aws-location]
-verify_jwt = false
-
-[functions.map-proxy]
-verify_jwt = false
-
-[functions.send-brevo-email]
-verify_jwt = false
-
-[functions.manage-email-tokens]
-verify_jwt = false
-
-[functions.send-invite-email]
-verify_jwt = false
-
-[functions.send-reset-email-brevo]
-verify_jwt = false
-
-[functions.activate-employee]
-verify_jwt = false
-
-[functions.reset-password-with-token]
-verify_jwt = false
+[functions]
+  [functions.activate-employee]
+    verify_jwt = false
+  [functions.approve-employee]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.check-phone-exists]
+    verify_jwt = false
+  [functions.check-punch-missing]
+    verify_jwt = false
+  [functions.email-login]
+    verify_jwt = false
+  [functions.generate-challenge]
+    verify_jwt = false
+  [functions.get-company-by-invite]
+    verify_jwt = false
+  [functions.get-live-locations]
+    verify_jwt = false
+  [functions.manage-email-tokens]
+    verify_jwt = false
+  [functions.map-proxy]
+    verify_jwt = false
+  [functions.phone-login]
+    verify_jwt = false
+  [functions.register-face]
+    verify_jwt = false
+  [functions.reset-password-with-token]
+    verify_jwt = false
+  [functions.send-brevo-email]
+    verify_jwt = false
+  [functions.send-email-otp]
+    verify_jwt = false
+  [functions.send-invite-email]
+    verify_jwt = false
+  [functions.send-otp]
+    verify_jwt = false
+  [functions.send-reset-email-brevo]
+    verify_jwt = false
+  [functions.test-aws-location]
+    verify_jwt = false
+  [functions.track-invite-usage]
+    verify_jwt = false
+  [functions.update-aws-credentials]
+    verify_jwt = false
+  [functions.update-live-location]
+    verify_jwt = false
+  [functions.verify-attendance]
+    verify_jwt = false
+  [functions.verify-email-otp]
+    verify_jwt = false
+  [functions.verify-face]
+    verify_jwt = false
+  [functions.verify-otp]
+    verify_jwt = false
