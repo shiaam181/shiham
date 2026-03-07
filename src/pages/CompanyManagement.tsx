@@ -657,7 +657,7 @@ export default function CompanyManagement() {
           </DialogContent>
         </Dialog>
 
-        <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1">
           {/* Companies List */}
           <Card>
             <CardHeader>
