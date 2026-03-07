@@ -149,7 +149,7 @@ export function useSystemSettings() {
     fetchSettings();
   }, [fetchSettings]);
 
-  return { settings, isLoading, refetch: fetchSettings };
+  return { settings, isLoading, refetch: () => fetchSettings(true) };
 }
 
 export function isEmailConfigured(settings: SystemSettings): boolean {
