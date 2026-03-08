@@ -61,6 +61,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
       </SidebarInset>
+      
+      {/* AI HR Assistant */}
+      <HRAssistantChat />
     </SidebarProvider>
   );
 }
