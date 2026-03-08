@@ -52,6 +52,7 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { role, isDeveloper } = useAuth();
+  const { canSeeCommandPalette } = useCompanyFeatures();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
