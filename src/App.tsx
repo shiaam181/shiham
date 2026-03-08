@@ -65,6 +65,7 @@ import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
 import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
 import PayslipSettings from "./pages/PayslipSettings";
 import GeofenceLocations from "./pages/GeofenceLocations";
+import DocumentManagement from "./pages/DocumentManagement";
 
 const queryClient = new QueryClient();
 
