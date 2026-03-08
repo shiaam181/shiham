@@ -93,6 +93,9 @@ interface DashboardStats {
   presentToday: number;
   absentToday: number;
   onLeave: number;
+  pendingLeaves: number;
+  pendingRegularizations: number;
+  attendanceRate: number;
 }
 
 interface Company {
