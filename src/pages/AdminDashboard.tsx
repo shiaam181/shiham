@@ -222,16 +222,24 @@ export default function AdminDashboard() {
 
       setTodayAttendance(attendanceWithEmployees);
 
-      // Calculate stats
+      // Calculate stats - also fetch pending counts
       const present = attendanceData?.filter(a => a.status === 'present').length || 0;
       const leave = attendanceData?.filter(a => a.status === 'leave').length || 0;
       const total = employeesData?.length || 0;
+
+      const [pendingLeavesRes, pendingRegRes] = await Promise.all([
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('regularization_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
 
       setStats({
         totalEmployees: total,
         presentToday: present,
         absentToday: total - present - leave,
         onLeave: leave,
+        pendingLeaves: pendingLeavesRes.count || 0,
+        pendingRegularizations: pendingRegRes.count || 0,
+        attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
       });
     } catch (error) {
       console.error('Error fetching data:', error);
