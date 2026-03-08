@@ -32,6 +32,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
           
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border/50">
               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
