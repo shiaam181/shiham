@@ -3,6 +3,7 @@ import AppSidebar from '@/components/AppSidebar';
 import NotificationBell from '@/components/NotificationBell';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import ThemeToggle from '@/components/ThemeToggle';
+import HRAssistantChat from '@/components/HRAssistantChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
