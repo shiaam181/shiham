@@ -29,6 +29,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
+import { applyBrandTheme } from '@/lib/hexToHsl';
 
 interface Company {
   id: string;
@@ -185,6 +186,8 @@ export default function CompanyDetail() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Saved', description: 'Company settings updated successfully' });
+      // Apply brand colors to UI immediately
+      applyBrandTheme(brandColor, brandColorSecondary);
       fetchCompany();
     }
     setIsSaving(false);
