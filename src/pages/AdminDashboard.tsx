@@ -50,6 +50,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
+import DashboardAnalytics from '@/components/DashboardAnalytics';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
