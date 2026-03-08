@@ -88,6 +88,7 @@ export default function CompanyDetail() {
   const [moodPulseEnabled, setMoodPulseEnabled] = useState(false);
   const [teamBoardEnabled, setTeamBoardEnabled] = useState(false);
   const [commandPaletteEnabled, setCommandPaletteEnabled] = useState(false);
+  const [separatePayrollTeamEnabled, setSeparatePayrollTeamEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
