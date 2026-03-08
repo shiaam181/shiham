@@ -42,15 +42,11 @@ export function useCompanyFeatures() {
       });
   }, [profile?.company_id]);
 
-  // Developers and admins always see features (for preview/testing)
-  const isPrivileged = isDeveloper || isAdmin;
-
   return {
     ...features,
     loading,
-    // Privileged users always have access
-    canSeeMoodPulse: isPrivileged || features.moodPulseEnabled,
-    canSeeTeamBoard: isPrivileged || features.teamBoardEnabled,
-    canSeeCommandPalette: isPrivileged || features.commandPaletteEnabled,
+    canSeeMoodPulse: features.moodPulseEnabled,
+    canSeeTeamBoard: features.teamBoardEnabled,
+    canSeeCommandPalette: features.commandPaletteEnabled,
   };
 }
