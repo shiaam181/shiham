@@ -292,8 +292,32 @@ export default function AdminDashboard() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 pb-6">
+        {/* Attendance Rate Banner */}
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Today's Attendance Rate</p>
+              <p className="text-3xl font-bold text-primary">{stats.attendanceRate}%</p>
+            </div>
+            <div className="flex gap-2">
+              {stats.pendingLeaves > 0 && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/manager/approvals')} className="gap-1.5">
+                  <Bell className="w-3.5 h-3.5" />
+                  {stats.pendingLeaves} Leave{stats.pendingLeaves !== 1 ? 's' : ''} Pending
+                </Button>
+              )}
+              {stats.pendingRegularizations > 0 && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/manager/approvals')} className="gap-1.5">
+                  <Timer className="w-3.5 h-3.5" />
+                  {stats.pendingRegularizations} Corrections
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label="Total Employees"
             value={stats.totalEmployees}
