@@ -39,7 +39,6 @@ export default function AppSidebar() {
   const { profile, role, isAdmin, isDeveloper, isOwner, isHR, isManager, isPayrollTeam, signOut } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
   const companyFeatures = useCompanyFeatures();
-  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleNav = (path?: string) => {
     if (path) {
