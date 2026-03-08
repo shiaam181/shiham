@@ -12,6 +12,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UpdateNotification from "@/components/UpdateNotification";
 import DashboardRouter from "@/components/DashboardRouter";
+import CommandPalette from "@/components/CommandPalette";
 
 // Eager-loaded critical routes
 import Index from "./pages/Index";
