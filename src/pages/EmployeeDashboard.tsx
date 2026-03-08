@@ -712,6 +712,10 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+        {/* Smart Alerts & Quick Actions */}
+        <SmartNotificationsWidget />
+        <QuickActionsWidget />
+
         {/* Profile Completion & Manager Widgets */}
         {/* Mood Pulse - feature toggled */}
         {companyFeatures.canSeeMoodPulse && <MoodPulse />}
@@ -719,6 +723,7 @@ export default function EmployeeDashboard() {
         <ProfileCompletionCard />
         <ManagerPendingWidget />
         <CelebrationsWidget />
+        <TeamLeaderboard />
         <ConfettiCelebration trigger={false} />
 
         {/* Team Availability - feature toggled */}
