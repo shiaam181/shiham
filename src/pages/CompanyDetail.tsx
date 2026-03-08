@@ -47,6 +47,9 @@ interface Company {
   live_tracking_enabled: boolean | null;
   tracking_interval_seconds: number | null;
   geofencing_enabled: boolean | null;
+  mood_pulse_enabled: boolean;
+  team_board_enabled: boolean;
+  command_palette_enabled: boolean;
 }
 
 interface CompanyUser {
