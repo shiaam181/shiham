@@ -345,6 +345,7 @@ export type Database = {
           pf_registration_number: string | null
           pt_registration_number: string | null
           registered_address: string | null
+          separate_payroll_team_enabled: boolean
           slug: string
           tagline: string | null
           tan_number: string | null
@@ -378,6 +379,7 @@ export type Database = {
           pf_registration_number?: string | null
           pt_registration_number?: string | null
           registered_address?: string | null
+          separate_payroll_team_enabled?: boolean
           slug: string
           tagline?: string | null
           tan_number?: string | null
@@ -411,6 +413,7 @@ export type Database = {
           pf_registration_number?: string | null
           pt_registration_number?: string | null
           registered_address?: string | null
+          separate_payroll_team_enabled?: boolean
           slug?: string
           tagline?: string | null
           tan_number?: string | null
