@@ -172,6 +172,13 @@ export default function RoleManagement() {
             Manager
           </Badge>
         );
+      case 'payroll_team':
+        return (
+          <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
+            <IndianRupee className="w-3 h-3 mr-1" />
+            Payroll Team
+          </Badge>
+        );
       default:
         return (
           <Badge variant="secondary">
