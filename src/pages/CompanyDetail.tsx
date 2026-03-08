@@ -172,6 +172,9 @@ export default function CompanyDetail() {
       live_tracking_enabled: liveTrackingEnabled,
       tracking_interval_seconds: parseInt(trackingInterval) || 60,
       geofencing_enabled: geofencingEnabled,
+      mood_pulse_enabled: moodPulseEnabled,
+      team_board_enabled: teamBoardEnabled,
+      command_palette_enabled: commandPaletteEnabled,
     } as any).eq('id', company.id);
 
     if (error) {
