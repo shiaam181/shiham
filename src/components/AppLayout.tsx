@@ -48,9 +48,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 pb-mobile-nav overflow-x-hidden">
+        <main id="main-content" className="flex-1 pb-mobile-nav overflow-x-hidden" role="main">
           {children}
-        </div>
+        </main>
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
