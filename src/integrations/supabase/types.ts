@@ -917,6 +917,71 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hr_chat_messages: {
+        Row: {
+          action_meta: Json | null
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          reaction: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          action_meta?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          reaction?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          action_meta?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          reaction?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "hr_chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_usage_history: {
         Row: {
           company_id: string
