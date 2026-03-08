@@ -10,7 +10,7 @@ interface NavItem {
 }
 
 const employeeNavItems: NavItem[] = [
-  { icon: Home, label: 'Home', path: '/dashboard' },
+  { icon: Home, label: 'Home', path: '/employee-home' },
   { icon: ClipboardList, label: 'Attendance', path: '/my-attendance' },
   { icon: User, label: 'Profile', path: '/profile' },
 ];
