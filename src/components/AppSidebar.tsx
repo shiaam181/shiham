@@ -60,6 +60,7 @@ export default function AppSidebar() {
   // HR items - visible to HR role
   const hrItems: NavItem[] = [
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
+    { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll', children: [
