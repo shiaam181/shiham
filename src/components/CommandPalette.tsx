@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from '@/components/ui/command';
@@ -51,9 +52,11 @@ export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { role, isDeveloper } = useAuth();
+  const { canSeeCommandPalette } = useCompanyFeatures();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (!canSeeCommandPalette) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen(o => !o);
@@ -61,7 +64,7 @@ export default function CommandPalette() {
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [canSeeCommandPalette]);
 
   const filteredItems = useMemo(() => {
     return allNavItems.filter(item => {
@@ -75,6 +78,8 @@ export default function CommandPalette() {
     setOpen(false);
     navigate(path);
   };
+
+  if (!canSeeCommandPalette) return null;
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>

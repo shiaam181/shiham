@@ -47,6 +47,9 @@ interface Company {
   live_tracking_enabled: boolean | null;
   tracking_interval_seconds: number | null;
   geofencing_enabled: boolean | null;
+  mood_pulse_enabled: boolean;
+  team_board_enabled: boolean;
+  command_palette_enabled: boolean;
 }
 
 interface CompanyUser {
@@ -81,6 +84,9 @@ export default function CompanyDetail() {
   const [liveTrackingEnabled, setLiveTrackingEnabled] = useState(false);
   const [trackingInterval, setTrackingInterval] = useState('60');
   const [geofencingEnabled, setGeofencingEnabled] = useState(false);
+  const [moodPulseEnabled, setMoodPulseEnabled] = useState(false);
+  const [teamBoardEnabled, setTeamBoardEnabled] = useState(false);
+  const [commandPaletteEnabled, setCommandPaletteEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
@@ -121,6 +127,9 @@ export default function CompanyDetail() {
     setLiveTrackingEnabled(data.live_tracking_enabled || false);
     setTrackingInterval(String(data.tracking_interval_seconds || 60));
     setGeofencingEnabled((data as any).geofencing_enabled || false);
+    setMoodPulseEnabled((data as any).mood_pulse_enabled || false);
+    setTeamBoardEnabled((data as any).team_board_enabled || false);
+    setCommandPaletteEnabled((data as any).command_palette_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
@@ -163,6 +172,9 @@ export default function CompanyDetail() {
       live_tracking_enabled: liveTrackingEnabled,
       tracking_interval_seconds: parseInt(trackingInterval) || 60,
       geofencing_enabled: geofencingEnabled,
+      mood_pulse_enabled: moodPulseEnabled,
+      team_board_enabled: teamBoardEnabled,
+      command_palette_enabled: commandPaletteEnabled,
     } as any).eq('id', company.id);
 
     if (error) {
@@ -338,10 +350,11 @@ export default function CompanyDetail() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="employees">Team ({users.length})</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -607,6 +620,50 @@ export default function CompanyDetail() {
                     </Table>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Features Tab */}
+          <TabsContent value="features" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings2 className="w-5 h-5 text-primary" />
+                  Extra Features
+                </CardTitle>
+                <CardDescription>Toggle premium features for this company's employees</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">😊 Mood Pulse Tracker</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Daily emoji mood check-in on employee dashboard
+                    </p>
+                  </div>
+                  <Switch checked={moodPulseEnabled} onCheckedChange={setMoodPulseEnabled} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">👥 Team Availability Board</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Real-time who's in office / on leave / absent
+                    </p>
+                  </div>
+                  <Switch checked={teamBoardEnabled} onCheckedChange={setTeamBoardEnabled} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">⌘ Command Palette</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Cmd+K quick search & navigation for employees
+                    </p>
+                  </div>
+                  <Switch checked={commandPaletteEnabled} onCheckedChange={setCommandPaletteEnabled} />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

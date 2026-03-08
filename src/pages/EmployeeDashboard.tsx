@@ -46,6 +46,7 @@ import MoodPulse from '@/components/MoodPulse';
 import TeamAvailabilityBoard from '@/components/TeamAvailabilityBoard';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import LocationDisplay from '@/components/LocationDisplay';
+import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
@@ -111,6 +112,7 @@ export default function EmployeeDashboard() {
   const [geofenceLocationName, setGeofenceLocationName] = useState('');
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
+  const companyFeatures = useCompanyFeatures();
 
   // Preload face models in background for faster camera startup
   // Non-blocking - if it fails, we'll handle it when camera opens
@@ -708,16 +710,16 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* Profile Completion & Manager Widgets */}
-        {/* Mood Pulse */}
-        <MoodPulse />
+        {/* Mood Pulse - feature toggled */}
+        {companyFeatures.canSeeMoodPulse && <MoodPulse />}
 
         <ProfileCompletionCard />
         <ManagerPendingWidget />
         <CelebrationsWidget />
         <ConfettiCelebration trigger={false} />
 
-        {/* Team Availability */}
-        <TeamAvailabilityBoard />
+        {/* Team Availability - feature toggled */}
+        {companyFeatures.canSeeTeamBoard && <TeamAvailabilityBoard />}
 
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (

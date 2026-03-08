@@ -322,6 +322,7 @@ export type Database = {
         Row: {
           brand_color: string | null
           brand_color_secondary: string | null
+          command_palette_enabled: boolean
           created_at: string
           esi_registration_number: string | null
           face_verification_disabled: boolean
@@ -336,6 +337,7 @@ export type Database = {
           legal_name: string | null
           live_tracking_enabled: boolean | null
           logo_url: string | null
+          mood_pulse_enabled: boolean
           name: string
           pan_number: string | null
           pay_cycle: string | null
@@ -346,12 +348,14 @@ export type Database = {
           slug: string
           tagline: string | null
           tan_number: string | null
+          team_board_enabled: boolean
           tracking_interval_seconds: number | null
           updated_at: string
         }
         Insert: {
           brand_color?: string | null
           brand_color_secondary?: string | null
+          command_palette_enabled?: boolean
           created_at?: string
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
@@ -366,6 +370,7 @@ export type Database = {
           legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
+          mood_pulse_enabled?: boolean
           name: string
           pan_number?: string | null
           pay_cycle?: string | null
@@ -376,12 +381,14 @@ export type Database = {
           slug: string
           tagline?: string | null
           tan_number?: string | null
+          team_board_enabled?: boolean
           tracking_interval_seconds?: number | null
           updated_at?: string
         }
         Update: {
           brand_color?: string | null
           brand_color_secondary?: string | null
+          command_palette_enabled?: boolean
           created_at?: string
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
@@ -396,6 +403,7 @@ export type Database = {
           legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
+          mood_pulse_enabled?: boolean
           name?: string
           pan_number?: string | null
           pay_cycle?: string | null
@@ -406,6 +414,7 @@ export type Database = {
           slug?: string
           tagline?: string | null
           tan_number?: string | null
+          team_board_enabled?: boolean
           tracking_interval_seconds?: number | null
           updated_at?: string
         }
