@@ -9,9 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
  * Manager → /dashboard (employee view, they use sidebar for manager features)
  */
 export default function DashboardRouter() {
-  const { role, isDeveloper, isAdmin } = useAuth();
+  const { role, isDeveloper, isAdmin, isPayrollTeam } = useAuth();
 
   if (isDeveloper) return <Navigate to="/developer" replace />;
+  if (role === 'payroll_team') return <Navigate to="/payroll" replace />;
   if (isAdmin && role !== 'employee' && role !== 'manager') return <Navigate to="/admin" replace />;
   
   // Employees and managers land on the employee dashboard

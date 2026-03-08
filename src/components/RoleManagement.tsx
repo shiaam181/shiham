@@ -362,6 +362,12 @@ export default function RoleManagement() {
                   assigned under this manager, including attendance and leave approvals.
                 </>
               )}
+              {newRole === 'payroll_team' && (
+                <>
+                  <strong>Note:</strong> Payroll Team role grants access to view approved payroll,
+                  salary structures, mark payments as processed, and generate payslips.
+                </>
+              )}
               {newRole === 'employee' && (
                 <>
                   <strong>Note:</strong> Employee role only allows access to the employee
