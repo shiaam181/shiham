@@ -56,6 +56,7 @@ export default function CommandPalette() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (!canSeeCommandPalette) return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen(o => !o);
@@ -63,7 +64,9 @@ export default function CommandPalette() {
     };
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [canSeeCommandPalette]);
+
+  if (!canSeeCommandPalette) return null;
 
   const filteredItems = useMemo(() => {
     return allNavItems.filter(item => {
