@@ -282,6 +282,7 @@ function AppRoutes() {
         <Route path="/developer/companies/:id/geofencing" element={<DeveloperRoute><GeofenceLocations /></DeveloperRoute>} />
         <Route path="/admin/geofencing" element={<AdminRoute><GeofenceLocations /></AdminRoute>} />
         <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
+        <Route path="/admin/documents" element={<AdminRoute><DocumentManagement /></AdminRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
