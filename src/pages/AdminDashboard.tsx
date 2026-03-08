@@ -50,6 +50,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
+import DashboardAnalytics from '@/components/DashboardAnalytics';
 import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
@@ -307,6 +308,9 @@ export default function AdminDashboard() {
             iconBg="bg-info-soft"
           />
         </div>
+
+        {/* Analytics Charts */}
+        <DashboardAnalytics />
 
         {/* Attendance Management with Tabs */}
         <Tabs defaultValue="daily" className="space-y-4">
