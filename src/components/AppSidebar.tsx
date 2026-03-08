@@ -178,7 +178,10 @@ export default function AppSidebar() {
 
   // Payroll team items
   const payrollItems: NavItem[] = [
-    { icon: Wallet, label: 'Payroll Processing', path: '/payroll' },
+    { icon: Home, label: 'Payroll Dashboard', path: '/payroll' },
+    { icon: Receipt, label: 'Salary Structures', path: '/admin/compensation' },
+    { icon: Scale, label: 'Statutory Compliance', path: '/compliance' },
+    { icon: BarChart3, label: 'Compliance Reports', path: '/compliance-reports' },
   ];
 
   const isActive = (path?: string) => path ? location.pathname === path : false;

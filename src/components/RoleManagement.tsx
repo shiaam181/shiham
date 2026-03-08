@@ -29,14 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, Shield, User, Code, Save, AlertTriangle, Building, UserCog, Users } from 'lucide-react';
+import { Search, Shield, User, Code, Save, AlertTriangle, Building, UserCog, Users, IndianRupee } from 'lucide-react';
 
 interface UserWithRole {
   user_id: string;
   full_name: string;
   email: string;
   department: string | null;
-  role: 'admin' | 'employee' | 'developer' | 'owner' | 'hr' | 'manager';
+  role: 'admin' | 'employee' | 'developer' | 'owner' | 'hr' | 'manager' | 'payroll_team';
   is_active: boolean;
 }
 
@@ -172,6 +172,13 @@ export default function RoleManagement() {
             Manager
           </Badge>
         );
+      case 'payroll_team':
+        return (
+          <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
+            <IndianRupee className="w-3 h-3 mr-1" />
+            Payroll Team
+          </Badge>
+        );
       default:
         return (
           <Badge variant="secondary">
@@ -290,6 +297,7 @@ export default function RoleManagement() {
                             <SelectItem value="owner">Owner</SelectItem>
                             <SelectItem value="hr">HR</SelectItem>
                             <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="payroll_team">Payroll Team</SelectItem>
                             <SelectItem value="developer">Developer</SelectItem>
                           </SelectContent>
                         </Select>
@@ -352,6 +360,12 @@ export default function RoleManagement() {
                 <>
                   <strong>Note:</strong> Manager role grants team-level oversight for employees
                   assigned under this manager, including attendance and leave approvals.
+                </>
+              )}
+              {newRole === 'payroll_team' && (
+                <>
+                  <strong>Note:</strong> Payroll Team role grants access to view approved payroll,
+                  salary structures, mark payments as processed, and generate payslips.
                 </>
               )}
               {newRole === 'employee' && (

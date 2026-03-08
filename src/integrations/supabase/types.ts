@@ -2099,7 +2099,14 @@ export type Database = {
       is_payroll_team: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "employee" | "developer" | "owner" | "hr" | "manager"
+      app_role:
+        | "admin"
+        | "employee"
+        | "developer"
+        | "owner"
+        | "hr"
+        | "manager"
+        | "payroll_team"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2227,7 +2234,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "employee", "developer", "owner", "hr", "manager"],
+      app_role: [
+        "admin",
+        "employee",
+        "developer",
+        "owner",
+        "hr",
+        "manager",
+        "payroll_team",
+      ],
     },
   },
 } as const
