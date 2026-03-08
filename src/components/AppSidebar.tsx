@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import { cn } from '@/lib/utils';
 import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
