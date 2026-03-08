@@ -505,6 +505,11 @@ export default function AdminDashboard() {
           <TabsContent value="monthly">
             <EmployeeAttendanceList />
           </TabsContent>
+
+          {/* Bulk Attendance Correction Tab */}
+          <TabsContent value="bulk">
+            <BulkAttendanceCorrection onComplete={fetchData} />
+          </TabsContent>
         </Tabs>
 
         {/* Company Settings - Face Verification Toggle */}
