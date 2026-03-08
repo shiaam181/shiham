@@ -39,6 +39,8 @@ import LeaveNotifications from '@/components/LeaveNotifications';
 import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import AppLayout from '@/components/AppLayout';
+import ProfileCompletionCard from '@/components/ProfileCompletionCard';
+import ManagerPendingWidget from '@/components/ManagerPendingWidget';
 import LocationDisplay from '@/components/LocationDisplay';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
