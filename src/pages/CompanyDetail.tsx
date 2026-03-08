@@ -84,6 +84,9 @@ export default function CompanyDetail() {
   const [liveTrackingEnabled, setLiveTrackingEnabled] = useState(false);
   const [trackingInterval, setTrackingInterval] = useState('60');
   const [geofencingEnabled, setGeofencingEnabled] = useState(false);
+  const [moodPulseEnabled, setMoodPulseEnabled] = useState(false);
+  const [teamBoardEnabled, setTeamBoardEnabled] = useState(false);
+  const [commandPaletteEnabled, setCommandPaletteEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
