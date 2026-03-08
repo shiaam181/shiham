@@ -286,6 +286,21 @@ export default function HRAssistantChat() {
                   </div>
                 </div>
               )}
+
+              {!isLoading && followUps.length > 0 && messages.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <p className="text-[10px] text-muted-foreground font-medium px-1">Suggested follow-ups</p>
+                  {followUps.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="text-left text-xs px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted text-foreground transition-colors border border-border/50"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </ScrollArea>
 
