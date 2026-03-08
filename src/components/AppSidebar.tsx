@@ -146,6 +146,7 @@ export default function AppSidebar() {
         { icon: Users, label: 'Employees', path: '/admin/employees' },
         { icon: Users, label: 'Teams', path: '/admin/teams' },
         { icon: Calendar, label: 'Leaves', path: '/admin/leaves' },
+        { icon: FileText, label: 'Documents', path: '/admin/documents' },
         { icon: FileText, label: 'Reports', path: '/admin/reports' },
       ]
     },
