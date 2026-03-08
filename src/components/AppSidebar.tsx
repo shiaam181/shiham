@@ -52,6 +52,7 @@ export default function AppSidebar() {
     { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
     { icon: FileText, label: 'My Documents', path: '/my-documents' },
+    { icon: Users, label: 'Directory', path: '/directory' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
