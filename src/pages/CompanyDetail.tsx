@@ -186,6 +186,8 @@ export default function CompanyDetail() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Saved', description: 'Company settings updated successfully' });
+      // Apply brand colors to UI immediately
+      applyBrandTheme(brandColor, brandColorSecondary);
       fetchCompany();
     }
     setIsSaving(false);
