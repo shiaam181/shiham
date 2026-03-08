@@ -55,6 +55,7 @@ import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import EmployeeAttendanceList from '@/components/EmployeeAttendanceList';
+import BulkAttendanceCorrection from '@/components/BulkAttendanceCorrection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
@@ -93,6 +94,9 @@ interface DashboardStats {
   presentToday: number;
   absentToday: number;
   onLeave: number;
+  pendingLeaves: number;
+  pendingRegularizations: number;
+  attendanceRate: number;
 }
 
 interface Company {
@@ -113,6 +117,9 @@ export default function AdminDashboard() {
     presentToday: 0,
     absentToday: 0,
     onLeave: 0,
+    pendingLeaves: 0,
+    pendingRegularizations: 0,
+    attendanceRate: 0,
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -216,16 +223,24 @@ export default function AdminDashboard() {
 
       setTodayAttendance(attendanceWithEmployees);
 
-      // Calculate stats
+      // Calculate stats - also fetch pending counts
       const present = attendanceData?.filter(a => a.status === 'present').length || 0;
       const leave = attendanceData?.filter(a => a.status === 'leave').length || 0;
       const total = employeesData?.length || 0;
+
+      const [pendingLeavesRes, pendingRegRes] = await Promise.all([
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('regularization_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
 
       setStats({
         totalEmployees: total,
         presentToday: present,
         absentToday: total - present - leave,
         onLeave: leave,
+        pendingLeaves: pendingLeavesRes.count || 0,
+        pendingRegularizations: pendingRegRes.count || 0,
+        attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
       });
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -278,8 +293,32 @@ export default function AdminDashboard() {
   return (
     <AppLayout>
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 pb-6">
+        {/* Attendance Rate Banner */}
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Today's Attendance Rate</p>
+              <p className="text-3xl font-bold text-primary">{stats.attendanceRate}%</p>
+            </div>
+            <div className="flex gap-2">
+              {stats.pendingLeaves > 0 && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/manager/approvals')} className="gap-1.5">
+                  <Bell className="w-3.5 h-3.5" />
+                  {stats.pendingLeaves} Leave{stats.pendingLeaves !== 1 ? 's' : ''} Pending
+                </Button>
+              )}
+              {stats.pendingRegularizations > 0 && (
+                <Button size="sm" variant="outline" onClick={() => navigate('/manager/approvals')} className="gap-1.5">
+                  <Timer className="w-3.5 h-3.5" />
+                  {stats.pendingRegularizations} Corrections
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label="Total Employees"
             value={stats.totalEmployees}
@@ -314,7 +353,7 @@ export default function AdminDashboard() {
 
         {/* Attendance Management with Tabs */}
         <Tabs defaultValue="daily" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+          <TabsList className="grid w-full grid-cols-3 max-w-[450px]">
             <TabsTrigger value="daily" className="text-sm">
               <Clock className="w-4 h-4 mr-2" />
               Daily View
@@ -322,6 +361,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="monthly" className="text-sm">
               <Calendar className="w-4 h-4 mr-2" />
               Monthly View
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="text-sm">
+              <Users className="w-4 h-4 mr-2" />
+              Bulk Update
             </TabsTrigger>
           </TabsList>
 
@@ -461,6 +504,11 @@ export default function AdminDashboard() {
           {/* Monthly Attendance Tab - Employee List */}
           <TabsContent value="monthly">
             <EmployeeAttendanceList />
+          </TabsContent>
+
+          {/* Bulk Attendance Correction Tab */}
+          <TabsContent value="bulk">
+            <BulkAttendanceCorrection onComplete={fetchData} />
           </TabsContent>
         </Tabs>
 

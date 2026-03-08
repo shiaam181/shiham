@@ -39,6 +39,9 @@ import LeaveNotifications from '@/components/LeaveNotifications';
 import OvertimeChart from '@/components/OvertimeChart';
 import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import AppLayout from '@/components/AppLayout';
+import ProfileCompletionCard from '@/components/ProfileCompletionCard';
+import ManagerPendingWidget from '@/components/ManagerPendingWidget';
+import CelebrationsWidget from '@/components/CelebrationsWidget';
 import LocationDisplay from '@/components/LocationDisplay';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
@@ -700,6 +703,11 @@ export default function EmployeeDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Profile Completion & Manager Widgets */}
+        <ProfileCompletionCard />
+        <ManagerPendingWidget />
+        <CelebrationsWidget />
 
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (
