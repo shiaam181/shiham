@@ -709,16 +709,16 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* Profile Completion & Manager Widgets */}
-        {/* Mood Pulse */}
-        <MoodPulse />
+        {/* Mood Pulse - feature toggled */}
+        {companyFeatures.canSeeMoodPulse && <MoodPulse />}
 
         <ProfileCompletionCard />
         <ManagerPendingWidget />
         <CelebrationsWidget />
         <ConfettiCelebration trigger={false} />
 
-        {/* Team Availability */}
-        <TeamAvailabilityBoard />
+        {/* Team Availability - feature toggled */}
+        {companyFeatures.canSeeTeamBoard && <TeamAvailabilityBoard />}
 
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (
