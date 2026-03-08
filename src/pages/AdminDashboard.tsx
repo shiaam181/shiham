@@ -309,6 +309,9 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Analytics Charts */}
+        <DashboardAnalytics />
+
         {/* Attendance Management with Tabs */}
         <Tabs defaultValue="daily" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
