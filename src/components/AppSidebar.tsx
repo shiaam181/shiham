@@ -60,6 +60,7 @@ export default function AppSidebar() {
   // HR items - visible to HR role
   const hrItems: NavItem[] = [
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
+    { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll', children: [
@@ -98,6 +99,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
+    { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
@@ -140,6 +142,7 @@ export default function AppSidebar() {
       icon: Shield, label: 'Administration', children: [
         { icon: Home, label: 'Admin Dashboard', path: '/admin' },
         { icon: Users, label: 'Employees', path: '/admin/employees' },
+        { icon: Users, label: 'Teams', path: '/admin/teams' },
         { icon: Calendar, label: 'Leaves', path: '/admin/leaves' },
         { icon: FileText, label: 'Reports', path: '/admin/reports' },
       ]
