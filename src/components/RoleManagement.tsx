@@ -36,7 +36,7 @@ interface UserWithRole {
   full_name: string;
   email: string;
   department: string | null;
-  role: 'admin' | 'employee' | 'developer' | 'owner' | 'hr' | 'manager';
+  role: 'admin' | 'employee' | 'developer' | 'owner' | 'hr' | 'manager' | 'payroll_team';
   is_active: boolean;
 }
 
