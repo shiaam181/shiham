@@ -300,6 +300,7 @@ function AppRoutes() {
         <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
         <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
         <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
+        <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
         <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
