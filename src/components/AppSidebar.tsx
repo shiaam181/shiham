@@ -323,8 +323,8 @@ export default function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Payroll Team Section */}
-        {(role === 'payroll_team') && (
+        {/* Payroll Team Section - only if company has separate payroll enabled */}
+        {(role === 'payroll_team') && companyFeatures.canSeePayrollTeamRole && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
               Payroll

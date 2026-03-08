@@ -885,6 +885,9 @@ export default function CompanyDetail() {
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="hr">HR</SelectItem>
+                  {separatePayrollTeamEnabled && (
+                    <SelectItem value="payroll_team">Payroll Team</SelectItem>
+                  )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
                 </SelectContent>
