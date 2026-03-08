@@ -707,6 +707,7 @@ export default function EmployeeDashboard() {
         {/* Profile Completion & Manager Widgets */}
         <ProfileCompletionCard />
         <ManagerPendingWidget />
+        <CelebrationsWidget />
 
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (
