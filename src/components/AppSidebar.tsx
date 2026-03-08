@@ -51,6 +51,7 @@ export default function AppSidebar() {
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
+    { icon: FileText, label: 'My Documents', path: '/my-documents' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
