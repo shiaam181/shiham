@@ -50,6 +50,7 @@ interface Company {
   mood_pulse_enabled: boolean;
   team_board_enabled: boolean;
   command_palette_enabled: boolean;
+  separate_payroll_team_enabled: boolean;
 }
 
 interface CompanyUser {
@@ -87,6 +88,7 @@ export default function CompanyDetail() {
   const [moodPulseEnabled, setMoodPulseEnabled] = useState(false);
   const [teamBoardEnabled, setTeamBoardEnabled] = useState(false);
   const [commandPaletteEnabled, setCommandPaletteEnabled] = useState(false);
+  const [separatePayrollTeamEnabled, setSeparatePayrollTeamEnabled] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
@@ -130,6 +132,7 @@ export default function CompanyDetail() {
     setMoodPulseEnabled((data as any).mood_pulse_enabled || false);
     setTeamBoardEnabled((data as any).team_board_enabled || false);
     setCommandPaletteEnabled((data as any).command_palette_enabled || false);
+    setSeparatePayrollTeamEnabled((data as any).separate_payroll_team_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
@@ -175,6 +178,7 @@ export default function CompanyDetail() {
       mood_pulse_enabled: moodPulseEnabled,
       team_board_enabled: teamBoardEnabled,
       command_palette_enabled: commandPaletteEnabled,
+      separate_payroll_team_enabled: separatePayrollTeamEnabled,
     } as any).eq('id', company.id);
 
     if (error) {
@@ -664,6 +668,22 @@ export default function CompanyDetail() {
                   </div>
                   <Switch checked={commandPaletteEnabled} onCheckedChange={setCommandPaletteEnabled} />
                 </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Role Configuration</p>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label className="font-medium">💰 Separate Payroll Team</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {separatePayrollTeamEnabled 
+                          ? 'Enabled — HR manages employees, Payroll Team handles payments separately' 
+                          : 'Disabled — HR handles both employee management and payroll processing'}
+                      </p>
+                    </div>
+                    <Switch checked={separatePayrollTeamEnabled} onCheckedChange={setSeparatePayrollTeamEnabled} />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -865,6 +885,9 @@ export default function CompanyDetail() {
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="hr">HR</SelectItem>
+                  {separatePayrollTeamEnabled && (
+                    <SelectItem value="payroll_team">Payroll Team</SelectItem>
+                  )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
                 </SelectContent>

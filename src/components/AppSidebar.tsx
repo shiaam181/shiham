@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import { cn } from '@/lib/utils';
 import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
@@ -37,6 +38,7 @@ export default function AppSidebar() {
   const location = useLocation();
   const { profile, role, isAdmin, isDeveloper, isOwner, isHR, isManager, isPayrollTeam, signOut } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
+  const companyFeatures = useCompanyFeatures();
 
   const handleNav = (path?: string) => {
     if (path) {
@@ -321,8 +323,8 @@ export default function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Payroll Team Section */}
-        {(role === 'payroll_team') && (
+        {/* Payroll Team Section - only if company has separate payroll enabled */}
+        {(role === 'payroll_team') && companyFeatures.canSeePayrollTeamRole && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest font-semibold">
               Payroll
