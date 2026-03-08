@@ -714,7 +714,6 @@ export default function EmployeeDashboard() {
 
         {/* Smart Alerts & Quick Actions */}
         <SmartNotificationsWidget />
-        <QuickActionsWidget />
 
         {/* Profile Completion & Manager Widgets */}
         {/* Mood Pulse - feature toggled */}
