@@ -353,7 +353,7 @@ export default function AdminDashboard() {
 
         {/* Attendance Management with Tabs */}
         <Tabs defaultValue="daily" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+          <TabsList className="grid w-full grid-cols-3 max-w-[450px]">
             <TabsTrigger value="daily" className="text-sm">
               <Clock className="w-4 h-4 mr-2" />
               Daily View
@@ -361,6 +361,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="monthly" className="text-sm">
               <Calendar className="w-4 h-4 mr-2" />
               Monthly View
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="text-sm">
+              <Users className="w-4 h-4 mr-2" />
+              Bulk Update
             </TabsTrigger>
           </TabsList>
 
