@@ -55,6 +55,7 @@ import AttendanceEditDialog from '@/components/AttendanceEditDialog';
 import PhotoThumbnail from '@/components/PhotoThumbnail';
 import AttendancePhotoViewer from '@/components/AttendancePhotoViewer';
 import EmployeeAttendanceList from '@/components/EmployeeAttendanceList';
+import BulkAttendanceCorrection from '@/components/BulkAttendanceCorrection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { calculateOvertime, formatDuration } from '@/lib/overtime';
 
