@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/s
 import AppSidebar from '@/components/AppSidebar';
 import NotificationBell from '@/components/NotificationBell';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -18,7 +19,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <AppSidebar />
       <SidebarInset className="overflow-x-hidden">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 h-14">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 h-14" role="banner" aria-label="Top navigation">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="hidden sm:flex items-center gap-2 relative">
@@ -31,6 +32,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
           
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border/50">
               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
@@ -46,9 +48,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 pb-mobile-nav overflow-x-hidden">
+        <main id="main-content" className="flex-1 pb-mobile-nav overflow-x-hidden" role="main">
           {children}
-        </div>
+        </main>
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />

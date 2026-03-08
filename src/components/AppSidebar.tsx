@@ -47,11 +47,12 @@ export default function AppSidebar() {
 
   // Employee items - visible to all
   const employeeItems: NavItem[] = [
-    { icon: Home, label: 'Home', path: '/dashboard' },
+    { icon: Home, label: 'Home', path: '/employee-home' },
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
     { icon: FileText, label: 'My Documents', path: '/my-documents' },
+    { icon: Users, label: 'Directory', path: '/directory' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
@@ -124,6 +125,7 @@ export default function AppSidebar() {
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
     { icon: FileText, label: 'Payslip Settings', path: '/admin/payslip-settings' },
     { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
+    { icon: Shield, label: 'Audit Trail', path: '/admin/audit-trail' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 

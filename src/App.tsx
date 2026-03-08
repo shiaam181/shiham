@@ -11,6 +11,7 @@ import { hasFaceEmbedding } from "@/lib/faceEmbedding";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UpdateNotification from "@/components/UpdateNotification";
+import DashboardRouter from "@/components/DashboardRouter";
 
 // Eager-loaded critical routes
 import Index from "./pages/Index";
@@ -71,6 +72,8 @@ const PayslipSettings = lazy(() => import("./pages/PayslipSettings"));
 const GeofenceLocations = lazy(() => import("./pages/GeofenceLocations"));
 const DocumentManagement = lazy(() => import("./pages/DocumentManagement"));
 const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
+const AuditTrail = lazy(() => import("./pages/AuditTrail"));
+const EmployeeDirectory = lazy(() => import("./pages/EmployeeDirectory"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -202,7 +205,8 @@ function AppRoutes() {
           <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
           <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
           <Route path="/onboarding" element={<ProtectedRoute requireFaceSetup={false}><EmployeeOnboarding /></ProtectedRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
+          <Route path="/employee-home" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
@@ -248,6 +252,8 @@ function AppRoutes() {
           <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
+          <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />
+          <Route path="/directory" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="*" element={<NotFound />} />
