@@ -46,6 +46,7 @@ import MoodPulse from '@/components/MoodPulse';
 import TeamAvailabilityBoard from '@/components/TeamAvailabilityBoard';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import LocationDisplay from '@/components/LocationDisplay';
+import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { calculateOvertime, formatDuration, getRemainingTime, isApproaching24Hours } from '@/lib/overtime';
