@@ -42,6 +42,9 @@ import AppLayout from '@/components/AppLayout';
 import ProfileCompletionCard from '@/components/ProfileCompletionCard';
 import ManagerPendingWidget from '@/components/ManagerPendingWidget';
 import CelebrationsWidget from '@/components/CelebrationsWidget';
+import MoodPulse from '@/components/MoodPulse';
+import TeamAvailabilityBoard from '@/components/TeamAvailabilityBoard';
+import ConfettiCelebration from '@/components/ConfettiCelebration';
 import LocationDisplay from '@/components/LocationDisplay';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
@@ -705,9 +708,16 @@ export default function EmployeeDashboard() {
         </div>
 
         {/* Profile Completion & Manager Widgets */}
+        {/* Mood Pulse */}
+        <MoodPulse />
+
         <ProfileCompletionCard />
         <ManagerPendingWidget />
         <CelebrationsWidget />
+        <ConfettiCelebration trigger={false} />
+
+        {/* Team Availability */}
+        <TeamAvailabilityBoard />
 
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (

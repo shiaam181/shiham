@@ -4,7 +4,7 @@ import NotificationBell from '@/components/NotificationBell';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search } from 'lucide-react';
+import { Search, Command } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface AppLayoutProps {
@@ -22,12 +22,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 h-14" role="banner" aria-label="Top navigation">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-            <div className="hidden sm:flex items-center gap-2 relative">
+            <div
+              className="hidden sm:flex items-center gap-2 relative cursor-pointer"
+              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+            >
               <Search className="w-4 h-4 absolute left-2.5 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                className="h-8 w-48 lg:w-64 pl-8 bg-muted/50 border-0 text-sm"
-              />
+              <div className="h-8 w-48 lg:w-64 pl-8 pr-10 bg-muted/50 border-0 rounded-md flex items-center">
+                <span className="text-sm text-muted-foreground">Search...</span>
+              </div>
+              <kbd className="absolute right-2 pointer-events-none inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
             </div>
           </div>
           
