@@ -703,6 +703,10 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+        {/* Profile Completion & Manager Widgets */}
+        <ProfileCompletionCard />
+        <ManagerPendingWidget />
+
         {/* Location Status - only show if GPS tracking is enabled */}
         {systemSettings.gpsTrackingEnabled && locationError && (
           <Card className="border-warning/30 bg-warning-soft">
