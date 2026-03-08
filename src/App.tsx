@@ -66,6 +66,7 @@ import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
 import PayslipSettings from "./pages/PayslipSettings";
 import GeofenceLocations from "./pages/GeofenceLocations";
 import DocumentManagement from "./pages/DocumentManagement";
+import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 
 const queryClient = new QueryClient();
 
