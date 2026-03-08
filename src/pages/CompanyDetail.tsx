@@ -132,6 +132,7 @@ export default function CompanyDetail() {
     setMoodPulseEnabled((data as any).mood_pulse_enabled || false);
     setTeamBoardEnabled((data as any).team_board_enabled || false);
     setCommandPaletteEnabled((data as any).command_palette_enabled || false);
+    setSeparatePayrollTeamEnabled((data as any).separate_payroll_team_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
