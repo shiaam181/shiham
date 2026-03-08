@@ -42,7 +42,7 @@ export default function MobileBottomNav() {
   else if (isAdminRoute) items = adminNavItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/60 sm:hidden safe-area-bottom shadow-[0_-4px_20px_-4px_hsl(0_0%_0%/0.08)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border/60 sm:hidden safe-area-bottom shadow-[0_-4px_20px_-4px_hsl(0_0%_0%/0.08)]" role="navigation" aria-label="Mobile navigation">
       <div className="flex items-center justify-around h-[60px] px-0.5">
         {items.map((item) => {
           const isActive = location.pathname === item.path;
