@@ -178,6 +178,7 @@ export default function CompanyDetail() {
       mood_pulse_enabled: moodPulseEnabled,
       team_board_enabled: teamBoardEnabled,
       command_palette_enabled: commandPaletteEnabled,
+      separate_payroll_team_enabled: separatePayrollTeamEnabled,
     } as any).eq('id', company.id);
 
     if (error) {
