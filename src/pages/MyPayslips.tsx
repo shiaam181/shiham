@@ -76,13 +76,33 @@ export default function MyPayslips() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+      <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6" role="main" aria-label="My Payslips">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-primary" /> My Payslips
+            <Wallet className="w-6 h-6 text-primary" aria-hidden="true" /> My Payslips
           </h1>
           <p className="text-sm text-muted-foreground">View and download your salary slips</p>
         </div>
+
+        {/* Summary Stats */}
+        {payslips.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="p-3 text-center">
+              <p className="text-lg font-bold text-foreground">{payslips.length}</p>
+              <p className="text-[11px] text-muted-foreground">Total Slips</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-lg font-bold text-success">{formatCurrency(Number(payslips[0]?.net_salary || 0))}</p>
+              <p className="text-[11px] text-muted-foreground">Latest Net Pay</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-lg font-bold text-foreground">
+                {formatCurrency(payslips.reduce((s, p) => s + Number(p.net_salary || 0), 0))}
+              </p>
+              <p className="text-[11px] text-muted-foreground">YTD Earnings</p>
+            </Card>
+          </div>
+        )}
 
         {payslips.length === 0 ? (
           <Card className="p-8 text-center">
