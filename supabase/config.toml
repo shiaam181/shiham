@@ -55,3 +55,5 @@ project_id = "kvygdphglkxqtaoxlzmh"
     verify_jwt = false
   [functions.verify-otp]
     verify_jwt = false
+  [functions.hr-assistant]
+    verify_jwt = false
