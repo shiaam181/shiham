@@ -71,6 +71,8 @@ const PayslipSettings = lazy(() => import("./pages/PayslipSettings"));
 const GeofenceLocations = lazy(() => import("./pages/GeofenceLocations"));
 const DocumentManagement = lazy(() => import("./pages/DocumentManagement"));
 const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
+const AuditTrail = lazy(() => import("./pages/AuditTrail"));
+const EmployeeDirectory = lazy(() => import("./pages/EmployeeDirectory"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
