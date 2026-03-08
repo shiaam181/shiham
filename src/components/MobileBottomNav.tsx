@@ -100,7 +100,7 @@ export default function MobileBottomNav() {
         
         {(isAdminRoute || isDeveloperRoute) && (
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/employee-home')}
             className="relative flex flex-col items-center justify-center gap-0.5 py-2 px-2 min-w-0 flex-1 min-h-[48px] rounded-xl transition-all active:scale-95 text-muted-foreground"
           >
             <Home className="w-5 h-5" />

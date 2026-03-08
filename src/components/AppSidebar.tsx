@@ -47,7 +47,7 @@ export default function AppSidebar() {
 
   // Employee items - visible to all
   const employeeItems: NavItem[] = [
-    { icon: Home, label: 'Home', path: '/dashboard' },
+    { icon: Home, label: 'Home', path: '/employee-home' },
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
