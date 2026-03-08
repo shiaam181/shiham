@@ -55,6 +55,7 @@ export default function AppSidebar() {
     { icon: Users, label: 'Directory', path: '/directory' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: TrendingUp, label: 'My Journey', path: '/my-timeline' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
