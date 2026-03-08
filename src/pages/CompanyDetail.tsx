@@ -127,6 +127,9 @@ export default function CompanyDetail() {
     setLiveTrackingEnabled(data.live_tracking_enabled || false);
     setTrackingInterval(String(data.tracking_interval_seconds || 60));
     setGeofencingEnabled((data as any).geofencing_enabled || false);
+    setMoodPulseEnabled((data as any).mood_pulse_enabled || false);
+    setTeamBoardEnabled((data as any).team_board_enabled || false);
+    setCommandPaletteEnabled((data as any).command_palette_enabled || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
