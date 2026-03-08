@@ -55,6 +55,7 @@ import Compensation from "./pages/Compensation";
 import PayrollRun from "./pages/PayrollRun";
 import ManagerTeam from "./pages/ManagerTeam";
 import ManagerApprovals from "./pages/ManagerApprovals";
+import TeamManagement from "./pages/TeamManagement";
 import ComplianceReports from "./pages/ComplianceReports";
 import DeveloperRoles from "./pages/DeveloperRoles";
 import DeveloperTracking from "./pages/DeveloperTracking";
