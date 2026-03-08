@@ -39,7 +39,10 @@ export default function HRAssistantChat() {
     }
   }, [messages]);
 
+  const [followUps, setFollowUps] = useState<string[]>([]);
+
   const streamChat = async (allMessages: Msg[]) => {
+    setFollowUps([]);
     const resp = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
@@ -62,6 +65,35 @@ export default function HRAssistantChat() {
     let assistantSoFar = '';
     let streamDone = false;
 
+    const processContent = (content: string) => {
+      assistantSoFar += content;
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'assistant') {
+          return prev.map((m, i) =>
+            i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
+          );
+        }
+        return [...prev, { role: 'assistant', content: assistantSoFar }];
+      });
+    };
+
+    const parseLine = (line: string): boolean => {
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') return false;
+      if (!line.startsWith('data: ')) return false;
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === '[DONE]') return true;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) processContent(content);
+      } catch {
+        return false;
+      }
+      return false;
+    };
+
     while (!streamDone) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -69,70 +101,68 @@ export default function HRAssistantChat() {
 
       let newlineIndex: number;
       while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-        let line = textBuffer.slice(0, newlineIndex);
+        const line = textBuffer.slice(0, newlineIndex);
         textBuffer = textBuffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') {
-          streamDone = true;
-          break;
-        }
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
-            assistantSoFar += content;
-            setMessages(prev => {
-              const last = prev[prev.length - 1];
-              if (last?.role === 'assistant') {
-                return prev.map((m, i) =>
-                  i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
-                );
-              }
-              return [...prev, { role: 'assistant', content: assistantSoFar }];
-            });
-          }
-        } catch {
-          textBuffer = line + '\n' + textBuffer;
-          break;
-        }
+        if (parseLine(line)) { streamDone = true; break; }
       }
     }
 
     // Final flush
     if (textBuffer.trim()) {
-      for (let raw of textBuffer.split('\n')) {
-        if (!raw) continue;
-        if (raw.endsWith('\r')) raw = raw.slice(0, -1);
-        if (raw.startsWith(':') || raw.trim() === '') continue;
-        if (!raw.startsWith('data: ')) continue;
-        const jsonStr = raw.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
-            assistantSoFar += content;
-            setMessages(prev => {
-              const last = prev[prev.length - 1];
-              if (last?.role === 'assistant') {
-                return prev.map((m, i) =>
-                  i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
-                );
-              }
-              return [...prev, { role: 'assistant', content: assistantSoFar }];
-            });
-          }
-        } catch { /* ignore */ }
+      for (const raw of textBuffer.split('\n')) {
+        if (raw) parseLine(raw);
       }
     }
+
+    // Generate follow-up suggestions based on context
+    generateFollowUps(assistantSoFar, allMessages);
   };
 
+  const generateFollowUps = (lastAnswer: string, history: Msg[]) => {
+    const lastUserMsg = history.filter(m => m.role === 'user').pop()?.content?.toLowerCase() || '';
+    
+    const suggestionSets: Record<string, string[]> = {
+      leave: [
+        "How do I apply for leave?",
+        "What's the leave policy?",
+        "Show my recent leave requests",
+        "Can I carry forward my leaves?",
+      ],
+      attendance: [
+        "Show my attendance this month",
+        "What time did I check in today?",
+        "How many days was I absent?",
+        "How do I regularize attendance?",
+      ],
+      payroll: [
+        "When is the next pay day?",
+        "Show my salary breakdown",
+        "What deductions apply to me?",
+        "How is overtime calculated?",
+      ],
+      general: [
+        "What's my leave balance?",
+        "Show my attendance summary",
+        "Who is my reporting manager?",
+        "What are my work hours?",
+      ],
+    };
+
+    let category = 'general';
+    if (lastUserMsg.includes('leave') || lastUserMsg.includes('balance') || lastUserMsg.includes('holiday')) {
+      category = 'leave';
+    } else if (lastUserMsg.includes('attend') || lastUserMsg.includes('check in') || lastUserMsg.includes('present') || lastUserMsg.includes('absent')) {
+      category = 'attendance';
+    } else if (lastUserMsg.includes('salary') || lastUserMsg.includes('pay') || lastUserMsg.includes('slip')) {
+      category = 'payroll';
+    }
+
+    const pool = suggestionSets[category];
+    // Pick 2-3 random suggestions excluding what was already asked
+    const filtered = pool.filter(s => !history.some(m => m.content.toLowerCase() === s.toLowerCase()));
+    const picked = filtered.sort(() => Math.random() - 0.5).slice(0, 3);
+    setFollowUps(picked);
+  };
   const send = async (text: string) => {
     if (!text.trim() || isLoading) return;
     const userMsg: Msg = { role: 'user', content: text.trim() };
@@ -254,6 +284,21 @@ export default function HRAssistantChat() {
                       <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:300ms]" />
                     </div>
                   </div>
+                </div>
+              )}
+
+              {!isLoading && followUps.length > 0 && messages.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <p className="text-[10px] text-muted-foreground font-medium px-1">Suggested follow-ups</p>
+                  {followUps.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="text-left text-xs px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted text-foreground transition-colors border border-border/50"
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
