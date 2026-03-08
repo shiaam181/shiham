@@ -41,6 +41,7 @@ import EmployeeAttendancePDF from '@/components/EmployeeAttendancePDF';
 import AppLayout from '@/components/AppLayout';
 import ProfileCompletionCard from '@/components/ProfileCompletionCard';
 import ManagerPendingWidget from '@/components/ManagerPendingWidget';
+import CelebrationsWidget from '@/components/CelebrationsWidget';
 import LocationDisplay from '@/components/LocationDisplay';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
