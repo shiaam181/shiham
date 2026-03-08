@@ -66,8 +66,6 @@ export default function CommandPalette() {
     return () => document.removeEventListener('keydown', down);
   }, [canSeeCommandPalette]);
 
-  if (!canSeeCommandPalette) return null;
-
   const filteredItems = useMemo(() => {
     return allNavItems.filter(item => {
       if (!item.roles) return true;
@@ -80,6 +78,8 @@ export default function CommandPalette() {
     setOpen(false);
     navigate(path);
   };
+
+  if (!canSeeCommandPalette) return null;
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
