@@ -66,6 +66,7 @@ import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
 import PayslipSettings from "./pages/PayslipSettings";
 import GeofenceLocations from "./pages/GeofenceLocations";
 import DocumentManagement from "./pages/DocumentManagement";
+import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -259,6 +260,7 @@ function AppRoutes() {
         <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
         <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
+        <Route path="/onboarding" element={<ProtectedRoute requireFaceSetup={false}><EmployeeOnboarding /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

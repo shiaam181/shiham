@@ -17,6 +17,15 @@ interface Profile {
   is_active: boolean;
   phone_verified: boolean;
   company_id: string | null;
+  designation: string | null;
+  work_location: string | null;
+  employee_code: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
+  bank_branch: string | null;
+  manager_id: string | null;
+  date_of_joining: string | null;
 }
 
 type UserRole = 'admin' | 'employee' | 'developer' | 'owner' | 'payroll_team' | 'hr' | 'manager';
