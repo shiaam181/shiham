@@ -62,6 +62,7 @@ export default function AppSidebar() {
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
     { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
+    { icon: FileText, label: 'Documents', path: '/admin/documents' },
     {
       icon: Wallet, label: 'Payroll', children: [
         { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
