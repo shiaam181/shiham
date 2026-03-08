@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, Cell, PieChart, Pie } from 'recharts';
 import { 
   ArrowLeft,
   BarChart3,
@@ -20,7 +22,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, differenceInMinutes } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
@@ -40,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Employee {
   id: string;
@@ -458,7 +462,6 @@ export default function Reports() {
               </div>
             </div>
           </Card>
-          
           <Card className="p-3 sm:p-6">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -470,7 +473,6 @@ export default function Reports() {
               </div>
             </div>
           </Card>
-          
           <Card className="p-3 sm:p-6">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -482,7 +484,6 @@ export default function Reports() {
               </div>
             </div>
           </Card>
-          
           <Card className="p-3 sm:p-6">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -496,86 +497,327 @@ export default function Reports() {
           </Card>
         </div>
 
-        {/* Detailed Report */}
-        <Card>
-          <CardHeader className="pb-3 sm:pb-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              Monthly Attendance Summary
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')} - {stats.length} employees
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            <div className="rounded-lg border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="text-xs sm:text-sm">Employee</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center">Present</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center">Absent</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center hidden sm:table-cell">Leave</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Late</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Early Out</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-center">%</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stats.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
-                        No data available for this period
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    stats.map((stat) => (
-                      <TableRow key={stat.employee.id}>
-                        <TableCell className="font-medium text-xs sm:text-sm">
-                          <span className="truncate max-w-[80px] sm:max-w-none block">{stat.employee.full_name}</span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
-                          {stat.employee.department || '-'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="success-soft" className="text-[10px] sm:text-xs">{stat.present}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="destructive-soft" className="text-[10px] sm:text-xs">{stat.absent}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          <Badge variant="info-soft" className="text-[10px] sm:text-xs">{stat.leave}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center hidden lg:table-cell">
-                          <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.lateCheckIns}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center hidden lg:table-cell">
-                          <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.earlyCheckOuts}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge 
-                            variant={
-                              stat.attendancePercentage >= 90 
-                                ? 'success' 
-                                : stat.attendancePercentage >= 75 
-                                  ? 'warning' 
-                                  : 'destructive'
-                            }
-                            className="text-[10px] sm:text-xs"
-                          >
-                            {stat.attendancePercentage}%
-                          </Badge>
-                        </TableCell>
+        {/* Visual Charts Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Attendance Distribution Pie */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4 text-primary" />
+                Attendance Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const totalPresent = stats.reduce((a, s) => a + s.present, 0);
+                const totalLeave = stats.reduce((a, s) => a + s.leave, 0);
+                const pieData = [
+                  { name: 'Present', value: totalPresent, fill: 'hsl(var(--chart-1))' },
+                  { name: 'Absent', value: totalStats.totalAbsent, fill: 'hsl(var(--chart-2))' },
+                  { name: 'Leave', value: totalLeave, fill: 'hsl(var(--chart-3))' },
+                ].filter(d => d.value > 0);
+                return (
+                  <>
+                    <ChartContainer config={{ value: { label: 'Days' } }} className="h-[180px] w-full">
+                      <PieChart>
+                        <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                        <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={35} paddingAngle={2}>
+                          {pieData.map(e => <Cell key={e.name} fill={e.fill} />)}
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                    <div className="flex justify-center gap-4 mt-1">
+                      {pieData.map(d => (
+                        <div key={d.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.fill }} />
+                          {d.name} ({d.value})
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Top 5 Performers */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                Top Performers
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const top5 = stats.slice(0, 5).map(s => ({
+                  name: s.employee.full_name.split(' ')[0],
+                  pct: s.attendancePercentage,
+                  fill: s.attendancePercentage >= 90 ? 'hsl(var(--chart-1))' : s.attendancePercentage >= 75 ? 'hsl(var(--chart-3))' : 'hsl(var(--chart-2))',
+                }));
+                return (
+                  <ChartContainer config={{ pct: { label: 'Attendance %' } }} className="h-[200px] w-full">
+                    <BarChart data={top5} layout="vertical">
+                      <XAxis type="number" domain={[0, 100]} fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" fontSize={11} tickLine={false} axisLine={false} width={60} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="pct" radius={[0, 4, 4, 0]}>
+                        {top5.map(e => <Cell key={e.name} fill={e.fill} />)}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detailed Report Tabs */}
+        <Tabs defaultValue="attendance" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+            <TabsTrigger value="attendance" className="text-xs sm:text-sm">
+              <Calendar className="w-3.5 h-3.5 mr-1.5" /> Attendance
+            </TabsTrigger>
+            <TabsTrigger value="leave" className="text-xs sm:text-sm">
+              <Clock className="w-3.5 h-3.5 mr-1.5" /> Leave Summary
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="attendance">
+            <Card>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  Monthly Attendance Summary
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {format(parseISO(`${selectedMonth}-01`), 'MMMM yyyy')} - {stats.length} employees
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-3 sm:px-6">
+                <div className="rounded-lg border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="text-xs sm:text-sm">Employee</TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden md:table-cell">Department</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center">Present</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center">Absent</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center hidden sm:table-cell">Leave</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Late</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center hidden lg:table-cell">Early Out</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-center">%</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {stats.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                            No data available for this period
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        stats.map((stat) => (
+                          <TableRow key={stat.employee.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm">
+                              <span className="truncate max-w-[80px] sm:max-w-none block">{stat.employee.full_name}</span>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs sm:text-sm hidden md:table-cell">
+                              {stat.employee.department || '-'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="success-soft" className="text-[10px] sm:text-xs">{stat.present}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="destructive-soft" className="text-[10px] sm:text-xs">{stat.absent}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center hidden sm:table-cell">
+                              <Badge variant="info-soft" className="text-[10px] sm:text-xs">{stat.leave}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center hidden lg:table-cell">
+                              <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.lateCheckIns}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center hidden lg:table-cell">
+                              <Badge variant="warning-soft" className="text-[10px] sm:text-xs">{stat.earlyCheckOuts}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge 
+                                variant={
+                                  stat.attendancePercentage >= 90 
+                                    ? 'success' 
+                                    : stat.attendancePercentage >= 75 
+                                      ? 'warning' 
+                                      : 'destructive'
+                                }
+                                className="text-[10px] sm:text-xs"
+                              >
+                                {stat.attendancePercentage}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="leave">
+            <LeaveSummaryTab selectedMonth={selectedMonth} />
+          </TabsContent>
+        </Tabs>
       </main>
     </AppLayout>
+  );
+}
+
+/* Leave Summary Sub-component */
+function LeaveSummaryTab({ selectedMonth }: { selectedMonth: string }) {
+  const [leaveData, setLeaveData] = useState<{ user_id: string; name: string; dept: string; type: string; status: string; start: string; end: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      setLoading(true);
+      const monthDate = parseISO(`${selectedMonth}-01`);
+      const startDate = format(startOfMonth(monthDate), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+
+      const [leavesRes, profilesRes] = await Promise.all([
+        supabase.from('leave_requests').select('user_id, leave_type, status, start_date, end_date')
+          .gte('start_date', startDate).lte('start_date', endDate),
+        supabase.from('profiles').select('user_id, full_name, department').eq('is_active', true),
+      ]);
+
+      const profiles = profilesRes.data || [];
+      const mapped = (leavesRes.data || []).map(l => {
+        const p = profiles.find(pr => pr.user_id === l.user_id);
+        return {
+          user_id: l.user_id,
+          name: p?.full_name || 'Unknown',
+          dept: p?.department || '-',
+          type: l.leave_type,
+          status: l.status,
+          start: l.start_date,
+          end: l.end_date,
+        };
+      });
+      setLeaveData(mapped);
+      setLoading(false);
+    };
+    fetchLeaves();
+  }, [selectedMonth]);
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" /></div>;
+  }
+
+  const statusCounts = leaveData.reduce<Record<string, number>>((acc, l) => {
+    acc[l.status] = (acc[l.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const typeCounts = leaveData.reduce<Record<string, number>>((acc, l) => {
+    acc[l.type] = (acc[l.type] || 0) + 1;
+    return acc;
+  }, {});
+
+  const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+  const typeChartData = Object.entries(typeCounts).map(([type, count], i) => ({
+    name: type.charAt(0).toUpperCase() + type.slice(1),
+    count,
+    fill: COLORS[i % COLORS.length],
+  }));
+
+  return (
+    <div className="space-y-4">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-3">
+          <p className="text-[10px] text-muted-foreground uppercase">Total Requests</p>
+          <p className="text-lg font-bold">{leaveData.length}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-[10px] text-muted-foreground uppercase">Approved</p>
+          <p className="text-lg font-bold text-success">{statusCounts['approved'] || 0}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-[10px] text-muted-foreground uppercase">Pending</p>
+          <p className="text-lg font-bold text-warning">{statusCounts['pending'] || 0}</p>
+        </Card>
+      </div>
+
+      {/* Leave type chart */}
+      {typeChartData.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <PieChartIcon className="w-4 h-4 text-primary" /> Leave by Type
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ count: { label: 'Requests' } }} className="h-[180px] w-full">
+              <BarChart data={typeChartData}>
+                <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {typeChartData.map(e => <Cell key={e.name} fill={e.fill} />)}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Leave requests table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-primary" /> Leave Requests
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-3">
+          <div className="rounded-lg border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="text-xs">Employee</TableHead>
+                  <TableHead className="text-xs hidden sm:table-cell">Department</TableHead>
+                  <TableHead className="text-xs">Type</TableHead>
+                  <TableHead className="text-xs">Dates</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaveData.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No leave requests this month</TableCell></TableRow>
+                ) : leaveData.map((l, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-xs font-medium">{l.name}</TableCell>
+                    <TableCell className="text-xs hidden sm:table-cell text-muted-foreground">{l.dept}</TableCell>
+                    <TableCell className="text-xs capitalize">{l.type}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {format(parseISO(l.start), 'dd MMM')} - {format(parseISO(l.end), 'dd MMM')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={l.status === 'approved' ? 'success-soft' : l.status === 'rejected' ? 'destructive-soft' : 'warning-soft'}
+                        className="text-[10px]"
+                      >
+                        {l.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
