@@ -142,6 +142,7 @@ export default function AppSidebar() {
       icon: Shield, label: 'Administration', children: [
         { icon: Home, label: 'Admin Dashboard', path: '/admin' },
         { icon: Users, label: 'Employees', path: '/admin/employees' },
+        { icon: Users, label: 'Teams', path: '/admin/teams' },
         { icon: Calendar, label: 'Leaves', path: '/admin/leaves' },
         { icon: FileText, label: 'Reports', path: '/admin/reports' },
       ]
