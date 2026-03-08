@@ -65,6 +65,7 @@ import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
 import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
 import PayslipSettings from "./pages/PayslipSettings";
 import GeofenceLocations from "./pages/GeofenceLocations";
+import DocumentManagement from "./pages/DocumentManagement";
 
 const queryClient = new QueryClient();
 
@@ -281,6 +282,7 @@ function AppRoutes() {
         <Route path="/developer/companies/:id/geofencing" element={<DeveloperRoute><GeofenceLocations /></DeveloperRoute>} />
         <Route path="/admin/geofencing" element={<AdminRoute><GeofenceLocations /></AdminRoute>} />
         <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
+        <Route path="/admin/documents" element={<AdminRoute><DocumentManagement /></AdminRoute>} />
         <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
@@ -298,6 +300,7 @@ function AppRoutes() {
         <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
         <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
         <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
+        <Route path="/my-documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
         <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
         <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
         <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />

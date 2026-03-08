@@ -51,6 +51,7 @@ export default function AppSidebar() {
     { icon: ClipboardList, label: 'My Attendance', path: '/my-attendance' },
     { icon: CalendarDays, label: 'My Leaves', path: '/my-leaves' },
     { icon: Wallet, label: 'My Payslips', path: '/my-payslips' },
+    { icon: FileText, label: 'My Documents', path: '/my-documents' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: User, label: 'Profile', path: '/profile' },
@@ -62,6 +63,7 @@ export default function AppSidebar() {
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
     { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
+    { icon: FileText, label: 'Documents', path: '/admin/documents' },
     {
       icon: Wallet, label: 'Payroll', children: [
         { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
@@ -101,6 +103,7 @@ export default function AppSidebar() {
     { icon: Users, label: 'Employee Management', path: '/admin/employees' },
     { icon: Users, label: 'Team Management', path: '/admin/teams' },
     { icon: Calendar, label: 'Leave Management', path: '/admin/leaves' },
+    { icon: FileText, label: 'Documents', path: '/admin/documents' },
     {
       icon: Wallet, label: 'Payroll & Compliance', children: [
         { icon: Receipt, label: 'Compensation', path: '/admin/compensation' },
@@ -144,6 +147,7 @@ export default function AppSidebar() {
         { icon: Users, label: 'Employees', path: '/admin/employees' },
         { icon: Users, label: 'Teams', path: '/admin/teams' },
         { icon: Calendar, label: 'Leaves', path: '/admin/leaves' },
+        { icon: FileText, label: 'Documents', path: '/admin/documents' },
         { icon: FileText, label: 'Reports', path: '/admin/reports' },
       ]
     },
