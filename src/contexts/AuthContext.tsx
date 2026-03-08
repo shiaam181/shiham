@@ -138,20 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (data?.brand_color) {
-        const root = document.documentElement;
-        // Convert hex to HSL for CSS variable compatibility
-        const primaryHsl = hexToHsl(data.brand_color);
-        const secondaryHsl = data.brand_color_secondary ? hexToHsl(data.brand_color_secondary) : null;
-        
-        if (primaryHsl) {
-          root.style.setProperty('--primary', primaryHsl);
-          root.style.setProperty('--ring', primaryHsl);
-          root.style.setProperty('--sidebar-primary', primaryHsl);
-          root.style.setProperty('--chart-1', primaryHsl);
-        }
-        if (secondaryHsl) {
-          root.style.setProperty('--chart-4', secondaryHsl);
-        }
+        applyBrandTheme(data.brand_color, data.brand_color_secondary);
       }
     } catch (err) {
       // Non-critical, silently fail
