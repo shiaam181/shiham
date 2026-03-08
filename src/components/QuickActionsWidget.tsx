@@ -15,24 +15,22 @@ export default function QuickActionsWidget() {
   const navigate = useNavigate();
 
   return (
-    <Card className="shadow-sm">
-      <CardContent className="p-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-2.5 px-1">Quick Actions</p>
-        <div className="grid grid-cols-3 gap-2">
-          {ACTIONS.map(action => (
-            <button
-              key={action.path}
-              onClick={() => navigate(action.path)}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-muted/50 transition-colors group"
-            >
-              <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                <action.icon className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-medium text-foreground/80 text-center leading-tight">{action.label}</span>
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground mb-2.5 px-1">Quick Actions</p>
+      <div className="grid grid-cols-3 gap-2">
+        {ACTIONS.map(action => (
+          <button
+            key={action.path}
+            onClick={() => navigate(action.path)}
+            className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-muted/50 transition-colors group"
+          >
+            <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-105 transition-transform`}>
+              <action.icon className="w-5 h-5" />
+            </div>
+            <span className="text-[11px] font-medium text-foreground/80 text-center leading-tight">{action.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
