@@ -50,6 +50,7 @@ interface Company {
   mood_pulse_enabled: boolean;
   team_board_enabled: boolean;
   command_palette_enabled: boolean;
+  separate_payroll_team_enabled: boolean;
 }
 
 interface CompanyUser {
