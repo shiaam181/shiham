@@ -11,6 +11,7 @@ import { hasFaceEmbedding } from "@/lib/faceEmbedding";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UpdateNotification from "@/components/UpdateNotification";
+import DashboardRouter from "@/components/DashboardRouter";
 
 // Eager-loaded critical routes
 import Index from "./pages/Index";
