@@ -210,6 +210,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
           <Route path="/employee-home" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+          <Route path="/my-timeline" element={<ProtectedRoute><EmployeeTimeline /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
           <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
