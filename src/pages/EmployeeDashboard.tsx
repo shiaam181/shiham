@@ -46,6 +46,9 @@ import MoodPulse from '@/components/MoodPulse';
 import TeamAvailabilityBoard from '@/components/TeamAvailabilityBoard';
 import ConfettiCelebration from '@/components/ConfettiCelebration';
 import LocationDisplay from '@/components/LocationDisplay';
+import QuickActionsWidget from '@/components/QuickActionsWidget';
+import SmartNotificationsWidget from '@/components/SmartNotificationsWidget';
+import TeamLeaderboard from '@/components/TeamLeaderboard';
 import { useCompanyFeatures } from '@/hooks/useCompanyFeatures';
 import GeofenceStatusIndicator from '@/components/GeofenceStatusIndicator';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
@@ -709,6 +712,10 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+        {/* Smart Alerts & Quick Actions */}
+        <SmartNotificationsWidget />
+        <QuickActionsWidget />
+
         {/* Profile Completion & Manager Widgets */}
         {/* Mood Pulse - feature toggled */}
         {companyFeatures.canSeeMoodPulse && <MoodPulse />}
@@ -716,6 +723,7 @@ export default function EmployeeDashboard() {
         <ProfileCompletionCard />
         <ManagerPendingWidget />
         <CelebrationsWidget />
+        <TeamLeaderboard />
         <ConfettiCelebration trigger={false} />
 
         {/* Team Availability - feature toggled */}

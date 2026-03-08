@@ -5,7 +5,7 @@ import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
   BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
-  Megaphone, Radio,
+  Megaphone, Radio, TrendingUp,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -55,6 +55,7 @@ export default function AppSidebar() {
     { icon: Users, label: 'Directory', path: '/directory' },
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: TrendingUp, label: 'My Journey', path: '/my-timeline' },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
