@@ -668,6 +668,22 @@ export default function CompanyDetail() {
                   </div>
                   <Switch checked={commandPaletteEnabled} onCheckedChange={setCommandPaletteEnabled} />
                 </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Role Configuration</p>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label className="font-medium">💰 Separate Payroll Team</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {separatePayrollTeamEnabled 
+                          ? 'Enabled — HR manages employees, Payroll Team handles payments separately' 
+                          : 'Disabled — HR handles both employee management and payroll processing'}
+                      </p>
+                    </div>
+                    <Switch checked={separatePayrollTeamEnabled} onCheckedChange={setSeparatePayrollTeamEnabled} />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
