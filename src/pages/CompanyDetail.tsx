@@ -29,6 +29,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
+import { applyBrandTheme } from '@/lib/hexToHsl';
 
 interface Company {
   id: string;
