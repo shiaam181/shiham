@@ -624,6 +624,50 @@ export default function CompanyDetail() {
             </Card>
           </TabsContent>
 
+          {/* Features Tab */}
+          <TabsContent value="features" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings2 className="w-5 h-5 text-primary" />
+                  Extra Features
+                </CardTitle>
+                <CardDescription>Toggle premium features for this company's employees</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">😊 Mood Pulse Tracker</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Daily emoji mood check-in on employee dashboard
+                    </p>
+                  </div>
+                  <Switch checked={moodPulseEnabled} onCheckedChange={setMoodPulseEnabled} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">👥 Team Availability Board</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Real-time who's in office / on leave / absent
+                    </p>
+                  </div>
+                  <Switch checked={teamBoardEnabled} onCheckedChange={setTeamBoardEnabled} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="font-medium">⌘ Command Palette</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Cmd+K quick search & navigation for employees
+                    </p>
+                  </div>
+                  <Switch checked={commandPaletteEnabled} onCheckedChange={setCommandPaletteEnabled} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
             <Card>
