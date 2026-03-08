@@ -116,6 +116,9 @@ export default function AdminDashboard() {
     presentToday: 0,
     absentToday: 0,
     onLeave: 0,
+    pendingLeaves: 0,
+    pendingRegularizations: 0,
+    attendanceRate: 0,
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
