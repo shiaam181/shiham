@@ -112,6 +112,7 @@ export default function EmployeeDashboard() {
   const [geofenceLocationName, setGeofenceLocationName] = useState('');
   const { settings: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { canTrack, startTrackingSilent, stopTrackingSilent } = useLiveTracking();
+  const companyFeatures = useCompanyFeatures();
 
   // Preload face models in background for faster camera startup
   // Non-blocking - if it fails, we'll handle it when camera opens
