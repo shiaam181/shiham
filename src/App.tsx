@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,66 +10,100 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { hasFaceEmbedding } from "@/lib/faceEmbedding";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
-import Index from "./pages/Index";
-// Invite flow removed - employees now search for company during signup
-import Auth from "./pages/Auth";
-import FaceSetup from "./pages/FaceSetup";
-import ResetPassword from "./pages/ResetPassword";
-import ActivateAccount from "./pages/ActivateAccount";
-import PhoneVerification from "./pages/PhoneVerification";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import DeveloperDashboard from "./pages/DeveloperDashboard";
-import HolidayManagement from "./pages/HolidayManagement";
-import EmployeeManagement from "./pages/EmployeeManagement";
-import Reports from "./pages/Reports";
-import ShiftManagement from "./pages/ShiftManagement";
-import LeaveManagement from "./pages/LeaveManagement";
-import ProfileSettings from "./pages/ProfileSettings";
-import WeekOffManagement from "./pages/WeekOffManagement";
-import CompanySettings from "./pages/CompanySettings";
-import CsvImport from "./pages/CsvImport";
-import Notifications from "./pages/Notifications";
-import Announcements from "./pages/Announcements";
-import AnnouncementsAdmin from "./pages/AnnouncementsAdmin";
-import GlobalBroadcast from "./pages/GlobalBroadcast";
-import NotificationCenter from "./pages/NotificationCenter";
-import Install from "./pages/Install";
-import Updates from "./pages/Updates";
-import CompanyManagement from "./pages/CompanyManagement";
-import CompanyDetail from "./pages/CompanyDetail";
-import OwnerDashboard from "./pages/OwnerDashboard";
-import PendingApproval from "./pages/PendingApproval";
-import EmployeeAttendance from "./pages/EmployeeAttendance";
-import NotFound from "./pages/NotFound";
-import PayrollTeamDashboard from "./pages/PayrollTeamDashboard";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import UpdateNotification from "./components/UpdateNotification";
-import StatutoryCompliance from "./pages/StatutoryCompliance";
-import LeavePolicies from "./pages/LeavePolicies";
-import SetupGuide from "./pages/SetupGuide";
-import MyAttendance from "./pages/MyAttendance";
-import MyPayslips from "./pages/MyPayslips";
-import MyLeaves from "./pages/MyLeaves";
-import Compensation from "./pages/Compensation";
-import PayrollRun from "./pages/PayrollRun";
-import ManagerTeam from "./pages/ManagerTeam";
-import ManagerApprovals from "./pages/ManagerApprovals";
-import TeamManagement from "./pages/TeamManagement";
-import ComplianceReports from "./pages/ComplianceReports";
-import DeveloperRoles from "./pages/DeveloperRoles";
-import DeveloperTracking from "./pages/DeveloperTracking";
-import DeveloperEngagement from "./pages/DeveloperEngagement";
-import DeveloperSettings from "./pages/DeveloperSettings";
-import DeveloperEmailSettings from "./pages/DeveloperEmailSettings";
-import DeveloperPayslipTemplates from "./pages/DeveloperPayslipTemplates";
-import PayslipSettings from "./pages/PayslipSettings";
-import GeofenceLocations from "./pages/GeofenceLocations";
-import DocumentManagement from "./pages/DocumentManagement";
-import EmployeeOnboarding from "./pages/EmployeeOnboarding";
+import UpdateNotification from "@/components/UpdateNotification";
 
-const queryClient = new QueryClient();
+// Eager-loaded critical routes
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+
+// Lazy-loaded pages
+const FaceSetup = lazy(() => import("./pages/FaceSetup"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
+const PhoneVerification = lazy(() => import("./pages/PhoneVerification"));
+const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
+const HolidayManagement = lazy(() => import("./pages/HolidayManagement"));
+const EmployeeManagement = lazy(() => import("./pages/EmployeeManagement"));
+const Reports = lazy(() => import("./pages/Reports"));
+const ShiftManagement = lazy(() => import("./pages/ShiftManagement"));
+const LeaveManagement = lazy(() => import("./pages/LeaveManagement"));
+const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const WeekOffManagement = lazy(() => import("./pages/WeekOffManagement"));
+const CompanySettings = lazy(() => import("./pages/CompanySettings"));
+const CsvImport = lazy(() => import("./pages/CsvImport"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const AnnouncementsAdmin = lazy(() => import("./pages/AnnouncementsAdmin"));
+const GlobalBroadcast = lazy(() => import("./pages/GlobalBroadcast"));
+const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
+const Install = lazy(() => import("./pages/Install"));
+const Updates = lazy(() => import("./pages/Updates"));
+const CompanyManagement = lazy(() => import("./pages/CompanyManagement"));
+const CompanyDetail = lazy(() => import("./pages/CompanyDetail"));
+const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
+const PendingApproval = lazy(() => import("./pages/PendingApproval"));
+const EmployeeAttendance = lazy(() => import("./pages/EmployeeAttendance"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PayrollTeamDashboard = lazy(() => import("./pages/PayrollTeamDashboard"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const StatutoryCompliance = lazy(() => import("./pages/StatutoryCompliance"));
+const LeavePolicies = lazy(() => import("./pages/LeavePolicies"));
+const SetupGuide = lazy(() => import("./pages/SetupGuide"));
+const MyAttendance = lazy(() => import("./pages/MyAttendance"));
+const MyPayslips = lazy(() => import("./pages/MyPayslips"));
+const MyLeaves = lazy(() => import("./pages/MyLeaves"));
+const Compensation = lazy(() => import("./pages/Compensation"));
+const PayrollRun = lazy(() => import("./pages/PayrollRun"));
+const ManagerTeam = lazy(() => import("./pages/ManagerTeam"));
+const ManagerApprovals = lazy(() => import("./pages/ManagerApprovals"));
+const TeamManagement = lazy(() => import("./pages/TeamManagement"));
+const ComplianceReports = lazy(() => import("./pages/ComplianceReports"));
+const DeveloperRoles = lazy(() => import("./pages/DeveloperRoles"));
+const DeveloperTracking = lazy(() => import("./pages/DeveloperTracking"));
+const DeveloperEngagement = lazy(() => import("./pages/DeveloperEngagement"));
+const DeveloperSettings = lazy(() => import("./pages/DeveloperSettings"));
+const DeveloperEmailSettings = lazy(() => import("./pages/DeveloperEmailSettings"));
+const DeveloperPayslipTemplates = lazy(() => import("./pages/DeveloperPayslipTemplates"));
+const PayslipSettings = lazy(() => import("./pages/PayslipSettings"));
+const GeofenceLocations = lazy(() => import("./pages/GeofenceLocations"));
+const DocumentManagement = lazy(() => import("./pages/DocumentManagement"));
+const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 min
+      gcTime: 10 * 60 * 1000, // 10 min garbage collection
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading page...</p>
+      </div>
+    </div>
+  );
+}
+
+function AuthLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React.ReactNode; requireFaceSetup?: boolean }) => {
   const location = useLocation();
@@ -76,47 +111,22 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
   const { settings, isLoading: settingsLoading } = useSystemSettings();
 
-  if (isLoading || settingLoading || settingsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading || settingLoading || settingsLoading) return <AuthLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Block pending employees until owner approves
   if (!isDeveloper && profile && profile.is_active === false) {
-    // Allow the pending page itself to render
-    if (location.pathname !== "/pending-approval") {
-      return <Navigate to="/pending-approval" replace />;
-    }
+    if (location.pathname !== "/pending-approval") return <Navigate to="/pending-approval" replace />;
   }
 
-  // Check if app-only mode is enabled and user needs to install PWA
-  // Skip for developers and if already on install page
   if (settings.appOnlyModeEnabled && !isDeveloper) {
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  (window.navigator as any).standalone === true;
-    if (!isPWA) {
-      return <Navigate to="/install" replace />;
-    }
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    if (!isPWA) return <Navigate to="/install" replace />;
   }
 
-  // Check phone verification for OAuth users (if OAuth + phone verification is enabled)
-  // Skip when testing mode is active
   if (!settings.testingModeEnabled && settings.oauthPhoneVerificationEnabled && profile && !profile.phone_verified && !isDeveloper) {
     return <Navigate to="/phone-verify" replace />;
   }
 
-  // Developers bypass face setup, also skip if face verification is disabled
-  // face_embedding can be an object (Face++) or an array (legacy)
   const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
   if (requireFaceSetup && faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
     return <Navigate to="/face-setup" replace />;
@@ -128,35 +138,15 @@ const ProtectedRoute = ({ children, requireFaceSetup = true }: { children: React
 const FaceSetupRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isUpdate = new URLSearchParams(location.search).get('update') === 'true';
-
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
-  if (isLoading || settingLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading || settingLoading) return <AuthLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!faceVerificationRequired && !isUpdate) return <Navigate to="/dashboard" replace />;
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // If face verification is disabled, redirect to dashboard (unless explicitly updating)
-  if (!faceVerificationRequired && !isUpdate) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // Allow updating face even if already registered
   const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
-  if (!isUpdate && (hasFaceData || isDeveloper)) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (!isUpdate && (hasFaceData || isDeveloper)) return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -165,30 +155,12 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, isAdmin, isDeveloper, isLoading } = useAuth();
   const { isRequired: faceVerificationRequired, isLoading: settingLoading } = useFaceVerificationSetting();
 
-  if (isLoading || settingLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading || settingLoading) return <AuthLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Check face setup first (developers bypass, also skip if disabled)
   const hasFaceData = hasFaceEmbedding(profile?.face_embedding ?? null);
-  if (faceVerificationRequired && profile && !hasFaceData && !isDeveloper) {
-    return <Navigate to="/face-setup" replace />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (faceVerificationRequired && profile && !hasFaceData && !isDeveloper) return <Navigate to="/face-setup" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -196,26 +168,9 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const DeveloperRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isDeveloper, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Developers bypass face setup - no check needed
-
-  if (!isDeveloper) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (isLoading) return <AuthLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isDeveloper) return <Navigate to="/dashboard" replace />;
 
   return children;
 };
@@ -224,22 +179,8 @@ const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, isDeveloper, isLoading } = useAuth();
   const { settings, isLoading: settingsLoading } = useSystemSettings();
 
-  if (isLoading || settingsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // If testing mode is on, or OAuth + phone verification is disabled or already verified, go to dashboard
+  if (isLoading || settingsLoading) return <AuthLoader />;
+  if (!user) return <Navigate to="/auth" replace />;
   if (settings.testingModeEnabled || !settings.oauthPhoneVerificationEnabled || profile?.phone_verified || isDeveloper) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -250,67 +191,68 @@ const PhoneVerifyRoute = ({ children }: { children: React.ReactNode }) => {
 function AppRoutes() {
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        {/* Invite links removed - employees now search for company during signup */}
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/activate" element={<ActivateAccount />} />
-        <Route path="/install" element={<Install />} />
-        <Route path="/pending-approval" element={<PendingApproval />} />
-        <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
-        <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
-        <Route path="/onboarding" element={<ProtectedRoute requireFaceSetup={false}><EmployeeOnboarding /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
-        <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
-        <Route path="/admin/reports" element={<AdminRoute><Reports /></AdminRoute>} />
-        <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
-        <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
-        <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
-        <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
-        <Route path="/admin/attendance/:id" element={<AdminRoute><EmployeeAttendance /></AdminRoute>} />
-        <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
-        <Route path="/developer/roles" element={<DeveloperRoute><DeveloperRoles /></DeveloperRoute>} />
-        <Route path="/developer/tracking" element={<DeveloperRoute><DeveloperTracking /></DeveloperRoute>} />
-        <Route path="/developer/engagement" element={<DeveloperRoute><DeveloperEngagement /></DeveloperRoute>} />
-        <Route path="/developer/settings" element={<DeveloperRoute><DeveloperSettings /></DeveloperRoute>} />
-        <Route path="/developer/email-settings" element={<DeveloperRoute><DeveloperEmailSettings /></DeveloperRoute>} />
-        <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
-        <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
-        <Route path="/developer/payslip-templates" element={<DeveloperRoute><DeveloperPayslipTemplates /></DeveloperRoute>} />
-        <Route path="/developer/companies/:id/geofencing" element={<DeveloperRoute><GeofenceLocations /></DeveloperRoute>} />
-        <Route path="/admin/geofencing" element={<AdminRoute><GeofenceLocations /></AdminRoute>} />
-        <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
-        <Route path="/admin/documents" element={<AdminRoute><DocumentManagement /></AdminRoute>} />
-        <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
-        <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
-        <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
-        <Route path="/admin/announcements" element={<AdminRoute><AnnouncementsAdmin /></AdminRoute>} />
-        <Route path="/developer/broadcast" element={<DeveloperRoute><GlobalBroadcast /></DeveloperRoute>} />
-        <Route path="/leave-notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-        <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
-        <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
-        <Route path="/my-payslips" element={<ProtectedRoute><MyPayslips /></ProtectedRoute>} />
-        <Route path="/admin/compensation" element={<AdminRoute><Compensation /></AdminRoute>} />
-        <Route path="/admin/payroll-run" element={<AdminRoute><PayrollRun /></AdminRoute>} />
-        <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
-        <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
-        <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
-        <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
-        <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
-        <Route path="/my-documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
-        <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
-        <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
-        <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
-        <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/activate" element={<ActivateAccount />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/pending-approval" element={<PendingApproval />} />
+          <Route path="/phone-verify" element={<PhoneVerifyRoute><PhoneVerification /></PhoneVerifyRoute>} />
+          <Route path="/face-setup" element={<FaceSetupRoute><FaceSetup /></FaceSetupRoute>} />
+          <Route path="/onboarding" element={<ProtectedRoute requireFaceSetup={false}><EmployeeOnboarding /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/holidays" element={<AdminRoute><HolidayManagement /></AdminRoute>} />
+          <Route path="/admin/employees" element={<AdminRoute><EmployeeManagement /></AdminRoute>} />
+          <Route path="/admin/reports" element={<AdminRoute><Reports /></AdminRoute>} />
+          <Route path="/admin/shifts" element={<AdminRoute><ShiftManagement /></AdminRoute>} />
+          <Route path="/admin/leaves" element={<AdminRoute><LeaveManagement /></AdminRoute>} />
+          <Route path="/admin/weekoffs" element={<AdminRoute><WeekOffManagement /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><CompanySettings /></AdminRoute>} />
+          <Route path="/admin/attendance/:id" element={<AdminRoute><EmployeeAttendance /></AdminRoute>} />
+          <Route path="/developer" element={<DeveloperRoute><DeveloperDashboard /></DeveloperRoute>} />
+          <Route path="/developer/roles" element={<DeveloperRoute><DeveloperRoles /></DeveloperRoute>} />
+          <Route path="/developer/tracking" element={<DeveloperRoute><DeveloperTracking /></DeveloperRoute>} />
+          <Route path="/developer/engagement" element={<DeveloperRoute><DeveloperEngagement /></DeveloperRoute>} />
+          <Route path="/developer/settings" element={<DeveloperRoute><DeveloperSettings /></DeveloperRoute>} />
+          <Route path="/developer/email-settings" element={<DeveloperRoute><DeveloperEmailSettings /></DeveloperRoute>} />
+          <Route path="/developer/companies" element={<DeveloperRoute><CompanyManagement /></DeveloperRoute>} />
+          <Route path="/developer/companies/:id" element={<DeveloperRoute><CompanyDetail /></DeveloperRoute>} />
+          <Route path="/developer/payslip-templates" element={<DeveloperRoute><DeveloperPayslipTemplates /></DeveloperRoute>} />
+          <Route path="/developer/companies/:id/geofencing" element={<DeveloperRoute><GeofenceLocations /></DeveloperRoute>} />
+          <Route path="/admin/geofencing" element={<AdminRoute><GeofenceLocations /></AdminRoute>} />
+          <Route path="/admin/payslip-settings" element={<AdminRoute><PayslipSettings /></AdminRoute>} />
+          <Route path="/admin/documents" element={<AdminRoute><DocumentManagement /></AdminRoute>} />
+          <Route path="/owner" element={<ProtectedRoute><OwnerDashboard /></ProtectedRoute>} />
+          <Route path="/admin/import" element={<DeveloperRoute><CsvImport /></DeveloperRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationCenter /></ProtectedRoute>} />
+          <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+          <Route path="/admin/announcements" element={<AdminRoute><AnnouncementsAdmin /></AdminRoute>} />
+          <Route path="/developer/broadcast" element={<DeveloperRoute><GlobalBroadcast /></DeveloperRoute>} />
+          <Route path="/leave-notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
+          <Route path="/payroll" element={<ProtectedRoute><PayrollTeamDashboard /></ProtectedRoute>} />
+          <Route path="/my-payslips" element={<ProtectedRoute><MyPayslips /></ProtectedRoute>} />
+          <Route path="/admin/compensation" element={<AdminRoute><Compensation /></AdminRoute>} />
+          <Route path="/admin/payroll-run" element={<AdminRoute><PayrollRun /></AdminRoute>} />
+          <Route path="/compliance" element={<AdminRoute><StatutoryCompliance /></AdminRoute>} />
+          <Route path="/leave-policies" element={<AdminRoute><LeavePolicies /></AdminRoute>} />
+          <Route path="/setup-guide" element={<AdminRoute><SetupGuide /></AdminRoute>} />
+          <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
+          <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
+          <Route path="/my-documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
+          <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
+          <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
+          <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
+          <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <PWAInstallPrompt />
       <PWAUpdatePrompt />
       <UpdateNotification />
