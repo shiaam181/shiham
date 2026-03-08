@@ -75,6 +75,7 @@ const DocumentManagement = lazy(() => import("./pages/DocumentManagement"));
 const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
 const AuditTrail = lazy(() => import("./pages/AuditTrail"));
 const EmployeeDirectory = lazy(() => import("./pages/EmployeeDirectory"));
+const EmployeeTimeline = lazy(() => import("./pages/EmployeeTimeline"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
