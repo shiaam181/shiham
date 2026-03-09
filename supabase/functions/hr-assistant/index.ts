@@ -89,6 +89,38 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "search_company_policies",
+      description: "Search company policies, rules, and guidelines to answer factual HR questions.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query (e.g., 'leave policy', 'WFH guidelines')" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_team_reminder",
+      description: "Send a direct system notification to a specific user (only for managers/HR).",
+      parameters: {
+        type: "object",
+        properties: {
+          target_user_id: { type: "string", description: "The UUID of the user to notify" },
+          title: { type: "string", description: "Short title for the notification" },
+          message: { type: "string", description: "The message to send" },
+        },
+        required: ["target_user_id", "title", "message"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Execute tool calls
