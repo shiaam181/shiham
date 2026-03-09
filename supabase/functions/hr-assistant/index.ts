@@ -331,6 +331,57 @@ async function executeTool(
       });
     }
 
+    case "search_company_policies": {
+      const { query } = args;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        return JSON.stringify({ error: "No company associated with user." });
+      }
+
+      const { data: policies, error } = await supabase
+        .from("company_policies")
+        .select("title, content")
+        .eq("company_id", profile.company_id)
+        .ilike("content", `%${query}%`)
+        .limit(3);
+
+      if (error) return JSON.stringify({ success: false, error: error.message });
+      if (!policies || policies.length === 0) return JSON.stringify({ found: false, message: "No matching policies found." });
+
+      return JSON.stringify({ found: true, policies });
+    }
+
+    case "send_team_reminder": {
+      const { target_user_id, title, message } = args;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id, full_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        return JSON.stringify({ error: "No company associated with user." });
+      }
+
+      const { error } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: target_user_id,
+          company_id: profile.company_id,
+          title: title,
+          message: `${profile.full_name} says: ${message}`,
+          type: "system",
+        });
+
+      if (error) return JSON.stringify({ success: false, error: error.message });
+      return JSON.stringify({ success: true, message: "Reminder sent successfully." });
+    }
+
     default:
       return JSON.stringify({ error: `Unknown tool: ${toolName}` });
   }
