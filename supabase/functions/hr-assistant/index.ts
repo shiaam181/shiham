@@ -89,6 +89,38 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "search_company_policies",
+      description: "Search company policies, rules, and guidelines to answer factual HR questions.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query (e.g., 'leave policy', 'WFH guidelines')" },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_team_reminder",
+      description: "Send a direct system notification to a specific user (only for managers/HR).",
+      parameters: {
+        type: "object",
+        properties: {
+          target_user_id: { type: "string", description: "The UUID of the user to notify" },
+          title: { type: "string", description: "Short title for the notification" },
+          message: { type: "string", description: "The message to send" },
+        },
+        required: ["target_user_id", "title", "message"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // Execute tool calls
@@ -299,6 +331,57 @@ async function executeTool(
       });
     }
 
+    case "search_company_policies": {
+      const { query } = args;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        return JSON.stringify({ error: "No company associated with user." });
+      }
+
+      const { data: policies, error } = await supabase
+        .from("company_policies")
+        .select("title, content")
+        .eq("company_id", profile.company_id)
+        .ilike("content", `%${query}%`)
+        .limit(3);
+
+      if (error) return JSON.stringify({ success: false, error: error.message });
+      if (!policies || policies.length === 0) return JSON.stringify({ found: false, message: "No matching policies found." });
+
+      return JSON.stringify({ found: true, policies });
+    }
+
+    case "send_team_reminder": {
+      const { target_user_id, title, message } = args;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id, full_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!profile?.company_id) {
+        return JSON.stringify({ error: "No company associated with user." });
+      }
+
+      const { error } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: target_user_id,
+          company_id: profile.company_id,
+          title: title,
+          message: `${profile.full_name} says: ${message}`,
+          type: "system",
+        });
+
+      if (error) return JSON.stringify({ success: false, error: error.message });
+      return JSON.stringify({ success: true, message: "Reminder sent successfully." });
+    }
+
     default:
       return JSON.stringify({ error: `Unknown tool: ${toolName}` });
   }
@@ -410,6 +493,8 @@ ${userContext}
 - **Submit attendance regularization** requests using the submit_regularization tool
 - **Show team status** for managers using the get_team_status tool
 - **Provide tax saving tips** using the get_tax_saving_tips tool
+- **Search company policies** for factual questions using search_company_policies
+- **Send notifications/reminders** to team members using send_team_reminder
 - Give tips on workplace productivity and well-being
 - Proactively alert about compliance deadlines and missing documents
 
@@ -419,6 +504,8 @@ ${userContext}
 - When a manager asks about team status, use get_team_status
 - When asked about regularization, use submit_regularization
 - When asked about tax saving, use get_tax_saving_tips
+- When asked about factual HR rules, use search_company_policies
+- When asked to remind someone, use send_team_reminder
 - Always confirm the action result to the user after executing a tool
 
 ## Multilingual Support
