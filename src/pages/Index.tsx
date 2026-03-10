@@ -77,8 +77,8 @@ export default function Index() {
                   Get Started
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button onClick={() => navigate('/auth')} variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 px-8">
-                  Sign In
+                <Button onClick={() => navigate('/pricing')} variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 px-8">
+                  View Pricing
                 </Button>
               </div>
             </div>
