@@ -757,7 +757,10 @@ export default function Auth() {
           )}
           
           {/* Footer */}
-          <div className="mt-8 text-center text-sm text-muted-foreground">
+          <div className="mt-8 text-center text-sm text-muted-foreground space-y-2">
+            <p>
+              <Link to="/pricing" className="text-primary hover:underline font-medium">View Pricing Plans</Link>
+            </p>
             <p>
               By continuing, you agree to our{' '}
               <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
