@@ -259,6 +259,8 @@ function AppRoutes() {
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
           <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />
           <Route path="/directory" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="*" element={<NotFound />} />

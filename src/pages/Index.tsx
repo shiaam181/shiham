@@ -110,6 +110,7 @@ export default function Index() {
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
             <span>© 2026 AttendanceHub</span>
             <div className="flex gap-4">
+              <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             </div>
