@@ -26,6 +26,8 @@ const PhoneVerification = lazy(() => import("./pages/PhoneVerification"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
+const DeveloperPricing = lazy(() => import("./pages/DeveloperPricing"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const HolidayManagement = lazy(() => import("./pages/HolidayManagement"));
 const EmployeeManagement = lazy(() => import("./pages/EmployeeManagement"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -257,6 +259,8 @@ function AppRoutes() {
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
           <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />
           <Route path="/directory" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="*" element={<NotFound />} />

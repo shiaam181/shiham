@@ -77,8 +77,8 @@ export default function Index() {
                   Get Started
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-                <Button onClick={() => navigate('/auth')} variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 px-8">
-                  Sign In
+                <Button onClick={() => navigate('/pricing')} variant="outline" size="lg" className="border-white/20 text-white hover:bg-white/10 px-8">
+                  View Pricing
                 </Button>
               </div>
             </div>
@@ -110,6 +110,7 @@ export default function Index() {
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
             <span>© 2026 AttendanceHub</span>
             <div className="flex gap-4">
+              <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
               <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             </div>
