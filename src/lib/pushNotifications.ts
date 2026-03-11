@@ -70,7 +70,6 @@ export function showLocalNotification(
     const defaultOptions: NotificationOptions = {
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
-      vibrate: [100, 50, 100],
       tag: 'attendancehub',
       ...options,
     };
