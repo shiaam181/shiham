@@ -40,15 +40,7 @@ export function hasNotch(): boolean {
 /** Trigger haptic feedback if available (Capacitor) */
 export async function hapticFeedback(style: 'light' | 'medium' | 'heavy' = 'light'): Promise<void> {
   try {
-    if (isNativeApp()) {
-      const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
-      const map = {
-        light: ImpactStyle.Light,
-        medium: ImpactStyle.Medium,
-        heavy: ImpactStyle.Heavy,
-      };
-      await Haptics.impact({ style: map[style] });
-    } else if (navigator.vibrate) {
+    if (navigator.vibrate) {
       const durations = { light: 10, medium: 20, heavy: 40 };
       navigator.vibrate(durations[style]);
     }
