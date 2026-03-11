@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -59,13 +59,21 @@ export default function HRAssistantChat() {
   const streamChat = async (allMessages: Msg[]) => {
     setFollowUps([]);
     setActions([]);
+
+    // Get the current user's JWT for authenticated edge function calls
+    const { data: sessionData } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) {
+      throw new Error('Not authenticated. Please sign in again.');
+    }
+
     const resp = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ messages: allMessages, userId: user?.id }),
+      body: JSON.stringify({ messages: allMessages }),
     });
 
     if (!resp.ok) {
