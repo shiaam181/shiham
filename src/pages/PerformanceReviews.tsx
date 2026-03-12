@@ -120,10 +120,9 @@ export default function PerformanceReviews() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
-        <PageHeader title="Performance Reviews" subtitle="View and manage performance evaluations">
-          {canManage && (
-            <Button onClick={() => setCreateOpen(true)}><Send className="w-4 h-4 mr-2" />Write Review</Button>
-          )}
+        <PageHeader title="Performance Reviews" description="View and manage performance evaluations" actions={
+          canManage ? <Button onClick={() => setCreateOpen(true)}><Send className="w-4 h-4 mr-2" />Write Review</Button> : undefined
+        } />
         </PageHeader>
 
         {/* Stats */}
