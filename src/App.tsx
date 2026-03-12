@@ -78,6 +78,9 @@ const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
 const AuditTrail = lazy(() => import("./pages/AuditTrail"));
 const EmployeeDirectory = lazy(() => import("./pages/EmployeeDirectory"));
 const EmployeeTimeline = lazy(() => import("./pages/EmployeeTimeline"));
+const PerformanceGoals = lazy(() => import("./pages/PerformanceGoals"));
+const PerformanceReviews = lazy(() => import("./pages/PerformanceReviews"));
+const KPITracking = lazy(() => import("./pages/KPITracking"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -259,6 +262,9 @@ function AppRoutes() {
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
           <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />
           <Route path="/directory" element={<ProtectedRoute><EmployeeDirectory /></ProtectedRoute>} />
+          <Route path="/my-goals" element={<ProtectedRoute><PerformanceGoals /></ProtectedRoute>} />
+          <Route path="/my-reviews" element={<ProtectedRoute><PerformanceReviews /></ProtectedRoute>} />
+          <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -6,7 +6,7 @@ import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
   BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
-  Megaphone, Radio, TrendingUp, DollarSign,
+  Megaphone, Radio, TrendingUp, DollarSign, Target, Star, Gauge,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -58,6 +58,12 @@ export default function AppSidebar() {
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: TrendingUp, label: 'My Journey', path: '/my-timeline' },
+    {
+      icon: Target, label: 'Performance', children: [
+        { icon: Target, label: 'My Goals', path: '/my-goals' },
+        { icon: Star, label: 'My Reviews', path: '/my-reviews' },
+      ]
+    },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
@@ -128,6 +134,7 @@ export default function AppSidebar() {
     { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
     { icon: FileText, label: 'Payslip Settings', path: '/admin/payslip-settings' },
     { icon: Megaphone, label: 'Announcements Admin', path: '/admin/announcements' },
+    { icon: Gauge, label: 'KPI Tracking', path: '/admin/kpi-tracking' },
     { icon: Shield, label: 'Audit Trail', path: '/admin/audit-trail' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
