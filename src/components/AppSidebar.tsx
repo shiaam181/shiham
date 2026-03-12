@@ -58,6 +58,12 @@ export default function AppSidebar() {
     { icon: Megaphone, label: 'Announcements', path: '/announcements' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: TrendingUp, label: 'My Journey', path: '/my-timeline' },
+    {
+      icon: Target, label: 'Performance', children: [
+        { icon: Target, label: 'My Goals', path: '/my-goals' },
+        { icon: Star, label: 'My Reviews', path: '/my-reviews' },
+      ]
+    },
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
