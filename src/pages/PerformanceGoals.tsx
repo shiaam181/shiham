@@ -92,7 +92,7 @@ export default function PerformanceGoals() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
-        <PageHeader title="My Goals" subtitle="Track your performance goals and objectives">
+        <PageHeader title="My Goals" description="Track your performance goals and objectives" actions={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="w-4 h-4 mr-2" />Add Goal</Button>
