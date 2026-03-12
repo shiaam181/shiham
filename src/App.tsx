@@ -78,6 +78,9 @@ const EmployeeOnboarding = lazy(() => import("./pages/EmployeeOnboarding"));
 const AuditTrail = lazy(() => import("./pages/AuditTrail"));
 const EmployeeDirectory = lazy(() => import("./pages/EmployeeDirectory"));
 const EmployeeTimeline = lazy(() => import("./pages/EmployeeTimeline"));
+const PerformanceGoals = lazy(() => import("./pages/PerformanceGoals"));
+const PerformanceReviews = lazy(() => import("./pages/PerformanceReviews"));
+const KPITracking = lazy(() => import("./pages/KPITracking"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
