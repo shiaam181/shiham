@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function DashboardRouter() {
   const { role, isDeveloper, isAdmin, isPayrollTeam } = useAuth();
 
-  if (isDeveloper) return <Navigate to="/developer" replace />;
+  if (isDeveloper) return <Navigate to="/admin" replace />;
   if (role === 'payroll_team') return <Navigate to="/payroll" replace />;
   if (isAdmin && role !== 'employee' && role !== 'manager') return <Navigate to="/admin" replace />;
   
