@@ -126,7 +126,7 @@ export default function PerformanceGoals() {
               </div>
             </DialogContent>
           </Dialog>
-        </PageHeader>
+        } />
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

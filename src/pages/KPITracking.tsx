@@ -74,11 +74,9 @@ export default function KPITracking() {
   return (
     <AppLayout>
       <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
-        <PageHeader title="KPI Tracking" subtitle="Key Performance Indicators and metrics">
-          {canManage && (
-            <Button onClick={() => setKpiDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />Define KPI</Button>
-          )}
-        </PageHeader>
+        <PageHeader title="KPI Tracking" description="Key Performance Indicators and metrics" actions={
+          canManage ? <Button onClick={() => setKpiDialogOpen(true)}><Plus className="w-4 h-4 mr-2" />Define KPI</Button> : undefined
+        } />
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

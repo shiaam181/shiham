@@ -123,7 +123,7 @@ export default function PerformanceReviews() {
         <PageHeader title="Performance Reviews" description="View and manage performance evaluations" actions={
           canManage ? <Button onClick={() => setCreateOpen(true)}><Send className="w-4 h-4 mr-2" />Write Review</Button> : undefined
         } />
-        </PageHeader>
+        
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
