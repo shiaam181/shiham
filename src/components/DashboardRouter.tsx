@@ -11,10 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function DashboardRouter() {
   const { role, isDeveloper, isAdmin, isPayrollTeam } = useAuth();
 
-  if (isDeveloper) return <Navigate to="/admin" replace />;
-  if (role === 'payroll_team') return <Navigate to="/payroll" replace />;
-  if (isAdmin && role !== 'employee' && role !== 'manager') return <Navigate to="/admin" replace />;
-  
-  // Employees and managers land on the employee dashboard
+  // All roles land on the employee home screen
+  return <Navigate to="/employee-home" replace />;
   return <Navigate to="/employee-home" replace />;
 }
