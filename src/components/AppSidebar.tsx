@@ -183,6 +183,8 @@ export default function AppSidebar() {
         { icon: Settings, label: 'Company Settings', path: '/admin/settings' },
       ]
     },
+    { icon: Gauge, label: 'KPI Tracking', path: '/admin/kpi-tracking' },
+    { icon: Shield, label: 'Audit Trail', path: '/admin/audit-trail' },
     { icon: BookOpen, label: 'Setup Guide', path: '/setup-guide' },
   ];
 
