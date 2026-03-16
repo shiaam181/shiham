@@ -52,6 +52,9 @@ interface Company {
   team_board_enabled: boolean;
   command_palette_enabled: boolean;
   separate_payroll_team_enabled: boolean;
+  employee_daily_updates_enabled: boolean;
+  manager_daily_updates_enabled: boolean;
+  auto_punchout_location_off: boolean;
 }
 
 interface CompanyUser {
