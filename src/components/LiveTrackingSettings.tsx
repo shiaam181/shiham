@@ -174,6 +174,36 @@ export function LiveTrackingSettings() {
     }
   };
 
+  const toggleAutoPunchout = async (enabled: boolean) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'auto_punchout_location_off',
+          value: { enabled },
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      setAutoPunchoutEnabled(enabled);
+      toast({
+        title: enabled ? 'Auto Punch-Out Enabled' : 'Auto Punch-Out Disabled',
+        description: enabled 
+          ? 'Employees will be auto punched out if they turn off location after check-in.'
+          : 'Auto punch-out on location off has been disabled.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const toggleCompanyTracking = async (companyId: string, enabled: boolean) => {
     setIsSaving(true);
     try {
