@@ -28,7 +28,8 @@ export default function PhotoThumbnail({
   alt, 
   size = 'sm', 
   onClick,
-  enableEnlarge = true 
+  enableEnlarge = true,
+  bucket = 'employee-photos'
 }: PhotoThumbnailProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
