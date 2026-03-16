@@ -116,22 +116,27 @@ export function LiveTrackingSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      // Get global setting
-      const { data: globalSetting } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'live_tracking_enabled')
-        .maybeSingle();
+      // Get global setting + auto-punchout setting
+      const [globalRes, autoPunchoutRes, companiesRes] = await Promise.all([
+        supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'live_tracking_enabled')
+          .maybeSingle(),
+        supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'auto_punchout_location_off')
+          .maybeSingle(),
+        supabase
+          .from('companies')
+          .select('id, name, live_tracking_enabled')
+          .order('name'),
+      ]);
 
-      setGlobalEnabled((globalSetting?.value as { enabled?: boolean })?.enabled ?? false);
-
-      // Get all companies with their tracking status
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('id, name, live_tracking_enabled')
-        .order('name');
-
-      setCompanies(companiesData || []);
+      setGlobalEnabled((globalRes.data?.value as { enabled?: boolean })?.enabled ?? false);
+      setAutoPunchoutEnabled((autoPunchoutRes.data?.value as { enabled?: boolean })?.enabled ?? false);
+      setCompanies(companiesRes.data || []);
     } catch (err) {
       console.error('Error fetching settings:', err);
     } finally {
