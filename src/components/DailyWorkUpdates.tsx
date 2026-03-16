@@ -196,7 +196,7 @@ export default function DailyWorkUpdates() {
             {updates.map(u => (
               <div key={u.id} className="flex gap-3 p-3 rounded-lg border bg-muted/20">
                 {u.photo_url && (
-                  <PhotoThumbnail photoUrl={u.photo_url} alt="Work photo" size="md" />
+                  <PhotoThumbnail photoUrl={u.photo_url} alt="Work photo" size="md" bucket="daily-updates" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
