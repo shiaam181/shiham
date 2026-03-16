@@ -20,6 +20,7 @@ interface PhotoThumbnailProps {
   size?: 'sm' | 'md';
   onClick?: () => void;
   enableEnlarge?: boolean;
+  bucket?: string;
 }
 
 export default function PhotoThumbnail({ 
@@ -27,7 +28,8 @@ export default function PhotoThumbnail({
   alt, 
   size = 'sm', 
   onClick,
-  enableEnlarge = true 
+  enableEnlarge = true,
+  bucket = 'employee-photos'
 }: PhotoThumbnailProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +53,7 @@ export default function PhotoThumbnail({
         } else {
           // Get signed URL from storage
           const { data, error } = await supabase.storage
-            .from('employee-photos')
+            .from(bucket)
             .createSignedUrl(photoUrl, 3600);
 
           if (data && !error) {

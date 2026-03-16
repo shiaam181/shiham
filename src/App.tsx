@@ -62,6 +62,8 @@ const MyLeaves = lazy(() => import("./pages/MyLeaves"));
 const Compensation = lazy(() => import("./pages/Compensation"));
 const PayrollRun = lazy(() => import("./pages/PayrollRun"));
 const ManagerTeam = lazy(() => import("./pages/ManagerTeam"));
+const MyDailyUpdates = lazy(() => import("./pages/MyDailyUpdates"));
+const TeamDailyUpdates = lazy(() => import("./pages/TeamDailyUpdates"));
 const ManagerApprovals = lazy(() => import("./pages/ManagerApprovals"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const ComplianceReports = lazy(() => import("./pages/ComplianceReports"));
@@ -256,8 +258,10 @@ function AppRoutes() {
           <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
           <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
           <Route path="/my-documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
+          <Route path="/my-daily-updates" element={<ProtectedRoute><MyDailyUpdates /></ProtectedRoute>} />
           <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
           <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
+          <Route path="/manager/team-updates" element={<ProtectedRoute><TeamDailyUpdates /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
           <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />

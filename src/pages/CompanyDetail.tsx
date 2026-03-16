@@ -52,6 +52,9 @@ interface Company {
   team_board_enabled: boolean;
   command_palette_enabled: boolean;
   separate_payroll_team_enabled: boolean;
+  employee_daily_updates_enabled: boolean;
+  manager_daily_updates_enabled: boolean;
+  auto_punchout_location_off: boolean;
 }
 
 interface CompanyUser {
@@ -90,6 +93,9 @@ export default function CompanyDetail() {
   const [teamBoardEnabled, setTeamBoardEnabled] = useState(false);
   const [commandPaletteEnabled, setCommandPaletteEnabled] = useState(false);
   const [separatePayrollTeamEnabled, setSeparatePayrollTeamEnabled] = useState(false);
+  const [employeeDailyUpdatesEnabled, setEmployeeDailyUpdatesEnabled] = useState(false);
+  const [managerDailyUpdatesEnabled, setManagerDailyUpdatesEnabled] = useState(false);
+  const [autoPunchoutLocationOff, setAutoPunchoutLocationOff] = useState(false);
 
   // Delete employee state
   const [deleteEmployee, setDeleteEmployee] = useState<CompanyUser | null>(null);
@@ -134,6 +140,9 @@ export default function CompanyDetail() {
     setTeamBoardEnabled((data as any).team_board_enabled || false);
     setCommandPaletteEnabled((data as any).command_palette_enabled || false);
     setSeparatePayrollTeamEnabled((data as any).separate_payroll_team_enabled || false);
+    setEmployeeDailyUpdatesEnabled((data as any).employee_daily_updates_enabled || false);
+    setManagerDailyUpdatesEnabled((data as any).manager_daily_updates_enabled || false);
+    setAutoPunchoutLocationOff((data as any).auto_punchout_location_off || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
@@ -180,6 +189,9 @@ export default function CompanyDetail() {
       team_board_enabled: teamBoardEnabled,
       command_palette_enabled: commandPaletteEnabled,
       separate_payroll_team_enabled: separatePayrollTeamEnabled,
+      employee_daily_updates_enabled: employeeDailyUpdatesEnabled,
+      manager_daily_updates_enabled: managerDailyUpdatesEnabled,
+      auto_punchout_location_off: autoPunchoutLocationOff,
     } as any).eq('id', company.id);
 
     if (error) {
@@ -685,6 +697,52 @@ export default function CompanyDetail() {
                       </p>
                     </div>
                     <Switch checked={separatePayrollTeamEnabled} onCheckedChange={setSeparatePayrollTeamEnabled} />
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Daily Updates & Activity</p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <Label className="font-medium">📸 Employee Daily Updates</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {employeeDailyUpdatesEnabled 
+                            ? 'Enabled — Employees post daily work photos/notes, managers can view & pick toppers' 
+                            : 'Disabled — Daily updates feature hidden'}
+                        </p>
+                      </div>
+                      <Switch checked={employeeDailyUpdatesEnabled} onCheckedChange={setEmployeeDailyUpdatesEnabled} />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <Label className="font-medium">👔 Manager Daily Updates</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {managerDailyUpdatesEnabled 
+                            ? 'Enabled — Managers post updates visible to HR/Owner' 
+                            : 'Disabled — Manager updates hidden from HR/Owner'}
+                        </p>
+                      </div>
+                      <Switch checked={managerDailyUpdatesEnabled} onCheckedChange={setManagerDailyUpdatesEnabled} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Compliance & Tracking</p>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label className="font-medium">📍 Auto Punch-Out on Location Off</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {autoPunchoutLocationOff 
+                          ? 'Enabled — Employees auto punched out if GPS disabled during shift' 
+                          : 'Disabled — No enforcement when GPS is turned off'}
+                      </p>
+                    </div>
+                    <Switch checked={autoPunchoutLocationOff} onCheckedChange={setAutoPunchoutLocationOff} />
                   </div>
                 </div>
               </CardContent>

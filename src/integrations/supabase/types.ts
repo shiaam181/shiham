@@ -320,10 +320,12 @@ export type Database = {
       }
       companies: {
         Row: {
+          auto_punchout_location_off: boolean
           brand_color: string | null
           brand_color_secondary: string | null
           command_palette_enabled: boolean
           created_at: string
+          employee_daily_updates_enabled: boolean
           esi_registration_number: string | null
           face_verification_disabled: boolean
           geofencing_enabled: boolean | null
@@ -337,6 +339,7 @@ export type Database = {
           legal_name: string | null
           live_tracking_enabled: boolean | null
           logo_url: string | null
+          manager_daily_updates_enabled: boolean
           mood_pulse_enabled: boolean
           name: string
           pan_number: string | null
@@ -354,10 +357,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_punchout_location_off?: boolean
           brand_color?: string | null
           brand_color_secondary?: string | null
           command_palette_enabled?: boolean
           created_at?: string
+          employee_daily_updates_enabled?: boolean
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
           geofencing_enabled?: boolean | null
@@ -371,6 +376,7 @@ export type Database = {
           legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
+          manager_daily_updates_enabled?: boolean
           mood_pulse_enabled?: boolean
           name: string
           pan_number?: string | null
@@ -388,10 +394,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_punchout_location_off?: boolean
           brand_color?: string | null
           brand_color_secondary?: string | null
           command_palette_enabled?: boolean
           created_at?: string
+          employee_daily_updates_enabled?: boolean
           esi_registration_number?: string | null
           face_verification_disabled?: boolean
           geofencing_enabled?: boolean | null
@@ -405,6 +413,7 @@ export type Database = {
           legal_name?: string | null
           live_tracking_enabled?: boolean | null
           logo_url?: string | null
+          manager_daily_updates_enabled?: boolean
           mood_pulse_enabled?: boolean
           name?: string
           pan_number?: string | null
@@ -571,6 +580,54 @@ export type Database = {
             columns: ["default_shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_work_updates: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+          photo_url: string | null
+          update_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description: string
+          id?: string
+          photo_url?: string | null
+          update_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          photo_url?: string | null
+          update_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_work_updates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_work_updates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2543,6 +2600,57 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      weekly_toppers: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          period_type: string
+          selected_by: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          period_type?: string
+          selected_by: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          period_type?: string
+          selected_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_toppers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_toppers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
