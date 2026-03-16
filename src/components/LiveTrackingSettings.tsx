@@ -292,6 +292,50 @@ export function LiveTrackingSettings() {
               </p>
             </div>
           )}
+
+          {/* Auto Punch-Out on Location Off */}
+          {globalEnabled && (
+            <div className="flex items-center justify-between p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  autoPunchoutEnabled ? 'bg-amber-500/20' : 'bg-muted'
+                }`}>
+                  <AlertTriangle className={`w-5 h-5 ${autoPunchoutEnabled ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="autopunchout-toggle" className="text-sm font-medium cursor-pointer">
+                    Auto Punch-Out on Location Off
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {autoPunchoutEnabled
+                      ? 'Employees will be warned and then auto punched out if they disable location after check-in'
+                      : 'No action taken when employees turn off location services'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="autopunchout-toggle"
+                checked={autoPunchoutEnabled}
+                onCheckedChange={toggleAutoPunchout}
+                disabled={isSaving}
+              />
+            </div>
+          )}
+
+          {autoPunchoutEnabled && globalEnabled && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                <p className="font-medium">How it works:</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  <li>Employee punches in → live tracking starts</li>
+                  <li>If location is turned off → employee gets a warning notification</li>
+                  <li>If location stays off → employee is automatically punched out</li>
+                  <li>A notification is sent explaining the auto punch-out</li>
+                </ol>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
