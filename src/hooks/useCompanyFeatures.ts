@@ -61,5 +61,8 @@ export function useCompanyFeatures() {
     canSeeTeamBoard: features.teamBoardEnabled,
     canSeeCommandPalette: features.commandPaletteEnabled,
     canSeePayrollTeamRole: features.separatePayrollTeamEnabled,
+    canSeeEmployeeDailyUpdates: features.employeeDailyUpdatesEnabled,
+    canSeeManagerDailyUpdates: features.managerDailyUpdatesEnabled,
+    companyAutoPunchoutEnabled: features.autoPunchoutLocationOff,
   };
 }
