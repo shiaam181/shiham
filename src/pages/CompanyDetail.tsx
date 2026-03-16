@@ -189,6 +189,9 @@ export default function CompanyDetail() {
       team_board_enabled: teamBoardEnabled,
       command_palette_enabled: commandPaletteEnabled,
       separate_payroll_team_enabled: separatePayrollTeamEnabled,
+      employee_daily_updates_enabled: employeeDailyUpdatesEnabled,
+      manager_daily_updates_enabled: managerDailyUpdatesEnabled,
+      auto_punchout_location_off: autoPunchoutLocationOff,
     } as any).eq('id', company.id);
 
     if (error) {
