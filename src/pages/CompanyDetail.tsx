@@ -140,6 +140,9 @@ export default function CompanyDetail() {
     setTeamBoardEnabled((data as any).team_board_enabled || false);
     setCommandPaletteEnabled((data as any).command_palette_enabled || false);
     setSeparatePayrollTeamEnabled((data as any).separate_payroll_team_enabled || false);
+    setEmployeeDailyUpdatesEnabled((data as any).employee_daily_updates_enabled || false);
+    setManagerDailyUpdatesEnabled((data as any).manager_daily_updates_enabled || false);
+    setAutoPunchoutLocationOff((data as any).auto_punchout_location_off || false);
   }, [id, navigate, toast]);
 
   const fetchUsers = useCallback(async () => {
