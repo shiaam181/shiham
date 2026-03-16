@@ -53,7 +53,7 @@ export default function PhotoThumbnail({
         } else {
           // Get signed URL from storage
           const { data, error } = await supabase.storage
-            .from('employee-photos')
+            .from(bucket)
             .createSignedUrl(photoUrl, 3600);
 
           if (data && !error) {
