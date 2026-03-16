@@ -7,6 +7,9 @@ interface CompanyFeatures {
   teamBoardEnabled: boolean;
   commandPaletteEnabled: boolean;
   separatePayrollTeamEnabled: boolean;
+  employeeDailyUpdatesEnabled: boolean;
+  managerDailyUpdatesEnabled: boolean;
+  autoPunchoutLocationOff: boolean;
 }
 
 const defaults: CompanyFeatures = {
@@ -14,6 +17,9 @@ const defaults: CompanyFeatures = {
   teamBoardEnabled: false,
   commandPaletteEnabled: false,
   separatePayrollTeamEnabled: false,
+  employeeDailyUpdatesEnabled: false,
+  managerDailyUpdatesEnabled: false,
+  autoPunchoutLocationOff: false,
 };
 
 export function useCompanyFeatures() {
