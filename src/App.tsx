@@ -62,6 +62,8 @@ const MyLeaves = lazy(() => import("./pages/MyLeaves"));
 const Compensation = lazy(() => import("./pages/Compensation"));
 const PayrollRun = lazy(() => import("./pages/PayrollRun"));
 const ManagerTeam = lazy(() => import("./pages/ManagerTeam"));
+const MyDailyUpdates = lazy(() => import("./pages/MyDailyUpdates"));
+const TeamDailyUpdates = lazy(() => import("./pages/TeamDailyUpdates"));
 const ManagerApprovals = lazy(() => import("./pages/ManagerApprovals"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const ComplianceReports = lazy(() => import("./pages/ComplianceReports"));
