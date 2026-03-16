@@ -35,6 +35,7 @@ export function LiveTrackingSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [globalEnabled, setGlobalEnabled] = useState(false);
+  const [autoPunchoutEnabled, setAutoPunchoutEnabled] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -115,22 +116,27 @@ export function LiveTrackingSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      // Get global setting
-      const { data: globalSetting } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'live_tracking_enabled')
-        .maybeSingle();
+      // Get global setting + auto-punchout setting
+      const [globalRes, autoPunchoutRes, companiesRes] = await Promise.all([
+        supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'live_tracking_enabled')
+          .maybeSingle(),
+        supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'auto_punchout_location_off')
+          .maybeSingle(),
+        supabase
+          .from('companies')
+          .select('id, name, live_tracking_enabled')
+          .order('name'),
+      ]);
 
-      setGlobalEnabled((globalSetting?.value as { enabled?: boolean })?.enabled ?? false);
-
-      // Get all companies with their tracking status
-      const { data: companiesData } = await supabase
-        .from('companies')
-        .select('id, name, live_tracking_enabled')
-        .order('name');
-
-      setCompanies(companiesData || []);
+      setGlobalEnabled((globalRes.data?.value as { enabled?: boolean })?.enabled ?? false);
+      setAutoPunchoutEnabled((autoPunchoutRes.data?.value as { enabled?: boolean })?.enabled ?? false);
+      setCompanies(companiesRes.data || []);
     } catch (err) {
       console.error('Error fetching settings:', err);
     } finally {
@@ -156,6 +162,36 @@ export function LiveTrackingSettings() {
         description: enabled 
           ? 'Companies can now enable live location tracking for their employees.'
           : 'Live location tracking has been disabled globally.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to update setting',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleAutoPunchout = async (enabled: boolean) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'auto_punchout_location_off',
+          value: { enabled },
+        }, { onConflict: 'key' });
+
+      if (error) throw error;
+
+      setAutoPunchoutEnabled(enabled);
+      toast({
+        title: enabled ? 'Auto Punch-Out Enabled' : 'Auto Punch-Out Disabled',
+        description: enabled 
+          ? 'Employees will be auto punched out if they turn off location after check-in.'
+          : 'Auto punch-out on location off has been disabled.',
       });
     } catch (err: any) {
       toast({
@@ -254,6 +290,50 @@ export function LiveTrackingSettings() {
               <p className="text-xs text-green-700 dark:text-green-300">
                 Live tracking is enabled. Company owners can now enable tracking for their employees.
               </p>
+            </div>
+          )}
+
+          {/* Auto Punch-Out on Location Off */}
+          {globalEnabled && (
+            <div className="flex items-center justify-between p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  autoPunchoutEnabled ? 'bg-amber-500/20' : 'bg-muted'
+                }`}>
+                  <AlertTriangle className={`w-5 h-5 ${autoPunchoutEnabled ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="autopunchout-toggle" className="text-sm font-medium cursor-pointer">
+                    Auto Punch-Out on Location Off
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {autoPunchoutEnabled
+                      ? 'Employees will be warned and then auto punched out if they disable location after check-in'
+                      : 'No action taken when employees turn off location services'}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="autopunchout-toggle"
+                checked={autoPunchoutEnabled}
+                onCheckedChange={toggleAutoPunchout}
+                disabled={isSaving}
+              />
+            </div>
+          )}
+
+          {autoPunchoutEnabled && globalEnabled && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                <p className="font-medium">How it works:</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  <li>Employee punches in → live tracking starts</li>
+                  <li>If location is turned off → employee gets a warning notification</li>
+                  <li>If location stays off → employee is automatically punched out</li>
+                  <li>A notification is sent explaining the auto punch-out</li>
+                </ol>
+              </div>
             </div>
           )}
         </CardContent>
