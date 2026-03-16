@@ -101,6 +101,7 @@ export default function AppSidebar() {
   const managerItems: NavItem[] = [
     { icon: Users, label: 'My Team', path: '/manager/team' },
     { icon: UserCheck, label: 'Approvals', path: '/manager/approvals' },
+    { icon: Camera, label: 'Team Updates', path: '/manager/team-updates' },
   ];
 
   // Admin items - visible to admins and above
