@@ -699,6 +699,52 @@ export default function CompanyDetail() {
                     <Switch checked={separatePayrollTeamEnabled} onCheckedChange={setSeparatePayrollTeamEnabled} />
                   </div>
                 </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Daily Updates & Activity</p>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <Label className="font-medium">📸 Employee Daily Updates</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {employeeDailyUpdatesEnabled 
+                            ? 'Enabled — Employees post daily work photos/notes, managers can view & pick toppers' 
+                            : 'Disabled — Daily updates feature hidden'}
+                        </p>
+                      </div>
+                      <Switch checked={employeeDailyUpdatesEnabled} onCheckedChange={setEmployeeDailyUpdatesEnabled} />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <Label className="font-medium">👔 Manager Daily Updates</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {managerDailyUpdatesEnabled 
+                            ? 'Enabled — Managers post updates visible to HR/Owner' 
+                            : 'Disabled — Manager updates hidden from HR/Owner'}
+                        </p>
+                      </div>
+                      <Switch checked={managerDailyUpdatesEnabled} onCheckedChange={setManagerDailyUpdatesEnabled} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Compliance & Tracking</p>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label className="font-medium">📍 Auto Punch-Out on Location Off</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {autoPunchoutLocationOff 
+                          ? 'Enabled — Employees auto punched out if GPS disabled during shift' 
+                          : 'Disabled — No enforcement when GPS is turned off'}
+                      </p>
+                    </div>
+                    <Switch checked={autoPunchoutLocationOff} onCheckedChange={setAutoPunchoutLocationOff} />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
