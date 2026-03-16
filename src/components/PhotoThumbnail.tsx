@@ -20,6 +20,7 @@ interface PhotoThumbnailProps {
   size?: 'sm' | 'md';
   onClick?: () => void;
   enableEnlarge?: boolean;
+  bucket?: string;
 }
 
 export default function PhotoThumbnail({ 
