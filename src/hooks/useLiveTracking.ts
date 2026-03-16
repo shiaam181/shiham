@@ -50,36 +50,30 @@ export function useLiveTracking() {
     }
 
     try {
-      // Get global setting + auto-punchout setting in parallel
-      const [globalRes, autoPunchoutRes] = await Promise.all([
-        supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'live_tracking_enabled')
-          .maybeSingle(),
-        supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'auto_punchout_location_off')
-          .maybeSingle(),
-      ]);
+      // Get global setting
+      const globalRes = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'live_tracking_enabled')
+        .maybeSingle();
 
       const globalEnabled = (globalRes.data?.value as { enabled?: boolean })?.enabled ?? false;
-      const autoPunchoutOnLocationOff = (autoPunchoutRes.data?.value as { enabled?: boolean })?.enabled ?? false;
 
-      // Get company setting
+      // Get company setting (including company-specific auto-punchout)
       let companyEnabled = true;
       let trackingInterval = 60;
+      let autoPunchoutOnLocationOff = false;
       
       if (profile?.company_id) {
         const { data: company } = await supabase
           .from('companies')
-          .select('live_tracking_enabled, tracking_interval_seconds')
+          .select('live_tracking_enabled, tracking_interval_seconds, auto_punchout_location_off')
           .eq('id', profile.company_id)
           .single();
 
         companyEnabled = company?.live_tracking_enabled ?? false;
         trackingInterval = company?.tracking_interval_seconds ?? 60;
+        autoPunchoutOnLocationOff = (company as any)?.auto_punchout_location_off ?? false;
       }
 
       setState({
