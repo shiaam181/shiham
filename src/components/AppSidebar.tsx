@@ -65,6 +65,7 @@ export default function AppSidebar() {
       ]
     },
     { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Camera, label: 'Daily Updates', path: '/my-daily-updates' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
   ];
 
