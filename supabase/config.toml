@@ -57,3 +57,5 @@ project_id = "kvygdphglkxqtaoxlzmh"
     verify_jwt = false
   [functions.hr-assistant]
     verify_jwt = false
+  [functions.auto-punchout]
+    verify_jwt = false

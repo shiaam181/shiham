@@ -35,6 +35,7 @@ export function LiveTrackingSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [globalEnabled, setGlobalEnabled] = useState(false);
+  const [autoPunchoutEnabled, setAutoPunchoutEnabled] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
