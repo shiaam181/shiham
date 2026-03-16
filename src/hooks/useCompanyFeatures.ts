@@ -35,7 +35,7 @@ export function useCompanyFeatures() {
 
     supabase
       .from('companies')
-      .select('mood_pulse_enabled, team_board_enabled, command_palette_enabled, separate_payroll_team_enabled')
+      .select('mood_pulse_enabled, team_board_enabled, command_palette_enabled, separate_payroll_team_enabled, employee_daily_updates_enabled, manager_daily_updates_enabled, auto_punchout_location_off')
       .eq('id', profile.company_id)
       .maybeSingle()
       .then(({ data }) => {
@@ -45,6 +45,9 @@ export function useCompanyFeatures() {
             teamBoardEnabled: (data as any).team_board_enabled ?? false,
             commandPaletteEnabled: (data as any).command_palette_enabled ?? false,
             separatePayrollTeamEnabled: (data as any).separate_payroll_team_enabled ?? false,
+            employeeDailyUpdatesEnabled: (data as any).employee_daily_updates_enabled ?? false,
+            managerDailyUpdatesEnabled: (data as any).manager_daily_updates_enabled ?? false,
+            autoPunchoutLocationOff: (data as any).auto_punchout_location_off ?? false,
           });
         }
         setLoading(false);
