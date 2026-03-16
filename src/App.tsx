@@ -258,8 +258,10 @@ function AppRoutes() {
           <Route path="/my-attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
           <Route path="/my-leaves" element={<ProtectedRoute><MyLeaves /></ProtectedRoute>} />
           <Route path="/my-documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
+          <Route path="/my-daily-updates" element={<ProtectedRoute><MyDailyUpdates /></ProtectedRoute>} />
           <Route path="/manager/team" element={<ProtectedRoute><ManagerTeam /></ProtectedRoute>} />
           <Route path="/manager/approvals" element={<ProtectedRoute><ManagerApprovals /></ProtectedRoute>} />
+          <Route path="/manager/team-updates" element={<ProtectedRoute><TeamDailyUpdates /></ProtectedRoute>} />
           <Route path="/admin/teams" element={<AdminRoute><TeamManagement /></AdminRoute>} />
           <Route path="/compliance-reports" element={<AdminRoute><ComplianceReports /></AdminRoute>} />
           <Route path="/admin/audit-trail" element={<AdminRoute><AuditTrail /></AdminRoute>} />
