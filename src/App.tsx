@@ -83,7 +83,9 @@ const EmployeeTimeline = lazy(() => import("./pages/EmployeeTimeline"));
 const PerformanceGoals = lazy(() => import("./pages/PerformanceGoals"));
 const PerformanceReviews = lazy(() => import("./pages/PerformanceReviews"));
 const KPITracking = lazy(() => import("./pages/KPITracking"));
-
+const ContactSupport = lazy(() => import("./pages/ContactSupport"));
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const AboutApp = lazy(() => import("./pages/AboutApp"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
