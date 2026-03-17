@@ -45,7 +45,7 @@ export default function PWAInstallPrompt() {
             <Download className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm">Install AttendanceHub</p>
+            <p className="font-medium text-sm">Install Zentrek</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Add to home screen for quick access
             </p>

@@ -68,7 +68,7 @@ export default function EmployeeAttendancePDF() {
 
       const reportDate = format(new Date(), 'MMMM d, yyyy h:mm a');
       const reportPeriod = format(monthDate, 'MMMM yyyy');
-      const companyName = companySettings?.company_name || 'AttendanceHub';
+      const companyName = companySettings?.company_name || 'Zentrek';
       const tagline = companySettings?.tagline || 'Employee Attendance Management System';
 
       // Generate PDF HTML

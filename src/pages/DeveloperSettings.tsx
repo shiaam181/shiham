@@ -73,8 +73,8 @@ export default function DeveloperSettings() {
   const [resendBackendConfigured, setResendBackendConfigured] = useState(false);
 
   // SMS Templates
-  const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your AttendanceHub verification code is: {{OTP}}. This code expires in 5 minutes.');
-  const [smsTemplateLogin, setSmsTemplateLogin] = useState('Your AttendanceHub login code is: {{OTP}}. This code expires in 5 minutes.');
+  const [smsTemplateSignup, setSmsTemplateSignup] = useState('Your Zentrek verification code is: {{OTP}}. This code expires in 5 minutes.');
+  const [smsTemplateLogin, setSmsTemplateLogin] = useState('Your Zentrek login code is: {{OTP}}. This code expires in 5 minutes.');
   const [smsTemplatesSaving, setSmsTemplatesSaving] = useState(false);
 
   // Test states
