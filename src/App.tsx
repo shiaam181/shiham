@@ -275,6 +275,9 @@ function AppRoutes() {
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact-support" element={<ContactSupport />} />
+          <Route path="/delete-account" element={<ProtectedRoute requireFaceSetup={false}><DeleteAccount /></ProtectedRoute>} />
+          <Route path="/about" element={<AboutApp />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

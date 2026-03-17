@@ -24,7 +24,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing and using this Attendance Management System, you accept and agree to 
+              By accessing and using Zentrek, you accept and agree to 
               be bound by these Terms of Service. If you do not agree to these terms, please do 
               not use the application.
             </p>
