@@ -63,7 +63,7 @@ function InstallAppCard() {
         <CardDescription>
           {showIOSInstructions 
             ? 'Add to your home screen for the best experience'
-            : 'Install AttendanceHub for offline access and notifications'}
+            : 'Install Zentrek for offline access and notifications'}
         </CardDescription>
       </CardHeader>
       <CardContent>

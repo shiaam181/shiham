@@ -389,7 +389,7 @@ export default function Reports() {
             </div>
             
             <div class="footer-note">
-              This is a computer-generated report from AttendanceHub. 
+              This is a computer-generated report from Zentrek. 
               For any discrepancies, please contact the HR department.
             </div>
           </div>

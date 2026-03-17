@@ -237,7 +237,7 @@ export default function Index() {
         
         <footer className="py-6 px-4 border-t border-border/40 bg-card">
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
-            <span>© 2026 AttendanceHub</span>
+            <span>© 2026 Zentrek</span>
             <div className="flex gap-4">
               <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
