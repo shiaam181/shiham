@@ -438,6 +438,20 @@ export default function DeveloperSettings() {
           <div className="space-y-3">
             <FeatureToggle label="Marketing Landing Page" description="Show landing page to visitors (otherwise redirect to login)" icon={Globe} checked={marketingPageEnabled} onCheckedChange={toggleMarketingPage} disabled={settingsLoading} />
             <FeatureToggle label="PWA / App-Only Mode" description="Require users to install the PWA before accessing the platform" icon={Smartphone} checked={appOnlyModeEnabled} onCheckedChange={toggleAppOnlyMode} disabled={settingsLoading} />
+            <FeatureToggle label="App Store Redirect" description="Redirect visitors to download app from Play Store / App Store instead of website" icon={Store} checked={appStoreRedirectEnabled} onCheckedChange={toggleAppStoreRedirect} disabled={settingsLoading} />
+
+            {appStoreRedirectEnabled && (
+              <div className="ml-4 pl-4 border-l-2 border-primary/20 space-y-3">
+                <CredentialField label="Play Store URL" value={playStoreLink} onChange={setPlayStoreLink} placeholder="https://play.google.com/store/apps/details?id=..." />
+                <CredentialField label="App Store URL" value={appStoreLink} onChange={setAppStoreLink} placeholder="https://apps.apple.com/app/..." />
+                <div className="flex justify-end">
+                  <Button onClick={saveStoreLinks} disabled={storeLinksSaving} size="sm" className="gap-2">
+                    <Save className="w-3.5 h-3.5" />
+                    {storeLinksSaving ? 'Saving…' : 'Save Links'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </SettingsSection>
 
