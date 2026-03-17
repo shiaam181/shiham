@@ -70,7 +70,7 @@ export function showLocalNotification(
     const defaultOptions: NotificationOptions = {
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
-      tag: 'attendancehub',
+      tag: 'zentrek',
       ...options,
     };
 
