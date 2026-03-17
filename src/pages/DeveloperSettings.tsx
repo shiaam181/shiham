@@ -43,6 +43,10 @@ export default function DeveloperSettings() {
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
   const [testingModeEnabled, setTestingModeEnabled] = useState(false);
+  const [appStoreRedirectEnabled, setAppStoreRedirectEnabled] = useState(false);
+  const [playStoreLink, setPlayStoreLink] = useState('');
+  const [appStoreLink, setAppStoreLink] = useState('');
+  const [storeLinksSaving, setStoreLinksSaving] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [clearDataStep, setClearDataStep] = useState(0);
   const [clearingData, setClearingData] = useState(false);
