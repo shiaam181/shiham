@@ -112,7 +112,7 @@ export default function Install() {
               </div>
               <CardTitle>Download App</CardTitle>
               <CardDescription>
-                Add AttendanceHub to your home screen
+                Add Zentrek to your home screen
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
