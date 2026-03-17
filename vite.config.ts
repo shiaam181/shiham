@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'AttendanceHub - Employee Attendance Management',
-        short_name: 'AttendanceHub',
+        name: 'Zentrek - Employee Attendance Management',
+        short_name: 'Zentrek',
         description: 'Professional employee attendance management with GPS tracking, face verification, and real-time reporting',
         theme_color: '#6366f1',
         background_color: '#ffffff',

@@ -29,7 +29,7 @@ export default function TopHeader({ currentView }: TopHeaderProps) {
       case 'admin':
         return 'Admin Dashboard';
       default:
-        return 'AttendanceHub';
+        return 'Zentrek';
     }
   };
 

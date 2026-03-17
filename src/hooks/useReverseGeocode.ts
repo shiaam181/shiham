@@ -28,7 +28,7 @@ export function useReverseGeocode() {
         {
           headers: {
             'Accept-Language': 'en',
-            'User-Agent': 'AttendanceHub App'
+            'User-Agent': 'Zentrek App'
           }
         }
       );
