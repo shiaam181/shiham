@@ -39,7 +39,7 @@ function InstallAppCard() {
             <CheckCircle2 className="w-5 h-5" />
             App Installed
           </CardTitle>
-          <CardDescription>AttendanceHub is installed on your device</CardDescription>
+          <CardDescription>Zentrek is installed on your device</CardDescription>
         </CardHeader>
       </Card>
     );
