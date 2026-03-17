@@ -47,7 +47,7 @@ export default function RoleBasedHeader({ currentView }: RoleBasedHeaderProps) {
       case 'developer': return { main: 'Developer Panel', sub: 'Full System Access' };
       case 'owner': return { main: 'Owner Dashboard', sub: 'Company Management' };
       case 'admin': return { main: 'Admin Dashboard', sub: 'Team Management' };
-      default: return { main: 'Dashboard', sub: 'AttendanceHub' };
+      default: return { main: 'Dashboard', sub: 'Zentrek' };
     }
   };
 

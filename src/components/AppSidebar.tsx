@@ -6,7 +6,7 @@ import {
   Home, ClipboardList, User, Calendar, Users, FileText, Clock, Settings, Shield, Code,
   Building2, ChevronDown, MapPin, Wallet, MessageSquare, BarChart3, CalendarOff, LogOut, X,
   BookOpen, Scale, Receipt, UserCheck, Briefcase, Bell, Sparkles, CalendarDays, Calculator,
-  Megaphone, Radio, TrendingUp, DollarSign, Target, Star, Gauge, Camera,
+  Megaphone, Radio, TrendingUp, DollarSign, Target, Star, Gauge, Camera, Info, HelpCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -67,6 +67,8 @@ export default function AppSidebar() {
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Camera, label: 'Daily Updates', path: '/my-daily-updates' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
+    { icon: HelpCircle, label: 'Support', path: '/contact-support' },
+    { icon: Info, label: 'About', path: '/about' },
   ];
 
   // HR items - visible to HR role

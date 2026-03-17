@@ -83,7 +83,9 @@ const EmployeeTimeline = lazy(() => import("./pages/EmployeeTimeline"));
 const PerformanceGoals = lazy(() => import("./pages/PerformanceGoals"));
 const PerformanceReviews = lazy(() => import("./pages/PerformanceReviews"));
 const KPITracking = lazy(() => import("./pages/KPITracking"));
-
+const ContactSupport = lazy(() => import("./pages/ContactSupport"));
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
+const AboutApp = lazy(() => import("./pages/AboutApp"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -273,6 +275,9 @@ function AppRoutes() {
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact-support" element={<ContactSupport />} />
+          <Route path="/delete-account" element={<ProtectedRoute requireFaceSetup={false}><DeleteAccount /></ProtectedRoute>} />
+          <Route path="/about" element={<AboutApp />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

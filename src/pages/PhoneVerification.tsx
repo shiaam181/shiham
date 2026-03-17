@@ -128,7 +128,7 @@ export default function PhoneVerification() {
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
             <Clock className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
+          <h1 className="text-xl sm:text-2xl font-display font-bold text-foreground">Zentrek</h1>
         </div>
 
         <Card variant="elevated" className="border-0 shadow-xl">

@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
             <p>
-              Welcome to our Attendance Management System. We respect your privacy and are committed 
+              Welcome to Zentrek. We respect your privacy and are committed 
               to protecting your personal data. This privacy policy explains how we collect, use, 
               and safeguard your information when you use our application.
             </p>

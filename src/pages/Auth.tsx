@@ -375,7 +375,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
               <Clock className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">Zentrek</h1>
           </div>
 
           <Card variant="elevated" className="border-0 shadow-xl">
@@ -469,7 +469,7 @@ export default function Auth() {
             <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/10">
               <Clock className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-white tracking-tight">AttendanceHub</h1>
+            <h1 className="text-2xl font-display font-bold text-white tracking-tight">Zentrek</h1>
           </div>
           <p className="text-white/70 text-base mt-4 max-w-md leading-relaxed">
             Professional employee attendance management with real-time tracking, GPS verification, and face recognition.
@@ -513,7 +513,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
               <Clock className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">Zentrek</h1>
           </div>
 
           {showForgotPassword ? (

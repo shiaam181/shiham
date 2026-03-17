@@ -151,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
 
     const { error: emailError } = await resend.emails.send({
-      from: "AttendanceHub <onboarding@resend.dev>",
+      from: "Zentrek <onboarding@resend.dev>",
       to: [email],
       subject,
       html: `

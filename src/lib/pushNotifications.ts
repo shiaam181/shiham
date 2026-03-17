@@ -70,7 +70,7 @@ export function showLocalNotification(
     const defaultOptions: NotificationOptions = {
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
-      tag: 'attendancehub',
+      tag: 'zentrek',
       ...options,
     };
 
@@ -110,7 +110,7 @@ export function sendHRNotification(
     POLICY_UPDATE: { title: '📋 Policy Updated', body: 'A company policy has been updated.' },
   };
 
-  const config = defaults[event] || { title: 'AttendanceHub', body: '' };
+  const config = defaults[event] || { title: 'Zentrek', body: '' };
   
   showLocalNotification(data.title || config.title, {
     body: data.body || config.body,

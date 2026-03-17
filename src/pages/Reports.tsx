@@ -285,7 +285,7 @@ export default function Reports() {
           <!-- Company Header -->
           <div class="header">
             <div class="company-info">
-              <h1 class="company-name">AttendanceHub</h1>
+              <h1 class="company-name">Zentrek</h1>
               <p class="company-tagline">Employee Attendance Management System</p>
             </div>
             <div class="report-meta">
@@ -389,7 +389,7 @@ export default function Reports() {
             </div>
             
             <div class="footer-note">
-              This is a computer-generated report from AttendanceHub. 
+              This is a computer-generated report from Zentrek. 
               For any discrepancies, please contact the HR department.
             </div>
           </div>

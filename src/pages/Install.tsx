@@ -78,7 +78,7 @@ export default function Install() {
         <div className="text-center space-y-3">
           <h1 className="text-3xl font-bold font-display">Get the App</h1>
           <p className="text-muted-foreground max-w-sm">
-            Install AttendanceHub on your device for the best experience with offline access and instant notifications
+            Install Zentrek on your device for the best experience with offline access and instant notifications
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export default function Install() {
               <div>
                 <h2 className="text-xl font-semibold text-success">App Installed!</h2>
                 <p className="text-muted-foreground mt-1">
-                  AttendanceHub is installed. Open it from your home screen for the best experience.
+                  Zentrek is installed. Open it from your home screen for the best experience.
                 </p>
               </div>
               <Button onClick={handleContinue} size="lg" className="w-full">
@@ -112,7 +112,7 @@ export default function Install() {
               </div>
               <CardTitle>Download App</CardTitle>
               <CardDescription>
-                Add AttendanceHub to your home screen
+                Add Zentrek to your home screen
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -271,7 +271,7 @@ export default function Install() {
       {/* Footer */}
       <footer className="p-4 text-center">
         <p className="text-xs text-muted-foreground">
-          AttendanceHub • Professional Attendance Management
+          Zentrek • Professional Attendance Management
         </p>
       </footer>
     </div>

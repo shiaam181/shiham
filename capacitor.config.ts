@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.d7ae568f9b984be2b3b6aa6c47628cad',
-  appName: 'shiham',
+  appName: 'Zentrek',
   webDir: 'dist',
   server: {
     url: 'https://d7ae568f-9b98-4be2-b3b6-aa6c47628cad.lovableproject.com?forceHideBadge=true',

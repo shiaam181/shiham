@@ -506,7 +506,7 @@ ${recentLeaves.length > 0 ? recentLeaves.map((lr: any) => `- ${lr.leave_type}: $
       console.error("Error fetching user context:", e);
     }
 
-    const systemPrompt = `You are **HR Buddy**, an intelligent, friendly, and multilingual HR assistant for AttendanceHub — an employee management platform used by Indian companies.
+    const systemPrompt = `You are **HR Buddy**, an intelligent, friendly, and multilingual HR assistant for Zentrek — an employee management platform used by Indian companies.
 
 ${userContext}
 
