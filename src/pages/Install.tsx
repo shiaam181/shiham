@@ -78,7 +78,7 @@ export default function Install() {
         <div className="text-center space-y-3">
           <h1 className="text-3xl font-bold font-display">Get the App</h1>
           <p className="text-muted-foreground max-w-sm">
-            Install AttendanceHub on your device for the best experience with offline access and instant notifications
+            Install Zentrek on your device for the best experience with offline access and instant notifications
           </p>
         </div>
 
