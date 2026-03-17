@@ -271,7 +271,7 @@ export default function Install() {
       {/* Footer */}
       <footer className="p-4 text-center">
         <p className="text-xs text-muted-foreground">
-          AttendanceHub • Professional Attendance Management
+          Zentrek • Professional Attendance Management
         </p>
       </footer>
     </div>

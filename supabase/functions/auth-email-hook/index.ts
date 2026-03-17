@@ -35,10 +35,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "shiham"
+const SITE_NAME = "Zentrek"
 const SENDER_DOMAIN = "notify.luxorapremiumofficial.shop"
 const ROOT_DOMAIN = "luxorapremiumofficial.shop"
-const FROM_DOMAIN = "luxorapremiumofficial.shop" // Domain shown in From address (may be root or sender subdomain)
+const FROM_DOMAIN = "luxorapremiumofficial.shop"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
