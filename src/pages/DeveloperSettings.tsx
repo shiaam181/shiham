@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Settings, Mail, ScanFace, Globe, MapPin, Camera, Timer, Save,
   CheckCircle2, Phone, MessageSquare, Loader2,
-  Smartphone, Trash2, AlertTriangle, Shield, Key, Calendar,
+  Smartphone, Trash2, AlertTriangle, Shield, Key, Calendar, Store, Link,
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -43,6 +43,10 @@ export default function DeveloperSettings() {
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
   const [testingModeEnabled, setTestingModeEnabled] = useState(false);
+  const [appStoreRedirectEnabled, setAppStoreRedirectEnabled] = useState(false);
+  const [playStoreLink, setPlayStoreLink] = useState('');
+  const [appStoreLink, setAppStoreLink] = useState('');
+  const [storeLinksSaving, setStoreLinksSaving] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [clearDataStep, setClearDataStep] = useState(0);
   const [clearingData, setClearingData] = useState(false);
@@ -142,6 +146,13 @@ export default function DeveloperSettings() {
           case 'oauth_phone_verification_enabled': setOauthPhoneVerificationEnabled((setting.value as any)?.enabled ?? true); break;
           case 'app_only_mode_enabled': setAppOnlyModeEnabled((setting.value as any)?.enabled ?? false); break;
           case 'testing_mode_enabled': setTestingModeEnabled((setting.value as any)?.enabled ?? false); break;
+          case 'app_store_redirect_enabled': setAppStoreRedirectEnabled((setting.value as any)?.enabled ?? false); break;
+          case 'app_store_links': {
+            const links = setting.value as any;
+            setPlayStoreLink(links?.play_store || '');
+            setAppStoreLink(links?.app_store || '');
+            break;
+          }
         }
       });
     }
@@ -267,6 +278,16 @@ export default function DeveloperSettings() {
   const toggleOauthPhoneVerification = (e: boolean) => updateSetting('oauth_phone_verification_enabled', e, setOauthPhoneVerificationEnabled, `OAuth + Phone ${e ? 'enabled' : 'disabled'}`);
   const toggleAppOnlyMode = (e: boolean) => updateSetting('app_only_mode_enabled', e, setAppOnlyModeEnabled, `App-only mode ${e ? 'enabled' : 'disabled'}`);
   const toggleTestingMode = (e: boolean) => updateSetting('testing_mode_enabled', e, setTestingModeEnabled, `Testing mode ${e ? 'ON' : 'OFF'}`);
+  const toggleAppStoreRedirect = (e: boolean) => updateSetting('app_store_redirect_enabled', e, setAppStoreRedirectEnabled, `App Store redirect ${e ? 'enabled' : 'disabled'}`);
+
+  const saveStoreLinks = async () => {
+    setStoreLinksSaving(true);
+    const { error } = await supabase.from('system_settings').upsert({
+      key: 'app_store_links', value: { play_store: playStoreLink, app_store: appStoreLink }
+    }, { onConflict: 'key' });
+    toast(error ? { title: 'Error', description: 'Failed to save', variant: 'destructive' as const } : { title: 'Saved', description: 'Store links saved' });
+    setStoreLinksSaving(false);
+  };
 
   const saveFaceThreshold = async (threshold: number) => {
     setSettingsLoading(true);
@@ -417,6 +438,20 @@ export default function DeveloperSettings() {
           <div className="space-y-3">
             <FeatureToggle label="Marketing Landing Page" description="Show landing page to visitors (otherwise redirect to login)" icon={Globe} checked={marketingPageEnabled} onCheckedChange={toggleMarketingPage} disabled={settingsLoading} />
             <FeatureToggle label="PWA / App-Only Mode" description="Require users to install the PWA before accessing the platform" icon={Smartphone} checked={appOnlyModeEnabled} onCheckedChange={toggleAppOnlyMode} disabled={settingsLoading} />
+            <FeatureToggle label="App Store Redirect" description="Redirect visitors to download app from Play Store / App Store instead of website" icon={Store} checked={appStoreRedirectEnabled} onCheckedChange={toggleAppStoreRedirect} disabled={settingsLoading} />
+
+            {appStoreRedirectEnabled && (
+              <div className="ml-4 pl-4 border-l-2 border-primary/20 space-y-3">
+                <CredentialField label="Play Store URL" value={playStoreLink} onChange={setPlayStoreLink} placeholder="https://play.google.com/store/apps/details?id=..." />
+                <CredentialField label="App Store URL" value={appStoreLink} onChange={setAppStoreLink} placeholder="https://apps.apple.com/app/..." />
+                <div className="flex justify-end">
+                  <Button onClick={saveStoreLinks} disabled={storeLinksSaving} size="sm" className="gap-2">
+                    <Save className="w-3.5 h-3.5" />
+                    {storeLinksSaving ? 'Saving…' : 'Save Links'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </SettingsSection>
 

@@ -3,8 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Check, AlertTriangle, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import { Sparkles, Check, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
 import { usePWAUpdate } from '@/hooks/usePWAUpdate';
 
@@ -34,7 +34,6 @@ export default function Updates() {
     if (!user) return;
 
     try {
-      // Get all updates
       const { data: updatesData, error: updatesError } = await supabase
         .from('app_updates')
         .select('*')
@@ -42,7 +41,6 @@ export default function Updates() {
 
       if (updatesError) throw updatesError;
 
-      // Get seen updates for this user
       const { data: seenUpdates, error: seenError } = await supabase
         .from('user_seen_updates')
         .select('update_id')
@@ -91,10 +89,21 @@ export default function Updates() {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div>
           <h1 className="text-xl font-display font-bold">App Updates</h1>
-          <p className="text-sm text-muted-foreground">See what's new</p>
+          <p className="text-sm text-muted-foreground">See what's new — full history of all releases</p>
         </div>
 
-        {/* Updates List */}
+        {/* Summary */}
+        {updates.length > 0 && (
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{updates.length} update{updates.length !== 1 ? 's' : ''} total</span>
+            <span>•</span>
+            <span>Latest: v{updates[0].version}</span>
+            <span>•</span>
+            <span>{format(new Date(updates[0].created_at), 'MMM d, yyyy')}</span>
+          </div>
+        )}
+
+        {/* Updates Timeline */}
         <div className="space-y-4">
           {hasDeferredUpdate && (
             <Card className="relative overflow-hidden ring-2 ring-primary/20">
@@ -138,54 +147,81 @@ export default function Updates() {
               </Card>
             ) : null
           ) : (
-            updates.map((update) => {
-              const wasSeen = seenIds.has(update.id);
+            <div className="relative">
+              {/* Timeline line */}
+              <div className="absolute left-[19px] top-8 bottom-4 w-px bg-border" />
 
-              return (
-                <Card
-                  key={update.id}
-                  className={`relative overflow-hidden ${!wasSeen ? 'ring-2 ring-primary/20' : ''}`}
-                >
-                  {update.is_critical && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-warning" />
-                  )}
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {update.is_critical ? (
-                          <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
-                            <AlertTriangle className="w-4 h-4 text-warning" />
-                          </div>
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                          </div>
-                        )}
-                        <div>
-                          <CardTitle className="text-base">{update.title}</CardTitle>
-                          <p className="text-xs text-muted-foreground">
-                            Version {update.version} • {format(new Date(update.created_at), 'MMM d, yyyy')}
-                          </p>
-                        </div>
+              <div className="space-y-4">
+                {updates.map((update, index) => {
+                  const wasSeen = seenIds.has(update.id);
+                  const dateObj = new Date(update.created_at);
+
+                  return (
+                    <div key={update.id} className="relative flex gap-4">
+                      {/* Timeline dot */}
+                      <div className="relative z-10 shrink-0 mt-4">
+                        <div className={`w-[10px] h-[10px] rounded-full border-2 ${
+                          update.is_critical
+                            ? 'border-warning bg-warning'
+                            : !wasSeen
+                            ? 'border-primary bg-primary'
+                            : 'border-muted-foreground/40 bg-muted'
+                        }`} style={{ marginLeft: '15px' }} />
                       </div>
-                      {wasSeen && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Check className="w-3 h-3" />
-                          Seen
-                        </div>
-                      )}
+
+                      <Card className={`flex-1 relative overflow-hidden ${!wasSeen ? 'ring-2 ring-primary/20' : ''}`}>
+                        {update.is_critical && (
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-warning" />
+                        )}
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              {update.is_critical ? (
+                                <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                                  <AlertTriangle className="w-4 h-4 text-warning" />
+                                </div>
+                              ) : (
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <Sparkles className="w-4 h-4 text-primary" />
+                                </div>
+                              )}
+                              <div>
+                                <CardTitle className="text-base">{update.title}</CardTitle>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>v{update.version}</span>
+                                  <span>•</span>
+                                  <span>{format(dateObj, 'MMM d, yyyy')}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {format(dateObj, 'h:mm a')}
+                                  </span>
+                                  <span>•</span>
+                                  <span>{formatDistanceToNow(dateObj, { addSuffix: true })}</span>
+                                </div>
+                              </div>
+                            </div>
+                            {wasSeen && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Check className="w-3 h-3" />
+                                Seen
+                              </div>
+                            )}
+                          </div>
+                        </CardHeader>
+                        {update.description && (
+                          <CardContent className="pt-2">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {update.description}
+                            </p>
+                          </CardContent>
+                        )}
+                      </Card>
                     </div>
-                  </CardHeader>
-                  {update.description && (
-                    <CardContent className="pt-2">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {update.description}
-                      </p>
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       </main>
