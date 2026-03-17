@@ -67,6 +67,8 @@ export default function AppSidebar() {
     { icon: User, label: 'Profile', path: '/profile' },
     { icon: Camera, label: 'Daily Updates', path: '/my-daily-updates' },
     { icon: Sparkles, label: 'Updates', path: '/updates' },
+    { icon: HelpCircle, label: 'Support', path: '/contact-support' },
+    { icon: Info, label: 'About', path: '/about' },
   ];
 
   // HR items - visible to HR role
