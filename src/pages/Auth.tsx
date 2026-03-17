@@ -375,7 +375,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
               <Clock className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-2xl font-display font-bold text-foreground">AttendanceHub</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">Zentrek</h1>
           </div>
 
           <Card variant="elevated" className="border-0 shadow-xl">
