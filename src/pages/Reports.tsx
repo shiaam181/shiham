@@ -285,7 +285,7 @@ export default function Reports() {
           <!-- Company Header -->
           <div class="header">
             <div class="company-info">
-              <h1 class="company-name">AttendanceHub</h1>
+              <h1 class="company-name">Zentrek</h1>
               <p class="company-tagline">Employee Attendance Management System</p>
             </div>
             <div class="report-meta">
