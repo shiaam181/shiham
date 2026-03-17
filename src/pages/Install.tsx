@@ -92,7 +92,7 @@ export default function Install() {
               <div>
                 <h2 className="text-xl font-semibold text-success">App Installed!</h2>
                 <p className="text-muted-foreground mt-1">
-                  AttendanceHub is installed. Open it from your home screen for the best experience.
+                  Zentrek is installed. Open it from your home screen for the best experience.
                 </p>
               </div>
               <Button onClick={handleContinue} size="lg" className="w-full">
