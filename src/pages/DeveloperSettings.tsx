@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Settings, Mail, ScanFace, Globe, MapPin, Camera, Timer, Save,
   CheckCircle2, Phone, MessageSquare, Loader2,
-  Smartphone, Trash2, AlertTriangle, Shield, Key, Calendar,
+  Smartphone, Trash2, AlertTriangle, Shield, Key, Calendar, Store, Link,
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
