@@ -278,6 +278,16 @@ export default function DeveloperSettings() {
   const toggleOauthPhoneVerification = (e: boolean) => updateSetting('oauth_phone_verification_enabled', e, setOauthPhoneVerificationEnabled, `OAuth + Phone ${e ? 'enabled' : 'disabled'}`);
   const toggleAppOnlyMode = (e: boolean) => updateSetting('app_only_mode_enabled', e, setAppOnlyModeEnabled, `App-only mode ${e ? 'enabled' : 'disabled'}`);
   const toggleTestingMode = (e: boolean) => updateSetting('testing_mode_enabled', e, setTestingModeEnabled, `Testing mode ${e ? 'ON' : 'OFF'}`);
+  const toggleAppStoreRedirect = (e: boolean) => updateSetting('app_store_redirect_enabled', e, setAppStoreRedirectEnabled, `App Store redirect ${e ? 'enabled' : 'disabled'}`);
+
+  const saveStoreLinks = async () => {
+    setStoreLinksSaving(true);
+    const { error } = await supabase.from('system_settings').upsert({
+      key: 'app_store_links', value: { play_store: playStoreLink, app_store: appStoreLink }
+    }, { onConflict: 'key' });
+    toast(error ? { title: 'Error', description: 'Failed to save', variant: 'destructive' as const } : { title: 'Saved', description: 'Store links saved' });
+    setStoreLinksSaving(false);
+  };
 
   const saveFaceThreshold = async (threshold: number) => {
     setSettingsLoading(true);
