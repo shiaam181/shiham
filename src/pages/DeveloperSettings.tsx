@@ -146,6 +146,13 @@ export default function DeveloperSettings() {
           case 'oauth_phone_verification_enabled': setOauthPhoneVerificationEnabled((setting.value as any)?.enabled ?? true); break;
           case 'app_only_mode_enabled': setAppOnlyModeEnabled((setting.value as any)?.enabled ?? false); break;
           case 'testing_mode_enabled': setTestingModeEnabled((setting.value as any)?.enabled ?? false); break;
+          case 'app_store_redirect_enabled': setAppStoreRedirectEnabled((setting.value as any)?.enabled ?? false); break;
+          case 'app_store_links': {
+            const links = setting.value as any;
+            setPlayStoreLink(links?.play_store || '');
+            setAppStoreLink(links?.app_store || '');
+            break;
+          }
         }
       });
     }
