@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.d7ae568f9b984be2b3b6aa6c47628cad',
+  appId: 'com.zentrek.app',
   appName: 'Zentrek',
   webDir: 'dist',
   server: {
@@ -11,13 +11,15 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: '#1a65e8',
+      backgroundColor: '#004D4D',
       showSpinner: true,
-      spinnerColor: '#ffffff'
+      spinnerColor: '#00C8C8',
+      splashImmersive: true,
+      splashFullScreen: true
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#1a65e8'
+      backgroundColor: '#004D4D'
     },
     Keyboard: {
       resize: 'body',
