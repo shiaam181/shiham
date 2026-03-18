@@ -65,8 +65,13 @@ serve(async (req) => {
       .single();
 
     if (!profile?.company_id) {
-      return new Response(JSON.stringify({ error: "No company assigned" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({
+        success: true,
+        isInside: true,
+        geofencingEnabled: false,
+        message: "No company assigned, geofencing not applicable",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
