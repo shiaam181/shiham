@@ -60,7 +60,7 @@ export default function GeofenceStatusIndicator({
       } catch (err) {
         console.error('Geofence check error:', err);
         setStatus('error');
-        onStatusChange?.(true); // Allow on error to not block
+        onStatusChange?.(false); // Block on error - don't silently allow bypass
       } finally {
         setIsChecking(false);
       }
