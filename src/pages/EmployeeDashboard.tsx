@@ -437,6 +437,10 @@ export default function EmployeeDashboard() {
           });
         }
       } else {
+        // Use the actual attendance record ID (handles night shift cross-day)
+        const recordId = todayAttendance?.id;
+        if (!recordId) throw new Error('No open attendance record found');
+
         const { error } = await supabase
           .from('attendance')
           .update({
@@ -446,8 +450,7 @@ export default function EmployeeDashboard() {
             check_out_photo_url: null,
             check_out_face_verified: !systemSettings.faceVerificationEnabled,
           })
-          .eq('user_id', user.id)
-          .eq('date', today);
+          .eq('id', recordId);
 
         if (error) throw error;
 
