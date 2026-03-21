@@ -174,15 +174,37 @@ export default function EmployeeDashboard() {
     
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const { data, error } = await supabase
+      const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+
+      // First check today's record
+      const { data: todayData, error: todayError } = await supabase
         .from('attendance')
         .select('*')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
 
-      if (error) throw error;
-      setTodayAttendance(data);
+      if (todayError) throw todayError;
+
+      if (todayData) {
+        setTodayAttendance(todayData);
+        return;
+      }
+
+      // No today record — check for an open night shift record from yesterday
+      const { data: yesterdayOpen, error: yesterdayError } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', yesterday)
+        .is('check_out_time', null)
+        .not('check_in_time', 'is', null)
+        .maybeSingle();
+
+      if (yesterdayError) throw yesterdayError;
+
+      // If there's an open record from yesterday, show it as active
+      setTodayAttendance(yesterdayOpen);
     } catch (error) {
       console.error('Error fetching attendance:', error);
     }
