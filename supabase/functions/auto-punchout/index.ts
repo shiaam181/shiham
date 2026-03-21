@@ -53,15 +53,40 @@ serve(async (req) => {
       );
     }
 
-    // Find today's open attendance record
+    // Find the user's open attendance record (today or yesterday for night shifts)
     const today = new Date().toISOString().split("T")[0];
-    const { data: attendance, error: attError } = await supabase
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+    // Check today first, then yesterday (night shift)
+    let attendance = null;
+    let attError = null;
+
+    const todayRes = await supabase
       .from("attendance")
       .select("id, check_in_time, check_out_time")
       .eq("user_id", userId)
       .eq("date", today)
       .is("check_out_time", null)
       .maybeSingle();
+
+    if (todayRes.error) {
+      attError = todayRes.error;
+    } else if (todayRes.data) {
+      attendance = todayRes.data;
+    } else {
+      // Check yesterday for night shift
+      const yesterdayRes = await supabase
+        .from("attendance")
+        .select("id, check_in_time, check_out_time")
+        .eq("user_id", userId)
+        .eq("date", yesterday)
+        .is("check_out_time", null)
+        .not("check_in_time", "is", null)
+        .maybeSingle();
+      
+      if (yesterdayRes.error) attError = yesterdayRes.error;
+      else attendance = yesterdayRes.data;
+    }
 
     if (attError) {
       return new Response(

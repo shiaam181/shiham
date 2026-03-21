@@ -451,19 +451,78 @@ serve(async (req: Request): Promise<Response> => {
 
     // === STEP 5: Check for duplicate attendance ===
     const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     
-    const { data: existingAttendance } = await supabase
+    // Check today's record first
+    let existingAttendance: any = null;
+    
+    const { data: todayRecord } = await supabase
       .from("attendance")
       .select("*")
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle();
 
+    existingAttendance = todayRecord;
+
+    // For check-out, also look for open night shift record from yesterday
+    if (action === 'check-out' && !existingAttendance?.check_in_time) {
+      const { data: yesterdayOpen } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("date", yesterday)
+        .is("check_out_time", null)
+        .not("check_in_time", "is", null)
+        .maybeSingle();
+
+      if (yesterdayOpen) {
+        existingAttendance = yesterdayOpen;
+        console.log(`Night shift: using yesterday's open record ${yesterdayOpen.id}`);
+      }
+    }
+
     if (action === 'check-in' && existingAttendance?.check_in_time) {
+      // Also check if there's an open record from yesterday (night shift still active)
+      const { data: yesterdayOpen } = await supabase
+        .from("attendance")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", yesterday)
+        .is("check_out_time", null)
+        .not("check_in_time", "is", null)
+        .maybeSingle();
+
+      if (yesterdayOpen) {
+        return new Response(
+          JSON.stringify({ error: "You have an open shift from yesterday. Please check out first.", code: "OPEN_NIGHT_SHIFT" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "Already checked in today", code: "ALREADY_CHECKED_IN" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // For check-in, also block if there's an open night shift from yesterday
+    if (action === 'check-in' && !existingAttendance?.check_in_time) {
+      const { data: yesterdayOpen } = await supabase
+        .from("attendance")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", yesterday)
+        .is("check_out_time", null)
+        .not("check_in_time", "is", null)
+        .maybeSingle();
+
+      if (yesterdayOpen) {
+        return new Response(
+          JSON.stringify({ error: "You have an open shift from yesterday. Please check out first.", code: "OPEN_NIGHT_SHIFT" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     if (action === 'check-out' && !existingAttendance?.check_in_time) {
