@@ -39,8 +39,8 @@ function normalizeEmbedding(embedding: unknown): number[] | null {
   return null;
 }
 
-const FACE_HOLD_FRAMES = 1; // Instant capture when face detected
-const DETECTION_INTERVAL = 80; // Fast detection interval
+const FACE_HOLD_FRAMES = 3; // Require 3 stable frames to avoid premature capture
+const DETECTION_INTERVAL = 100; // Detection interval ms
 
 export default function CameraCapture({ onCapture, onClose, type, referenceEmbedding }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -143,7 +143,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play();
           setIsLoading(false);
-          startFaceDetection();
+          // Wait for camera stream to stabilize before starting detection
+          setTimeout(() => startFaceDetection(), 500);
         };
       }
     } catch (err) {

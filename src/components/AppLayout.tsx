@@ -19,12 +19,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="overflow-x-hidden">
-        {/* Top Header Bar */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 sm:px-4 h-14" role="banner" aria-label="Top navigation">
+        {/* Top Header Bar - hidden on mobile since MobileBottomNav handles navigation */}
+        <header className="sticky top-0 z-40 hidden sm:flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-4 h-14" role="banner" aria-label="Top navigation">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div
-              className="hidden sm:flex items-center gap-2 relative cursor-pointer"
+              className="flex items-center gap-2 relative cursor-pointer"
               onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
             >
               <Search className="w-4 h-4 absolute left-2.5 text-muted-foreground" />
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <NotificationBell />
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border/50">
+            <div className="flex items-center gap-2 pl-2 border-l border-border/50">
               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-xs font-semibold text-primary">
                   {profile?.full_name?.charAt(0) || 'U'}
