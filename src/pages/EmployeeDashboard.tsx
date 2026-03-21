@@ -65,6 +65,7 @@ import { loadFaceModels } from '@/lib/faceRecognition';
 
 interface TodayAttendance {
   id: string;
+  date: string;
   check_in_time: string | null;
   check_out_time: string | null;
   status: string;
@@ -173,15 +174,37 @@ export default function EmployeeDashboard() {
     
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
-      const { data, error } = await supabase
+      const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+
+      // First check today's record
+      const { data: todayData, error: todayError } = await supabase
         .from('attendance')
         .select('*')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
 
-      if (error) throw error;
-      setTodayAttendance(data);
+      if (todayError) throw todayError;
+
+      if (todayData) {
+        setTodayAttendance(todayData);
+        return;
+      }
+
+      // No today record — check for an open night shift record from yesterday
+      const { data: yesterdayOpen, error: yesterdayError } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', yesterday)
+        .is('check_out_time', null)
+        .not('check_in_time', 'is', null)
+        .maybeSingle();
+
+      if (yesterdayError) throw yesterdayError;
+
+      // If there's an open record from yesterday, show it as active
+      setTodayAttendance(yesterdayOpen);
     } catch (error) {
       console.error('Error fetching attendance:', error);
     }
@@ -414,6 +437,10 @@ export default function EmployeeDashboard() {
           });
         }
       } else {
+        // Use the actual attendance record ID (handles night shift cross-day)
+        const recordId = todayAttendance?.id;
+        if (!recordId) throw new Error('No open attendance record found');
+
         const { error } = await supabase
           .from('attendance')
           .update({
@@ -423,8 +450,7 @@ export default function EmployeeDashboard() {
             check_out_photo_url: null,
             check_out_face_verified: !systemSettings.faceVerificationEnabled,
           })
-          .eq('user_id', user.id)
-          .eq('date', today);
+          .eq('id', recordId);
 
         if (error) throw error;
 
@@ -584,6 +610,10 @@ export default function EmployeeDashboard() {
           });
         }
       } else {
+        // Use the actual attendance record ID (handles night shift cross-day)
+        const recordId = todayAttendance?.id;
+        if (!recordId) throw new Error('No open attendance record found');
+
         const { error } = await supabase
           .from('attendance')
           .update({
@@ -593,8 +623,7 @@ export default function EmployeeDashboard() {
             check_out_photo_url: photoUrl,
             check_out_face_verified: localFaceVerified,
           })
-          .eq('user_id', user.id)
-          .eq('date', today);
+          .eq('id', recordId);
 
         if (error) throw error;
 
