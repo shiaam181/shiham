@@ -65,6 +65,7 @@ import { loadFaceModels } from '@/lib/faceRecognition';
 
 interface TodayAttendance {
   id: string;
+  date: string;
   check_in_time: string | null;
   check_out_time: string | null;
   status: string;
