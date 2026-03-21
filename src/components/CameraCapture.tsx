@@ -143,7 +143,8 @@ export default function CameraCapture({ onCapture, onClose, type, referenceEmbed
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play();
           setIsLoading(false);
-          startFaceDetection();
+          // Wait for camera stream to stabilize before starting detection
+          setTimeout(() => startFaceDetection(), 500);
         };
       }
     } catch (err) {
