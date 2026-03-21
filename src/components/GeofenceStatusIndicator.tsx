@@ -112,7 +112,43 @@ export default function GeofenceStatusIndicator({
       ) : (
         <>
           <MapPin className="w-4 h-4 text-yellow-600" />
-          <span className="text-sm text-yellow-700">Could not verify location</span>
+          <span className="text-sm text-yellow-700 flex-1">Could not verify location</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-yellow-700 hover:text-yellow-800"
+            onClick={() => {
+              setStatus('checking');
+              setIsChecking(true);
+              supabase.functions.invoke('evaluate-geofence', {
+                body: { latitude, longitude, accuracy },
+              }).then(({ data, error }) => {
+                if (error) throw error;
+                if (!data.geofencingEnabled) {
+                  setStatus('disabled');
+                  onStatusChange?.(true);
+                  onDisabled?.();
+                  return;
+                }
+                if (data.isInside) {
+                  setStatus('inside');
+                  setLocationName(data.matchedLocation?.name || '');
+                  setDistance(data.matchedLocation?.distance || 0);
+                  onStatusChange?.(true, data.matchedLocation?.name);
+                } else {
+                  setStatus('outside');
+                  setLocationName(data.nearestLocation || '');
+                  setDistance(data.distanceMeters || null);
+                  onStatusChange?.(false, data.nearestLocation);
+                }
+              }).catch(() => {
+                setStatus('error');
+                onStatusChange?.(false);
+              }).finally(() => setIsChecking(false));
+            }}
+          >
+            Retry
+          </Button>
         </>
       )}
     </div>
