@@ -5,8 +5,25 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import ThemeToggle from '@/components/ThemeToggle';
 import HRAssistantChat from '@/components/HRAssistantChat';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Command } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Search, Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
+
+function MobileTopBar() {
+  const { toggleSidebar } = useSidebar();
+  
+  return (
+    <header className="sticky top-0 z-40 flex sm:hidden items-center justify-between gap-2 border-b border-border/50 bg-card/95 backdrop-blur-xl px-3 safe-area-top" style={{ minHeight: '48px' }}>
+      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={toggleSidebar}>
+        <Menu className="w-5 h-5" />
+      </Button>
+      <div className="flex items-center gap-1.5">
+        <ThemeToggle />
+        <NotificationBell />
+      </div>
+    </header>
+  );
+}
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -19,7 +36,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="overflow-x-hidden">
-        {/* Top Header Bar - hidden on mobile since MobileBottomNav handles navigation */}
+        {/* Mobile Top Bar with safe-area + sidebar trigger */}
+        <MobileTopBar />
+
+        {/* Desktop Top Header Bar */}
         <header className="sticky top-0 z-40 hidden sm:flex items-center justify-between gap-3 border-b border-border/50 bg-card/95 backdrop-blur-xl px-4 h-14" role="banner" aria-label="Top navigation">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />

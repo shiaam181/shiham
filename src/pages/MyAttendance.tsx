@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
+import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -114,18 +115,17 @@ export default function MyAttendance() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 max-w-5xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <CalendarDays className="w-6 h-6 text-primary" /> My Attendance
-            </h1>
-            <p className="text-sm text-muted-foreground">View your attendance history and submit corrections</p>
-          </div>
-          <Button size="sm" onClick={() => setShowRegDialog(true)}>
-            <Plus className="w-4 h-4 mr-1" /> Request Correction
-          </Button>
-        </div>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-5xl space-y-5">
+        <PageHeader
+          title="My Attendance"
+          description="View your attendance history and submit corrections"
+          icon={<CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
+          actions={
+            <Button size="sm" onClick={() => setShowRegDialog(true)} className="w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-1" /> Request Correction
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
