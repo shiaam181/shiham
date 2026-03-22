@@ -319,11 +319,12 @@ export default function ProfileSettings() {
 
   return (
     <AppLayout>
-      <main className="container mx-auto px-4 py-6 space-y-6 max-w-2xl">
-        <div>
-          <h1 className="font-display font-bold text-xl">Profile Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your profile and face verification</p>
-        </div>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-5 max-w-2xl">
+        <PageHeader
+          title="Profile Settings"
+          description="Manage your profile and face verification"
+          icon={<User className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
+        />
         {/* Face Verification */}
         <Card>
           <CardHeader>
