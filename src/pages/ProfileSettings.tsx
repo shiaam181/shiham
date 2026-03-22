@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 import { 
   ArrowLeft, 

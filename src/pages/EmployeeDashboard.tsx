@@ -717,7 +717,7 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5 pb-6">
+      <main className="container mx-auto px-3 sm:px-4 py-3 sm:py-6 space-y-4 sm:space-y-5 pb-6">
         {/* Greeting & Time */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
