@@ -44,6 +44,7 @@ export default function DeveloperSettings() {
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
   const [testingModeEnabled, setTestingModeEnabled] = useState(false);
   const [appStoreRedirectEnabled, setAppStoreRedirectEnabled] = useState(false);
+  const [freeTrialEnabled, setFreeTrialEnabled] = useState(false);
   const [playStoreLink, setPlayStoreLink] = useState('');
   const [appStoreLink, setAppStoreLink] = useState('');
   const [storeLinksSaving, setStoreLinksSaving] = useState(false);
