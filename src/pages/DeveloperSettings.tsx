@@ -281,6 +281,7 @@ export default function DeveloperSettings() {
   const toggleAppOnlyMode = (e: boolean) => updateSetting('app_only_mode_enabled', e, setAppOnlyModeEnabled, `App-only mode ${e ? 'enabled' : 'disabled'}`);
   const toggleTestingMode = (e: boolean) => updateSetting('testing_mode_enabled', e, setTestingModeEnabled, `Testing mode ${e ? 'ON' : 'OFF'}`);
   const toggleAppStoreRedirect = (e: boolean) => updateSetting('app_store_redirect_enabled', e, setAppStoreRedirectEnabled, `App Store redirect ${e ? 'enabled' : 'disabled'}`);
+  const toggleFreeTrial = (e: boolean) => updateSetting('free_trial_enabled', e, setFreeTrialEnabled, `Free trial ${e ? 'enabled' : 'disabled'}`);
 
   const saveStoreLinks = async () => {
     setStoreLinksSaving(true);
