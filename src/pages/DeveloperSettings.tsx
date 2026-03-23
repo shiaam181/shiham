@@ -148,6 +148,7 @@ export default function DeveloperSettings() {
           case 'app_only_mode_enabled': setAppOnlyModeEnabled((setting.value as any)?.enabled ?? false); break;
           case 'testing_mode_enabled': setTestingModeEnabled((setting.value as any)?.enabled ?? false); break;
           case 'app_store_redirect_enabled': setAppStoreRedirectEnabled((setting.value as any)?.enabled ?? false); break;
+          case 'free_trial_enabled': setFreeTrialEnabled((setting.value as any)?.enabled ?? false); break;
           case 'app_store_links': {
             const links = setting.value as any;
             setPlayStoreLink(links?.play_store || '');
