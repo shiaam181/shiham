@@ -27,6 +27,7 @@ const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
 const DeveloperPricing = lazy(() => import("./pages/DeveloperPricing"));
+const DeveloperPlanFeatures = lazy(() => import("./pages/DeveloperPlanFeatures"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const HolidayManagement = lazy(() => import("./pages/HolidayManagement"));
 const EmployeeManagement = lazy(() => import("./pages/EmployeeManagement"));
