@@ -224,6 +224,7 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-[90vh] sm:min-h-screen flex items-center pt-20 sm:pt-24 pb-12 sm:pb-20 overflow-hidden bg-background">
+      <GoldenParticles />
       <FloatingShapes />
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
