@@ -156,6 +156,7 @@ export default function AppSidebar() {
         { icon: Building2, label: 'Company Management', path: '/developer/companies' },
         { icon: Radio, label: 'Global Broadcast', path: '/developer/broadcast' },
         { icon: DollarSign, label: 'Pricing Plans', path: '/developer/pricing' },
+        { icon: Settings, label: 'Plan Features', path: '/developer/plan-features' },
       ]
     },
     {
