@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { AnimatedCounter } from '@/components/landing/AnimatedCounter';
 import { ScrollReveal } from '@/components/landing/ScrollReveal';
+import { GoldenParticles } from '@/components/landing/GoldenParticles';
 import { cn } from '@/lib/utils';
 
 // ─── Floating shapes ──────────────────────────────────────────
