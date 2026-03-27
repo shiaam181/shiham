@@ -274,6 +274,7 @@ function AppRoutes() {
           <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
+          <Route path="/developer/plan-features" element={<DeveloperRoute><DeveloperPlanFeatures /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/contact-support" element={<ContactSupport />} />
