@@ -29,6 +29,7 @@ const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
 const DeveloperPricing = lazy(() => import("./pages/DeveloperPricing"));
 const DeveloperPlanFeatures = lazy(() => import("./pages/DeveloperPlanFeatures"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const GetApp = lazy(() => import("./pages/GetApp"));
 const HRSoftware = lazy(() => import("./pages/products/HRSoftware"));
 const PayrollSoftware = lazy(() => import("./pages/products/PayrollSoftware"));
 const LeaveManagementProduct = lazy(() => import("./pages/products/LeaveManagement"));
@@ -279,6 +280,7 @@ function AppRoutes() {
           <Route path="/my-reviews" element={<ProtectedRoute><PerformanceReviews /></ProtectedRoute>} />
           <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/get-app" element={<GetApp />} />
           <Route path="/product/hr-software" element={<HRSoftware />} />
           <Route path="/product/payroll-software" element={<PayrollSoftware />} />
           <Route path="/product/leave-management" element={<LeaveManagementProduct />} />
