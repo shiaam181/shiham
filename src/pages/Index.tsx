@@ -199,6 +199,10 @@ function LandingNav() {
           <MobileNavSection title="Resources" items={resourceColumns.flatMap(c => c.items)} />
           <a href="#features" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-foreground">Features</a>
           <Link to="/pricing" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-foreground">Pricing</Link>
+          <Link to="/get-app" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground">
+            <Smartphone className="w-4 h-4 text-primary" />
+            Get the App
+          </Link>
           <Button variant="outline" size="sm" onClick={() => { setMobileOpen(false); navigate('/auth'); }} className="w-full mt-2">Login</Button>
         </div>
       )}
