@@ -142,7 +142,7 @@ export default function DeveloperSettings() {
             if (t?.otp_login) setSmsTemplateLogin(t.otp_login);
             break;
           }
-          case 'google_signin_enabled': setGoogleSigninEnabled((setting.value as any)?.enabled ?? true); break;
+          
           case 'password_login_enabled': setPasswordLoginEnabled((setting.value as any)?.enabled ?? true); break;
           case 'oauth_phone_verification_enabled': setOauthPhoneVerificationEnabled((setting.value as any)?.enabled ?? true); break;
           case 'app_only_mode_enabled': setAppOnlyModeEnabled((setting.value as any)?.enabled ?? false); break;
