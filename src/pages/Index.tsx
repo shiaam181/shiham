@@ -570,14 +570,8 @@ export default function Index() {
 
         const rows = data as Array<{ key: string; value: Record<string, unknown> }> | null;
         const marketingEnabled = (rows?.find((r) => r.key === 'show_marketing_landing_page')?.value as any)?.enabled ?? false;
-        const redirectEnabled = (rows?.find((r) => r.key === 'app_store_redirect_enabled')?.value as any)?.enabled ?? false;
-        const links = rows?.find((r) => r.key === 'app_store_links')?.value as { play_store?: string; app_store?: string } ?? {};
 
         setShowMarketing(!!marketingEnabled);
-        setAppStoreRedirect(!!redirectEnabled);
-        setStoreLinks(links);
-
-        if (redirectEnabled) { setCheckingSettings(false); return; }
         if (!marketingEnabled) navigate('/auth');
       } catch (err) {
         console.error('Settings check failed:', err);
