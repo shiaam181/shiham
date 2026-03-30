@@ -29,6 +29,7 @@ const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
 const DeveloperPricing = lazy(() => import("./pages/DeveloperPricing"));
 const DeveloperPlanFeatures = lazy(() => import("./pages/DeveloperPlanFeatures"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const GetApp = lazy(() => import("./pages/GetApp"));
 const HRSoftware = lazy(() => import("./pages/products/HRSoftware"));
 const PayrollSoftware = lazy(() => import("./pages/products/PayrollSoftware"));
 const LeaveManagementProduct = lazy(() => import("./pages/products/LeaveManagement"));
