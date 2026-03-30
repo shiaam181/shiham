@@ -554,8 +554,11 @@ export default function Index() {
 
   useEffect(() => {
     const checkAndRedirect = async () => {
-      if (!isLoading && user) { navigate('/dashboard'); return; }
-      if (!isLoading && !user) {
+      if (isLoading) return;
+      
+      if (user) { navigate('/dashboard'); return; }
+
+      try {
         const { data, error } = await supabase.rpc('get_public_auth_settings' as never);
         if (error) console.error('Failed to load public auth settings:', error);
 
@@ -570,11 +573,28 @@ export default function Index() {
 
         if (redirectEnabled) { setCheckingSettings(false); return; }
         if (!marketingEnabled) navigate('/auth');
+      } catch (err) {
+        console.error('Settings check failed:', err);
+        // Fallback: show marketing page on error
+        setShowMarketing(true);
+      } finally {
         setCheckingSettings(false);
       }
     };
     checkAndRedirect();
   }, [user, isLoading, navigate]);
+
+  // Safety timeout: if loading takes more than 4 seconds, stop waiting
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (checkingSettings) {
+        console.warn('[Index] Loading timed out, showing page');
+        setCheckingSettings(false);
+        setShowMarketing(true);
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [checkingSettings]);
 
   if (isLoading || checkingSettings) {
     return (
