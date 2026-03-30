@@ -557,8 +557,6 @@ export default function Index() {
   const navigate = useNavigate();
   const [checkingSettings, setCheckingSettings] = useState(true);
   const [showMarketing, setShowMarketing] = useState(false);
-  const [appStoreRedirect, setAppStoreRedirect] = useState(false);
-  const [storeLinks, setStoreLinks] = useState<{ play_store?: string; app_store?: string }>({});
 
   useEffect(() => {
     const checkAndRedirect = async () => {
