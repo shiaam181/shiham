@@ -212,7 +212,12 @@ function MobileNavSection({ title, items }: { title: string; items: DropdownItem
       </button>
       {open && (
         <div className="pl-4 space-y-0.5">
-          {items.map(item => (
+          {items.map(item => item.href ? (
+            <Link key={item.label} to={item.href} className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <item.icon className="w-4 h-4 text-primary/70 shrink-0" />
+              {item.label}
+            </Link>
+          ) : (
             <div key={item.label} className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <item.icon className="w-4 h-4 text-primary/70 shrink-0" />
               {item.label}
