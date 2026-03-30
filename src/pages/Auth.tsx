@@ -48,7 +48,7 @@ export default function Auth() {
   const { signIn, resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
   const [isResetLoading, setIsResetLoading] = useState(false);
 
   // Determine which auth options are available
