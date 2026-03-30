@@ -280,6 +280,7 @@ function AppRoutes() {
           <Route path="/my-reviews" element={<ProtectedRoute><PerformanceReviews /></ProtectedRoute>} />
           <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/get-app" element={<GetApp />} />
           <Route path="/product/hr-software" element={<HRSoftware />} />
           <Route path="/product/payroll-software" element={<PayrollSoftware />} />
           <Route path="/product/leave-management" element={<LeaveManagementProduct />} />
