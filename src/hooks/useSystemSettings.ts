@@ -37,7 +37,7 @@ const defaultSettings: SystemSettings = {
   emailOtpEnabled: false,
   passwordLoginEnabled: true,
   resendApiKey: '',
-  googleSigninEnabled: true,
+  
   oauthPhoneVerificationEnabled: true,
   appOnlyModeEnabled: false,
   testingModeEnabled: false,
