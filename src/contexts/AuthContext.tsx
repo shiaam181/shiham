@@ -274,7 +274,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signIn,
         signUp,
-        signInWithGoogle,
         resetPassword,
         signOut,
         refreshProfile,

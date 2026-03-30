@@ -117,9 +117,6 @@ export function useSystemSettings() {
           case 'resend_config':
             newSettings.resendApiKey = (value as { api_key?: string })?.api_key ?? '';
             break;
-          case 'google_signin_enabled':
-            newSettings.googleSigninEnabled = value?.enabled ?? true;
-            break;
           case 'password_login_enabled':
             newSettings.passwordLoginEnabled = value?.enabled ?? true;
             break;
