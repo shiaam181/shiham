@@ -45,7 +45,7 @@ export default function Auth() {
   const [pendingLoginEmail, setPendingLoginEmail] = useState<string | null>(null);
   const [pendingLoginPhone, setPendingLoginPhone] = useState<string | null>(null);
   
-  const { signIn, signInWithGoogle, resetPassword, user } = useAuth();
+  const { signIn, resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
