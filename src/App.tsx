@@ -279,6 +279,12 @@ function AppRoutes() {
           <Route path="/my-reviews" element={<ProtectedRoute><PerformanceReviews /></ProtectedRoute>} />
           <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/product/hr-software" element={<HRSoftware />} />
+          <Route path="/product/payroll-software" element={<PayrollSoftware />} />
+          <Route path="/product/leave-management" element={<LeaveManagementProduct />} />
+          <Route path="/product/attendance-management" element={<AttendanceManagementProduct />} />
+          <Route path="/product/performance-management" element={<PerformanceManagementProduct />} />
+          <Route path="/product/employee-self-service" element={<EmployeeSelfService />} />
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/developer/plan-features" element={<DeveloperRoute><DeveloperPlanFeatures /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
