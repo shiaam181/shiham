@@ -387,7 +387,7 @@ export default function DeveloperSettings() {
           <div className="space-y-3">
             <FeatureToggle label="🧪 Testing Mode" description="Bypass OTP verification for faster testing" checked={testingModeEnabled} onCheckedChange={toggleTestingMode} disabled={settingsLoading} variant="warning" />
             <FeatureToggle label="Email + Password" description="Standard email and password login" icon={Mail} checked={passwordLoginEnabled} onCheckedChange={togglePasswordLogin} disabled={settingsLoading} />
-            <FeatureToggle label="Google Sign-in" description="Allow login with Google accounts" icon={Globe} checked={googleSigninEnabled} onCheckedChange={toggleGoogleSignin} disabled={settingsLoading} />
+            
             <FeatureToggle label="Phone OTP" description="Login via phone number OTP (requires SMS provider)" icon={Phone} checked={phoneOtpEnabled} onCheckedChange={togglePhoneOtp} disabled={settingsLoading} />
             <FeatureToggle label="Email OTP" description="Login via email OTP" icon={Mail} checked={emailOtpEnabled} onCheckedChange={toggleEmailOtp} disabled={settingsLoading} />
             <FeatureToggle label="OAuth + Phone Verification" description="Require phone OTP after Google sign-in" icon={Shield} checked={oauthPhoneVerificationEnabled} onCheckedChange={toggleOauthPhoneVerification} disabled={settingsLoading} />
