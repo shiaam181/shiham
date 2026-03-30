@@ -76,17 +76,23 @@ function NavDropdown({ label, columns, wide }: { label: string; columns: Dropdow
                   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">{col.title}</p>
                 )}
                 <div className="space-y-1">
-                  {col.items.map((item) => (
-                    <a
-                      key={item.label}
-                      href={item.href || '#'}
-                      onClick={(e) => { e.preventDefault(); setOpen(false); }}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors group"
-                    >
-                      <item.icon className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
-                      {item.label}
-                    </a>
-                  ))}
+                  {col.items.map((item) => {
+                    const inner = (
+                      <span className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors group cursor-pointer">
+                        <item.icon className="w-4 h-4 text-primary/70 group-hover:text-primary transition-colors shrink-0" />
+                        {item.label}
+                      </span>
+                    );
+                    return item.href ? (
+                      <Link key={item.label} to={item.href} onClick={() => setOpen(false)}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <a key={item.label} href="#" onClick={(e) => { e.preventDefault(); setOpen(false); }} className="block">
+                        {inner}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -113,20 +119,20 @@ function LandingNav() {
     {
       title: 'Product',
       items: [
-        { icon: Users, label: 'HR Software' },
-        { icon: Wallet, label: 'Payroll Software' },
-        { icon: Calendar, label: 'Leave Management' },
-        { icon: ClipboardCheck, label: 'Attendance Management' },
-        { icon: Target, label: 'Performance Management' },
-        { icon: UserCheck, label: 'Employee Self Service' },
+        { icon: Users, label: 'HR Software', href: '/product/hr-software' },
+        { icon: Wallet, label: 'Payroll Software', href: '/product/payroll-software' },
+        { icon: Calendar, label: 'Leave Management', href: '/product/leave-management' },
+        { icon: ClipboardCheck, label: 'Attendance Management', href: '/product/attendance-management' },
+        { icon: Target, label: 'Performance Management', href: '/product/performance-management' },
+        { icon: UserCheck, label: 'Employee Self Service', href: '/product/employee-self-service' },
       ],
     },
     {
       title: 'For Industry',
       items: [
-        { icon: Settings, label: 'Manufacturing' },
-        { icon: Globe, label: 'SaaS / IT' },
-        { icon: Shield, label: 'Healthcare' },
+        { icon: Settings, label: 'Manufacturing', href: '/product/hr-software' },
+        { icon: Globe, label: 'SaaS / IT', href: '/product/hr-software' },
+        { icon: Shield, label: 'Healthcare', href: '/product/hr-software' },
       ],
     },
   ];
@@ -206,7 +212,12 @@ function MobileNavSection({ title, items }: { title: string; items: DropdownItem
       </button>
       {open && (
         <div className="pl-4 space-y-0.5">
-          {items.map(item => (
+          {items.map(item => item.href ? (
+            <Link key={item.label} to={item.href} className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <item.icon className="w-4 h-4 text-primary/70 shrink-0" />
+              {item.label}
+            </Link>
+          ) : (
             <div key={item.label} className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <item.icon className="w-4 h-4 text-primary/70 shrink-0" />
               {item.label}

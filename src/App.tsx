@@ -29,6 +29,12 @@ const DeveloperDashboard = lazy(() => import("./pages/DeveloperDashboard"));
 const DeveloperPricing = lazy(() => import("./pages/DeveloperPricing"));
 const DeveloperPlanFeatures = lazy(() => import("./pages/DeveloperPlanFeatures"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const HRSoftware = lazy(() => import("./pages/products/HRSoftware"));
+const PayrollSoftware = lazy(() => import("./pages/products/PayrollSoftware"));
+const LeaveManagementProduct = lazy(() => import("./pages/products/LeaveManagement"));
+const AttendanceManagementProduct = lazy(() => import("./pages/products/AttendanceManagement"));
+const PerformanceManagementProduct = lazy(() => import("./pages/products/PerformanceManagement"));
+const EmployeeSelfService = lazy(() => import("./pages/products/EmployeeSelfService"));
 const HolidayManagement = lazy(() => import("./pages/HolidayManagement"));
 const EmployeeManagement = lazy(() => import("./pages/EmployeeManagement"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -273,6 +279,12 @@ function AppRoutes() {
           <Route path="/my-reviews" element={<ProtectedRoute><PerformanceReviews /></ProtectedRoute>} />
           <Route path="/admin/kpi-tracking" element={<AdminRoute><KPITracking /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/product/hr-software" element={<HRSoftware />} />
+          <Route path="/product/payroll-software" element={<PayrollSoftware />} />
+          <Route path="/product/leave-management" element={<LeaveManagementProduct />} />
+          <Route path="/product/attendance-management" element={<AttendanceManagementProduct />} />
+          <Route path="/product/performance-management" element={<PerformanceManagementProduct />} />
+          <Route path="/product/employee-self-service" element={<EmployeeSelfService />} />
           <Route path="/developer/pricing" element={<DeveloperRoute><DeveloperPricing /></DeveloperRoute>} />
           <Route path="/developer/plan-features" element={<DeveloperRoute><DeveloperPlanFeatures /></DeveloperRoute>} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
