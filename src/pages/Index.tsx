@@ -168,6 +168,10 @@ function LandingNav() {
           <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
           <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</a>
           <NavDropdown label="Resources" columns={resourceColumns} />
+          <Link to="/get-app" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+            <Smartphone className="w-3.5 h-3.5" />
+            Get App
+          </Link>
         </div>
 
         {/* CTA */}
