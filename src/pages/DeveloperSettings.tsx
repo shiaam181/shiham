@@ -38,7 +38,7 @@ export default function DeveloperSettings() {
   const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
-  const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
+  
   const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
