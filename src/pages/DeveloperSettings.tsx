@@ -275,7 +275,7 @@ export default function DeveloperSettings() {
   const togglePhotoCapture = (e: boolean) => updateSetting('photo_capture_enabled', e, setPhotoCaptureEnabled, `Photo capture ${e ? 'enabled' : 'disabled'}`);
   const toggleLeaveManagement = (e: boolean) => updateSetting('leave_management_enabled', e, setLeaveManagementEnabled, `Leave management ${e ? 'enabled' : 'disabled'}`);
   const toggleOvertimeTracking = (e: boolean) => updateSetting('overtime_tracking_enabled', e, setOvertimeTrackingEnabled, `Overtime ${e ? 'enabled' : 'disabled'}`);
-  const toggleGoogleSignin = (e: boolean) => updateSetting('google_signin_enabled', e, setGoogleSigninEnabled, `Google Sign-in ${e ? 'enabled' : 'disabled'}`);
+  
   const togglePasswordLogin = (e: boolean) => updateSetting('password_login_enabled', e, setPasswordLoginEnabled, `Password login ${e ? 'enabled' : 'disabled'}`);
   const toggleOauthPhoneVerification = (e: boolean) => updateSetting('oauth_phone_verification_enabled', e, setOauthPhoneVerificationEnabled, `OAuth + Phone ${e ? 'enabled' : 'disabled'}`);
   const toggleAppOnlyMode = (e: boolean) => updateSetting('app_only_mode_enabled', e, setAppOnlyModeEnabled, `App-only mode ${e ? 'enabled' : 'disabled'}`);
