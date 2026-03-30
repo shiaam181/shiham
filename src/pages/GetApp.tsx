@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Smartphone, ArrowRight, ArrowLeft, Download, Shield, Zap, Globe } from 'lucide-react';
+import { 
+  Smartphone, ArrowRight, ArrowLeft, Download, Shield, Zap, Globe, 
+  Bell, Fingerprint, MapPin, Wifi, WifiOff, Battery, CheckCircle2,
+  Monitor, Tablet
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollReveal } from '@/components/landing/ScrollReveal';
 import { GoldenParticles } from '@/components/landing/GoldenParticles';
@@ -18,11 +22,26 @@ export default function GetApp() {
     });
   }, []);
 
-  const features = [
-    { icon: Zap, title: 'Lightning Fast', description: 'Native performance with instant load times and smooth animations.' },
-    { icon: Shield, title: 'Secure & Private', description: 'Face verification, GPS tracking, and encrypted data — all on your device.' },
-    { icon: Globe, title: 'Works Offline', description: 'Mark attendance, view payslips, and access key features even without internet.' },
-    { icon: Download, title: 'Auto Updates', description: 'Always get the latest features without manually updating from the store.' },
+  const platforms = [
+    { icon: Smartphone, label: 'Android', desc: 'Play Store' },
+    { icon: Smartphone, label: 'iOS', desc: 'App Store' },
+    { icon: Monitor, label: 'Web App', desc: 'Any Browser' },
+    { icon: Tablet, label: 'Tablet', desc: 'Optimized' },
+  ];
+
+  const capabilities = [
+    { icon: Fingerprint, title: 'Biometric Check-in', description: 'Face verification and liveness detection ensure secure, fraud-proof attendance marking.' },
+    { icon: MapPin, title: 'GPS & Geofencing', description: 'Location-verified attendance with configurable office boundaries and real-time tracking.' },
+    { icon: Bell, title: 'Smart Notifications', description: 'Never miss a punch-in reminder, leave approval, or important announcement.' },
+    { icon: WifiOff, title: 'Offline Mode', description: 'Mark attendance, view payslips, and access key features even without internet.' },
+    { icon: Zap, title: 'Instant Performance', description: 'Native-like speed with smooth animations, instant loads, and responsive design.' },
+    { icon: Battery, title: 'Battery Efficient', description: 'Optimized background processes that won\'t drain your device battery.' },
+  ];
+
+  const steps = [
+    { step: '01', title: 'Download or Install', desc: 'Get from Play Store, App Store, or install the PWA directly from your browser.' },
+    { step: '02', title: 'Sign In', desc: 'Use your company credentials to log in. Your data syncs instantly.' },
+    { step: '03', title: 'Start Tracking', desc: 'Mark attendance, view schedules, apply for leaves — all from your phone.' },
   ];
 
   return (
@@ -45,31 +64,43 @@ export default function GetApp() {
         <GoldenParticles />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
           <ScrollReveal>
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-8">
-              <Smartphone className="w-10 h-10 text-primary" />
-            </div>
+            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-primary mb-4">Mobile Experience</span>
           </ScrollReveal>
           <ScrollReveal delay={100}>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4">
-              Get the App
+              Your HR, in{' '}
+              <span className="text-primary">your pocket</span>
             </h1>
           </ScrollReveal>
           <ScrollReveal delay={200}>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto mb-10 leading-relaxed">
-              Download our app for the best experience. Available on Android and iOS.
+              Manage attendance, leaves, payslips and more — anytime, anywhere. Available on every device.
             </p>
           </ScrollReveal>
 
-          {/* Store Buttons */}
+          {/* Platform badges */}
           <ScrollReveal delay={300}>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto mb-10">
+              {platforms.map((p, i) => (
+                <div key={p.label} className="flex flex-col items-center gap-1.5 p-4 rounded-xl bg-card border border-border/50 hover:border-primary/20 hover:shadow-md transition-all duration-300">
+                  <p.icon className="w-6 h-6 text-primary mb-1" />
+                  <span className="text-sm font-semibold text-foreground">{p.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{p.desc}</span>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+
+          {/* Store Buttons */}
+          <ScrollReveal delay={400}>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
               {storeLinks.play_store && (
                 <a href={storeLinks.play_store} target="_blank" rel="noopener noreferrer">
                   <div className="flex items-center gap-3 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-xl px-6 py-3.5 transition-all">
-                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-foreground" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg>
+                    <svg viewBox="0 0 24 24" className="w-7 h-7 text-foreground" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg>
                     <div className="text-left">
                       <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Get it on</p>
-                      <p className="text-foreground font-semibold text-lg leading-tight">Google Play</p>
+                      <p className="text-foreground font-semibold text-base leading-tight">Google Play</p>
                     </div>
                   </div>
                 </a>
@@ -77,27 +108,15 @@ export default function GetApp() {
               {storeLinks.app_store && (
                 <a href={storeLinks.app_store} target="_blank" rel="noopener noreferrer">
                   <div className="flex items-center gap-3 bg-foreground/5 hover:bg-foreground/10 border border-border rounded-xl px-6 py-3.5 transition-all">
-                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-foreground" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                    <svg viewBox="0 0 24 24" className="w-7 h-7 text-foreground" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
                     <div className="text-left">
                       <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Download on the</p>
-                      <p className="text-foreground font-semibold text-lg leading-tight">App Store</p>
+                      <p className="text-foreground font-semibold text-base leading-tight">App Store</p>
                     </div>
                   </div>
                 </a>
               )}
-              {!storeLinks.play_store && !storeLinks.app_store && (
-                <div className="text-muted-foreground text-sm bg-muted/50 rounded-xl px-6 py-4 border border-border">
-                  <Smartphone className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  App store links will be available soon. You can still use the web version!
-                </div>
-              )}
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delay={400}>
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-muted-foreground text-sm">or</span>
-              <Button variant="ghost" onClick={() => navigate('/auth')} className="text-muted-foreground hover:text-foreground">
+              <Button onClick={() => navigate('/auth')} variant="outline" size="lg" className="px-8 h-12">
                 Continue on Web <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -105,28 +124,71 @@ export default function GetApp() {
         </div>
       </section>
 
-      {/* Why Download */}
-      <section className="py-20 bg-muted/30">
+      {/* Capabilities */}
+      <section className="py-16 sm:py-24 bg-muted/30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <ScrollReveal>
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-3">Why Download the App?</h2>
-              <p className="text-muted-foreground text-lg">A better experience, right in your pocket.</p>
+            <div className="text-center mb-12">
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-3 block">Capabilities</span>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-3">Built for the modern workforce</h2>
+              <p className="text-muted-foreground text-base max-w-lg mx-auto">
+                Everything you need to manage your work life, optimized for mobile.
+              </p>
             </div>
           </ScrollReveal>
-          <div className="grid sm:grid-cols-2 gap-6">
-            {features.map((f, i) => (
-              <ScrollReveal key={f.title} delay={i * 100}>
-                <div className="bg-card rounded-2xl border border-border/50 p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 group">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {capabilities.map((f, i) => (
+              <ScrollReveal key={f.title} delay={i * 80}>
+                <div className="bg-card rounded-2xl border border-border/50 p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300 group h-full">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <f.icon className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
+                  <h3 className="font-semibold text-base mb-2">{f.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
                 </div>
               </ScrollReveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-16 sm:py-24 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary mb-3 block">Getting Started</span>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-3">Up and running in minutes</h2>
+            </div>
+          </ScrollReveal>
+          <div className="grid md:grid-cols-3 gap-6">
+            {steps.map((s, i) => (
+              <ScrollReveal key={s.step} delay={i * 120}>
+                <div className="text-center p-6">
+                  <div className="text-5xl font-bold text-primary/10 mb-4">{s.step}</div>
+                  <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 sm:py-20 bg-muted/30">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+          <ScrollReveal>
+            <div className="rounded-3xl bg-primary/5 border border-primary/15 p-8 sm:p-12">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Ready to go mobile?</h2>
+              <p className="text-muted-foreground mb-8 text-sm sm:text-base">
+                Join thousands of employees already managing their work on the go.
+              </p>
+              <Button onClick={() => navigate('/auth')} size="lg" className="font-semibold px-8 shadow-lg h-12 text-base">
+                Get Started Free <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
