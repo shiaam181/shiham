@@ -16,7 +16,7 @@ export interface SystemSettings {
   emailOtpEnabled: boolean;
   passwordLoginEnabled: boolean;
   resendApiKey: string;
-  googleSigninEnabled: boolean;
+  
   oauthPhoneVerificationEnabled: boolean;
   appOnlyModeEnabled: boolean;
   testingModeEnabled: boolean;
