@@ -113,20 +113,20 @@ function LandingNav() {
     {
       title: 'Product',
       items: [
-        { icon: Users, label: 'HR Software' },
-        { icon: Wallet, label: 'Payroll Software' },
-        { icon: Calendar, label: 'Leave Management' },
-        { icon: ClipboardCheck, label: 'Attendance Management' },
-        { icon: Target, label: 'Performance Management' },
-        { icon: UserCheck, label: 'Employee Self Service' },
+        { icon: Users, label: 'HR Software', href: '/product/hr-software' },
+        { icon: Wallet, label: 'Payroll Software', href: '/product/payroll-software' },
+        { icon: Calendar, label: 'Leave Management', href: '/product/leave-management' },
+        { icon: ClipboardCheck, label: 'Attendance Management', href: '/product/attendance-management' },
+        { icon: Target, label: 'Performance Management', href: '/product/performance-management' },
+        { icon: UserCheck, label: 'Employee Self Service', href: '/product/employee-self-service' },
       ],
     },
     {
       title: 'For Industry',
       items: [
-        { icon: Settings, label: 'Manufacturing' },
-        { icon: Globe, label: 'SaaS / IT' },
-        { icon: Shield, label: 'Healthcare' },
+        { icon: Settings, label: 'Manufacturing', href: '/product/hr-software' },
+        { icon: Globe, label: 'SaaS / IT', href: '/product/hr-software' },
+        { icon: Shield, label: 'Healthcare', href: '/product/hr-software' },
       ],
     },
   ];
