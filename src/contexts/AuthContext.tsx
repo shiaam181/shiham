@@ -231,16 +231,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
-    const configuredBaseUrl = await getConfiguredAppBaseUrl();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${configuredBaseUrl || window.location.origin}/phone-verify`,
-      },
-    });
-    return { error };
-  };
 
   const resetPassword = async (email: string) => {
     const configuredBaseUrl = await getConfiguredAppBaseUrl();

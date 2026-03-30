@@ -316,14 +316,6 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-      toast({ title: 'Sign In Failed', description: error.message, variant: 'destructive' });
-      setIsGoogleLoading(false);
-    }
-  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
