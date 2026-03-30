@@ -66,7 +66,7 @@ const PrivacyPolicy = () => {
             <h2 className="text-xl font-semibold mb-3">5. Third-Party Services</h2>
             <p className="mb-2">We use the following third-party services:</p>
             <ul className="list-disc pl-6 space-y-1">
-              <li><strong>Google Sign-In:</strong> For authentication (subject to Google's Privacy Policy)</li>
+              
               <li><strong>EmailJS/Resend:</strong> For sending OTP emails</li>
               <li><strong>Twilio:</strong> For sending SMS OTP codes</li>
             </ul>

@@ -45,7 +45,6 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -232,16 +231,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
-    const configuredBaseUrl = await getConfiguredAppBaseUrl();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${configuredBaseUrl || window.location.origin}/phone-verify`,
-      },
-    });
-    return { error };
-  };
 
   const resetPassword = async (email: string) => {
     const configuredBaseUrl = await getConfiguredAppBaseUrl();
@@ -275,7 +264,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signIn,
         signUp,
-        signInWithGoogle,
         resetPassword,
         signOut,
         refreshProfile,

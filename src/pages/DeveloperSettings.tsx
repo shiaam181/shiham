@@ -38,7 +38,7 @@ export default function DeveloperSettings() {
   const [leaveManagementEnabled, setLeaveManagementEnabled] = useState(true);
   const [overtimeTrackingEnabled, setOvertimeTrackingEnabled] = useState(true);
   const [faceVerificationThreshold, setFaceVerificationThreshold] = useState(70);
-  const [googleSigninEnabled, setGoogleSigninEnabled] = useState(true);
+  
   const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
   const [oauthPhoneVerificationEnabled, setOauthPhoneVerificationEnabled] = useState(true);
   const [appOnlyModeEnabled, setAppOnlyModeEnabled] = useState(false);
@@ -142,7 +142,7 @@ export default function DeveloperSettings() {
             if (t?.otp_login) setSmsTemplateLogin(t.otp_login);
             break;
           }
-          case 'google_signin_enabled': setGoogleSigninEnabled((setting.value as any)?.enabled ?? true); break;
+          
           case 'password_login_enabled': setPasswordLoginEnabled((setting.value as any)?.enabled ?? true); break;
           case 'oauth_phone_verification_enabled': setOauthPhoneVerificationEnabled((setting.value as any)?.enabled ?? true); break;
           case 'app_only_mode_enabled': setAppOnlyModeEnabled((setting.value as any)?.enabled ?? false); break;
@@ -275,7 +275,7 @@ export default function DeveloperSettings() {
   const togglePhotoCapture = (e: boolean) => updateSetting('photo_capture_enabled', e, setPhotoCaptureEnabled, `Photo capture ${e ? 'enabled' : 'disabled'}`);
   const toggleLeaveManagement = (e: boolean) => updateSetting('leave_management_enabled', e, setLeaveManagementEnabled, `Leave management ${e ? 'enabled' : 'disabled'}`);
   const toggleOvertimeTracking = (e: boolean) => updateSetting('overtime_tracking_enabled', e, setOvertimeTrackingEnabled, `Overtime ${e ? 'enabled' : 'disabled'}`);
-  const toggleGoogleSignin = (e: boolean) => updateSetting('google_signin_enabled', e, setGoogleSigninEnabled, `Google Sign-in ${e ? 'enabled' : 'disabled'}`);
+  
   const togglePasswordLogin = (e: boolean) => updateSetting('password_login_enabled', e, setPasswordLoginEnabled, `Password login ${e ? 'enabled' : 'disabled'}`);
   const toggleOauthPhoneVerification = (e: boolean) => updateSetting('oauth_phone_verification_enabled', e, setOauthPhoneVerificationEnabled, `OAuth + Phone ${e ? 'enabled' : 'disabled'}`);
   const toggleAppOnlyMode = (e: boolean) => updateSetting('app_only_mode_enabled', e, setAppOnlyModeEnabled, `App-only mode ${e ? 'enabled' : 'disabled'}`);
@@ -387,7 +387,7 @@ export default function DeveloperSettings() {
           <div className="space-y-3">
             <FeatureToggle label="🧪 Testing Mode" description="Bypass OTP verification for faster testing" checked={testingModeEnabled} onCheckedChange={toggleTestingMode} disabled={settingsLoading} variant="warning" />
             <FeatureToggle label="Email + Password" description="Standard email and password login" icon={Mail} checked={passwordLoginEnabled} onCheckedChange={togglePasswordLogin} disabled={settingsLoading} />
-            <FeatureToggle label="Google Sign-in" description="Allow login with Google accounts" icon={Globe} checked={googleSigninEnabled} onCheckedChange={toggleGoogleSignin} disabled={settingsLoading} />
+            
             <FeatureToggle label="Phone OTP" description="Login via phone number OTP (requires SMS provider)" icon={Phone} checked={phoneOtpEnabled} onCheckedChange={togglePhoneOtp} disabled={settingsLoading} />
             <FeatureToggle label="Email OTP" description="Login via email OTP" icon={Mail} checked={emailOtpEnabled} onCheckedChange={toggleEmailOtp} disabled={settingsLoading} />
             <FeatureToggle label="OAuth + Phone Verification" description="Require phone OTP after Google sign-in" icon={Shield} checked={oauthPhoneVerificationEnabled} onCheckedChange={toggleOauthPhoneVerification} disabled={settingsLoading} />
