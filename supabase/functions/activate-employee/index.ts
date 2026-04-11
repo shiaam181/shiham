@@ -10,6 +10,7 @@ interface ActivateRequest {
   user_id: string;
   password: string;
   tenant_id: string;
+  token?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -18,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { user_id, password, tenant_id }: ActivateRequest = await req.json();
+    const { user_id, password, tenant_id, token }: ActivateRequest = await req.json();
 
     if (!user_id || !password) {
       return new Response(
@@ -38,6 +39,41 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const { data: profile, error: profileFetchError } = await supabase
+      .from("profiles")
+      .select("user_id, is_active, registration_status")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (profileFetchError) {
+      console.error("Profile fetch error:", profileFetchError);
+      return new Response(
+        JSON.stringify({ error: "Could not verify this invitation. Please try again." }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ error: "This invited account could not be found. Please ask your administrator to send a new invitation." }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (profile.is_active || profile.registration_status === "approved") {
+      return new Response(
+        JSON.stringify({ error: "Account activated. Please sign in with your password." }),
+        { status: 409, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (profile.registration_status !== "pending_activation") {
+      return new Response(
+        JSON.stringify({ error: "This invitation is no longer valid. Please ask your administrator to send a new one." }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Update user password
     const { error: updateError } = await supabase.auth.admin.updateUserById(user_id, {
       password,
@@ -46,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (updateError) {
       console.error("Password update error:", updateError);
       return new Response(
-        JSON.stringify({ error: "Failed to set password: " + updateError.message }),
+        JSON.stringify({ error: updateError.message || "Failed to set password" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -63,6 +99,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (profileError) {
       console.error("Profile update error:", profileError);
+      return new Response(
+        JSON.stringify({ error: "Failed to activate profile. Please contact your administrator." }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (token) {
+      const consumeResponse = await fetch(`${supabaseUrl}/functions/v1/manage-email-tokens`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          action: "validate",
+          raw_token: token,
+          purpose: "INVITE",
+          consume: true,
+        }),
+      });
+
+      const consumeResult = await consumeResponse.json();
+      if (!consumeResult?.valid) {
+        console.warn("Invite token could not be consumed after activation:", consumeResult?.error);
+      }
     }
 
     console.log(`Employee activated: user_id=${user_id}, tenant=${tenant_id}`);
