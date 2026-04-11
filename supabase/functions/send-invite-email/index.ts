@@ -310,10 +310,21 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResult = await emailResponse.json();
 
     if (!emailResult.success) {
-      console.error("Email send failed:", emailResult.error);
+      const rawErr = emailResult.error || '';
+      const lower = String(rawErr).toLowerCase();
+      let friendlyError = 'Failed to send the invitation email. Please try again later.';
+
+      if (lower.includes('unauthorized') || lower.includes('401'))
+        friendlyError = 'Email service authorization failed. Please check your email provider settings (e.g. IP whitelist in Brevo).';
+      else if (lower.includes('invalid') && lower.includes('email'))
+        friendlyError = `The email address "${employee_email}" appears to be invalid.`;
+      else if (lower.includes('rate') || lower.includes('limit'))
+        friendlyError = 'Email sending rate limit reached. Please wait a moment and try again.';
+
+      console.error("Email send failed:", rawErr);
       return new Response(
-        JSON.stringify({ error: "User created but failed to send invite email. " + (emailResult.error || "") }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: friendlyError }),
+        { status: 422, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -326,7 +337,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-invite-email:", error.message);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "An unexpected error occurred while sending the invite. Please try again." }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
