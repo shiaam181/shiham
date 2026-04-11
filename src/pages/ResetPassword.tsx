@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { getReadablePasswordError, parseEdgeFunctionErrorMessage } from '@/lib/readableErrors';
 import { Clock, ArrowLeft, Lock, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 
@@ -87,9 +88,11 @@ export default function ResetPassword() {
         });
 
         if (error || data?.error) {
+          const rawMessage = data?.error || error?.message || 'Failed to reset password.';
+          const parsed = parseEdgeFunctionErrorMessage(rawMessage);
           toast({
-            title: 'Error',
-            description: data?.error || error?.message || 'Failed to reset password.',
+            title: 'Password Reset Failed',
+            description: getReadablePasswordError(parsed.error || rawMessage),
             variant: 'destructive',
           });
           return;
@@ -101,7 +104,7 @@ export default function ResetPassword() {
         });
 
         if (error) {
-          toast({ title: 'Error', description: error.message, variant: 'destructive' });
+          toast({ title: 'Password Reset Failed', description: getReadablePasswordError(error.message), variant: 'destructive' });
           return;
         }
       }

@@ -32,7 +32,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate and consume the token
+    // Validate token before changing the password
     const validateResponse = await fetch(`${supabaseUrl}/functions/v1/manage-email-tokens`, {
       method: "POST",
       headers: {
@@ -43,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
         action: "validate",
         raw_token: token,
         purpose: "RESET",
-        consume: true,
+        consume: false,
       }),
     });
 
@@ -64,9 +64,28 @@ const handler = async (req: Request): Promise<Response> => {
     if (updateError) {
       console.error("Password update error:", updateError);
       return new Response(
-        JSON.stringify({ error: "Failed to update password: " + updateError.message }),
+        JSON.stringify({ error: updateError.message || "Failed to update password" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
+    }
+
+    const consumeResponse = await fetch(`${supabaseUrl}/functions/v1/manage-email-tokens`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        action: "validate",
+        raw_token: token,
+        purpose: "RESET",
+        consume: true,
+      }),
+    });
+
+    const consumeResult = await consumeResponse.json();
+    if (!consumeResult?.valid) {
+      console.warn("Reset token could not be consumed after password update:", consumeResult?.error);
     }
 
     console.log(`Password reset successful: user_id=${tokenData.user_id}`);

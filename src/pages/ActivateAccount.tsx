@@ -77,7 +77,7 @@ export default function ActivateAccount() {
     setIsSubmitting(true);
     try {
       const { data: tokenResult, error: tokenError } = await supabase.functions.invoke('manage-email-tokens', {
-        body: { action: 'validate', raw_token: token, purpose: 'INVITE', consume: true },
+        body: { action: 'validate', raw_token: token, purpose: 'INVITE', consume: false },
       });
       const tokenErrorMessage = tokenResult?.error || tokenError?.message || '';
       if (tokenError || !tokenResult?.valid) {

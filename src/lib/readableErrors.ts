@@ -44,6 +44,8 @@ export function getReadablePasswordError(raw: string): string {
     return 'This activation request is missing account details. Please use the latest invitation link.';
   if (lower.includes('password should be different') || lower.includes('same password'))
     return 'Please choose a new password that is different from the temporary or previous one.';
+  if (lower.includes('easy to guess') || lower.includes('pwned'))
+    return 'This password is too common or unsafe. Please choose a stronger password that is harder to guess.';
   if (lower.includes('same_password') || lower.includes('same password'))
     return 'New password must be different from your current password.';
   if (lower.includes('weak_password') || lower.includes('too short'))
