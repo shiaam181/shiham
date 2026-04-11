@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
+import { parseEdgeFunctionErrorMessage } from '@/lib/edgeFunctionError';
+import { getReadableInviteError } from '@/lib/readableErrors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
