@@ -275,8 +275,14 @@ export default function CompanyDetail() {
           role: inviteRole,
         },
       });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+
+      // Extract meaningful error from edge function response
+      const errorMessage = data?.error || error?.message || '';
+      const parsed = parseEdgeFunctionErrorMessage(errorMessage);
+      if (error || data?.error) {
+        const friendly = getReadableInviteError(parsed.error || errorMessage);
+        throw new Error(friendly);
+      }
       
       const roleLabel = inviteRole === 'employee' ? 'Employee' : 
                         inviteRole === 'owner' ? 'Owner' :
@@ -291,7 +297,7 @@ export default function CompanyDetail() {
       setInviteRole('employee');
       fetchUsers();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+      toast({ title: 'Failed to Send Invite', description: err.message || 'Could not send the invitation email. Please try again.', variant: 'destructive' });
     } finally {
       setInviteSending(false);
     }

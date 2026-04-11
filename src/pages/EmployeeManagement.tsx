@@ -215,15 +215,20 @@ export default function EmployeeManagement() {
           invited_by: user?.id,
         },
       });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+
+      const errorMessage = data?.error || error?.message || '';
+      const parsed = parseEdgeFunctionErrorMessage(errorMessage);
+      if (error || data?.error) {
+        const friendly = getReadableInviteError(parsed.error || errorMessage);
+        throw new Error(friendly);
+      }
       toast({ title: 'Invite Sent', description: `Invitation email sent to ${inviteEmail}` });
       setInviteOpen(false);
       setInviteName('');
       setInviteEmail('');
       fetchEmployees();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to send invite', variant: 'destructive' });
+      toast({ title: 'Failed to Send Invite', description: err.message || 'Could not send the invitation email. Please try again.', variant: 'destructive' });
     } finally {
       setInviteSending(false);
     }
