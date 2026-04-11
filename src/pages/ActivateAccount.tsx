@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { getReadablePasswordError, parseEdgeFunctionErrorMessage } from '@/lib/readableErrors';
 import { CheckCircle, Lock, Clock, AlertTriangle, Eye, EyeOff, Check, X } from 'lucide-react';
 
 
@@ -78,6 +79,7 @@ export default function ActivateAccount() {
       const { data: tokenResult, error: tokenError } = await supabase.functions.invoke('manage-email-tokens', {
         body: { action: 'validate', raw_token: token, purpose: 'INVITE', consume: true },
       });
+      const tokenErrorMessage = tokenResult?.error || tokenError?.message || '';
       if (tokenError || !tokenResult?.valid) {
         toast({ title: 'Link Expired', description: 'This activation link has already been used or has expired. Please ask your administrator to send a new invitation.', variant: 'destructive' });
         setState('expired');
@@ -85,14 +87,13 @@ export default function ActivateAccount() {
       }
 
       const { data: activateResult, error: activateError } = await supabase.functions.invoke('activate-employee', {
-        body: { user_id: tokenResult.user_id, password, tenant_id: tokenResult.tenant_id },
+        body: { user_id: tokenResult.user_id, password, tenant_id: tokenResult.tenant_id, token },
       });
 
       if (activateError || activateResult?.error) {
-        const rawMsg = activateResult?.error || activateError?.message || '';
-        const friendlyMsg = rawMsg.includes('non-2xx')
-          ? 'Unable to activate your account right now. Please try again or contact your administrator.'
-          : rawMsg || 'Activation failed. Please try again.';
+        const rawMsg = activateResult?.error || activateError?.message || tokenErrorMessage;
+        const parsed = parseEdgeFunctionErrorMessage(rawMsg);
+        const friendlyMsg = getReadablePasswordError(parsed.error || rawMsg);
         toast({ title: 'Activation Failed', description: friendlyMsg, variant: 'destructive' });
         return;
       }
@@ -101,9 +102,8 @@ export default function ActivateAccount() {
       toast({ title: 'Account Activated!', description: 'You can now sign in with your new password.' });
       setTimeout(() => navigate('/auth'), 3000);
     } catch (err: any) {
-      const msg = err?.message?.includes('non-2xx')
-        ? 'Something went wrong. Please try again or contact your administrator.'
-        : err?.message || 'An unexpected error occurred.';
+      const parsed = parseEdgeFunctionErrorMessage(err?.message || err);
+      const msg = getReadablePasswordError(parsed.error || err?.message || '');
       toast({ title: 'Activation Failed', description: msg, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);

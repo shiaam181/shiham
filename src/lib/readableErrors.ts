@@ -40,16 +40,34 @@ export function getReadableInviteError(raw: string): string {
 export function getReadablePasswordError(raw: string): string {
   const lower = (raw || '').toLowerCase();
 
+  if (lower.includes('missing user_id') || lower.includes('missing user id'))
+    return 'This activation request is missing account details. Please use the latest invitation link.';
+  if (lower.includes('password should be different') || lower.includes('same password'))
+    return 'Please choose a new password that is different from the temporary or previous one.';
   if (lower.includes('same_password') || lower.includes('same password'))
     return 'New password must be different from your current password.';
   if (lower.includes('weak_password') || lower.includes('too short'))
     return 'Password is too weak. Use at least 8 characters with uppercase, lowercase, numbers, and special characters.';
+  if (lower.includes('new password should contain at least one character of each'))
+    return 'Password is too weak. Use at least 8 characters with uppercase, lowercase, numbers, and special characters.';
+  if (lower.includes('password') && lower.includes('at least 6 characters'))
+    return 'Password is too short. Use at least 8 characters.';
   if (lower.includes('invalid') && lower.includes('token'))
     return 'The reset link has expired or is invalid. Please request a new one.';
+  if (lower.includes('already been used'))
+    return 'This invitation link was already used. Please ask your administrator to send a new invitation.';
   if (lower.includes('expired'))
     return 'This link has expired. Please request a new one.';
+  if (lower.includes('failed to set password'))
+    return 'Your password could not be saved. Please try a stronger password or try again.';
+  if (lower.includes('failed to activate profile'))
+    return 'Your password was saved, but your account could not be activated. Please contact your administrator.';
+  if (lower.includes('account activated'))
+    return 'Your account is already activated. Please sign in with your password.';
   if (lower.includes('non-2xx') || lower.includes('non 2xx'))
     return 'Could not update your password. Please try again later.';
+  if (lower.includes('internal server'))
+    return 'We could not complete your request right now. Please try again in a moment.';
 
   if (raw && raw.length > 5 && raw.length < 200) return raw;
   return 'Could not update your password. Please try again.';
