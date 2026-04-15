@@ -13,6 +13,7 @@ import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UpdateNotification from "@/components/UpdateNotification";
 import DashboardRouter from "@/components/DashboardRouter";
 import CommandPalette from "@/components/CommandPalette";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Eager-loaded critical routes
 import Index from "./pages/Index";
@@ -105,25 +106,73 @@ const queryClient = new QueryClient({
   },
 });
 
-function PageLoader() {
+function VisibleAppShell({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-        <p className="text-sm text-muted-foreground">Loading page...</p>
+    <div className="min-h-[100svh] bg-background">
+      <div className="mx-auto flex min-h-[100svh] w-full max-w-5xl items-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid w-full items-center gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+          <section className="space-y-4">
+            <div className="inline-flex items-center gap-3 rounded-full border border-border/60 bg-card px-4 py-2 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-display font-bold text-primary-foreground">
+                Z
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Zentrek</p>
+                <p className="text-xs text-muted-foreground">Attendance, payroll, and HR workspace</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Instant first paint</p>
+              <h1 className="max-w-xl text-3xl font-display font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                {title}
+              </h1>
+              <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {description}
+              </p>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-border/60 bg-card p-5 shadow-lg sm:p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-11 w-full rounded-xl" />
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );
 }
 
+function PageLoader() {
+  return (
+    <VisibleAppShell
+      title="Loading your workspace"
+      description="The page shell stays visible immediately while the next screen finishes loading in the background."
+    />
+  );
+}
+
 function AuthLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    </div>
+    <VisibleAppShell
+      title="Preparing secure access"
+      description="We’re checking your account and settings in the background, but the app never drops to a blank screen."
+    />
   );
 }
 

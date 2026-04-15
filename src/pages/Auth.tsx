@@ -354,11 +354,13 @@ export default function Auth() {
     return pendingLoginEmail || '';
   };
 
+  const authTabsLoading = settingsLoading && !showOtpVerification;
+
   // OTP Verification Screen
   if (showOtpVerification) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md animate-fade-in">
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 bg-background auth-shell">
+        <div className="w-full max-w-md animate-fade-in-safe">
           <div className="flex items-center gap-3 mb-8 justify-center">
             <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
               <Clock className="w-7 h-7 text-white" />
@@ -444,7 +446,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row auth-shell">
       {/* Left Side - Hero */}
       <div className="hidden lg:flex lg:w-1/2 gradient-hero p-12 flex-col justify-between relative overflow-hidden">
         {/* Decorative elements */}
@@ -494,8 +496,8 @@ export default function Auth() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md animate-fade-in">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
+        <div className="w-full max-w-md animate-fade-in-safe">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
             <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow-primary">
@@ -580,7 +582,13 @@ export default function Auth() {
               <CardDescription>Sign in to access your account</CardDescription>
             </CardHeader>
             <CardContent>
-              {hasMultipleLoginMethods && (
+              {authTabsLoading ? (
+                <div className="mb-4 grid w-full grid-cols-3 gap-2 rounded-lg bg-muted/60 p-1">
+                  <div className="h-9 rounded-md bg-card/80" />
+                  <div className="h-9 rounded-md bg-card/80" />
+                  <div className="h-9 rounded-md bg-card/80" />
+                </div>
+              ) : hasMultipleLoginMethods ? (
                 <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as 'password' | 'email_otp' | 'phone_otp')} className="mb-4">
                   <TabsList className={`grid w-full ${[hasPasswordLogin, hasEmailOtp, hasPhoneOtp].filter(Boolean).length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     {hasPasswordLogin && (
@@ -603,7 +611,7 @@ export default function Auth() {
                     )}
                   </TabsList>
                 </Tabs>
-              )}
+              ) : null}
               
               <form onSubmit={handleSubmit} className="space-y-4">
                 {loginMethod !== 'phone_otp' && (
