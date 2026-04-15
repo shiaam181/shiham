@@ -2,8 +2,13 @@ import { useEffect, useRef } from 'react';
 
 export function GoldenParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shouldAnimate = typeof window !== 'undefined'
+    && window.innerWidth >= 768
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
+    if (!shouldAnimate) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -111,7 +116,17 @@ export function GoldenParticles() {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', init);
     };
-  }, []);
+  }, [shouldAnimate]);
+
+  if (!shouldAnimate) {
+    return (
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(circle at top, hsl(var(--primary) / 0.12), transparent 58%)' }}
+      />
+    );
+  }
 
   return (
     <canvas

@@ -555,14 +555,17 @@ function LandingFooter() {
 export default function Index() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [checkingSettings, setCheckingSettings] = useState(true);
-  const [showMarketing, setShowMarketing] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
     const checkAndRedirect = async () => {
       if (isLoading) return;
       
-      if (user) { navigate('/dashboard'); return; }
+      if (user) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
 
       try {
         const { data, error } = await supabase.rpc('get_public_auth_settings' as never);
@@ -571,55 +574,33 @@ export default function Index() {
         const rows = data as Array<{ key: string; value: Record<string, unknown> }> | null;
         const marketingEnabled = (rows?.find((r) => r.key === 'show_marketing_landing_page')?.value as any)?.enabled ?? false;
 
-        setShowMarketing(!!marketingEnabled);
-        if (!marketingEnabled) navigate('/auth');
+        if (!isActive) return;
+
+        if (!marketingEnabled) {
+          navigate('/auth', { replace: true });
+        }
       } catch (err) {
         console.error('Settings check failed:', err);
-        // Fallback: show marketing page on error
-        setShowMarketing(true);
-      } finally {
-        setCheckingSettings(false);
       }
     };
+
     checkAndRedirect();
+
+    return () => {
+      isActive = false;
+    };
   }, [user, isLoading, navigate]);
 
-  // Safety timeout: if loading takes more than 4 seconds, stop waiting
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (checkingSettings) {
-        console.warn('[Index] Loading timed out, showing page');
-        setCheckingSettings(false);
-        setShowMarketing(true);
-      }
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [checkingSettings]);
-
-  if (isLoading || checkingSettings) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-
-  // Marketing Landing Page
-  if (showMarketing) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <LandingNav />
-        <HeroSection />
-        <FeaturesSection />
-        <ModulesSection />
-        <HowItWorksSection />
-        <TrustSection />
-        <CTASection />
-        <LandingFooter />
-      </div>
-    );
-  }
-
-  return null;
+  return (
+    <div className="min-h-[100svh] flex flex-col bg-background">
+      <LandingNav />
+      <HeroSection />
+      <FeaturesSection />
+      <ModulesSection />
+      <HowItWorksSection />
+      <TrustSection />
+      <CTASection />
+      <LandingFooter />
+    </div>
+  );
 }
